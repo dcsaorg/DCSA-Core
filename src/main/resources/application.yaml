@@ -1,0 +1,20 @@
+
+spring:
+  application:
+    name: Your project name
+  r2dbc:
+    url: r2dbc:your_db_driver://your_url:your_port
+    name: your_db_name
+    properties:
+      schema: your_schema
+    username: admin
+    password: admin
+    initialization-mode: always
+
+server:
+  port: 9090
+
+logging:
+  level:
+    dk: DEBUG
+
