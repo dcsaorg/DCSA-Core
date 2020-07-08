@@ -1,8 +1,8 @@
-package dk.asseco.yourproject.service.impl;
+package dk.asseco.dcsa.service.impl;
 
-import dk.asseco.yourproject.exception.NotFoundException;
-import dk.asseco.yourproject.model.GetId;
-import dk.asseco.yourproject.service.BaseService;
+import dk.asseco.dcsa.exception.NotFoundException;
+import dk.asseco.dcsa.model.GetId;
+import dk.asseco.dcsa.service.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;

@@ -1,4 +1,4 @@
-package dk.asseco.yourproject.model;
+package dk.asseco.dcsa.model;
 
 public interface GetId<I> {
     I getId();
