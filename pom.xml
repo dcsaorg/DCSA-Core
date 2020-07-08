@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>dk.asseco</groupId>
-	<artifactId>your_artifact_name</artifactId>
+	<artifactId>dcsa_backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>war</packaging>
-	<name>your_project_name</name>
+	<name>DCSA-Backend</name>
 	<description>Demo project for Spring Boot</description>
 
 	<properties>
