@@ -1,8 +1,8 @@
-package dk.asseco.yourproject.controller;
+package dk.asseco.dcsa.controller;
 
-import dk.asseco.yourproject.exception.*;
-import dk.asseco.yourproject.model.GetId;
-import dk.asseco.yourproject.service.BaseService;
+import dk.asseco.dcsa.exception.*;
+import dk.asseco.dcsa.model.GetId;
+import dk.asseco.dcsa.service.BaseService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.r2dbc.BadSqlGrammarException;
 import org.springframework.http.HttpStatus;

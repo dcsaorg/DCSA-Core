@@ -1,4 +1,4 @@
-package dk.asseco.yourproject.exception;
+package dk.asseco.dcsa.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

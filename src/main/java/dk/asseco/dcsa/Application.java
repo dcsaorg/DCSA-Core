@@ -1,4 +1,4 @@
-package dk.asseco.yourproject;
+package dk.asseco.dcsa;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

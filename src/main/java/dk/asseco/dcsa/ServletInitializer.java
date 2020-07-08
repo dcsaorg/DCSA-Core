@@ -1,4 +1,4 @@
-package dk.asseco.yourproject;
+package dk.asseco.dcsa;
 
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
