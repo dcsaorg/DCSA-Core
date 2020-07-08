@@ -1,13 +1,13 @@
 
 spring:
   application:
-    name: Your project name
+    name: DCSA-Backend
   r2dbc:
-    url: r2dbc:your_db_driver://your_url:your_port
-    name: your_db_name
+    url: r2dbc:postgresql://localhost:5432
+    name: dcsa_tnt_v1
     properties:
-      schema: your_schema
-    username: admin
+      schema: dcsa v1.2
+    username: postgres
     password: admin
     initialization-mode: always
 
