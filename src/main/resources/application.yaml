@@ -3,10 +3,10 @@ spring:
   application:
     name: DCSA-Backend
   r2dbc:
-    url: r2dbc:postgresql://localhost:5432
+    url: r2dbc:postgresql://localhost:5433
     name: dcsa_tnt_v1
     properties:
-      schema: dcsa v1.2
+      schema: dcsa_v1.2
     username: postgres
     password: admin
     initialization-mode: always

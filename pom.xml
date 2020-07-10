@@ -38,13 +38,23 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/io.swagger.core.v3/swagger-annotations -->
+		<dependency>
+			<groupId>io.swagger.core.v3</groupId>
+			<artifactId>swagger-annotations</artifactId>
+			<version>2.1.3</version>
+		</dependency>
 
 <!--		Choose any sequel database driver-->
+		<!-- https://mvnrepository.com/artifact/io.r2dbc/r2dbc-postgresql -->
 		<dependency>
 			<groupId>io.r2dbc</groupId>
 			<artifactId>r2dbc-postgresql</artifactId>
-			<scope>provided</scope>
+			<version>0.8.3.RELEASE</version>
+			<scope>test</scope>
 		</dependency>
+
+
 
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -66,6 +76,14 @@
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+        </dependency>
+		<dependency>
+			<groupId>io.r2dbc</groupId>
+			<artifactId>r2dbc-postgresql</artifactId>
 		</dependency>
 	</dependencies>
 

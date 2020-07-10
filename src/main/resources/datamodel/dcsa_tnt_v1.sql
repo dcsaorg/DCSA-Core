@@ -27,7 +27,7 @@ DROP DATABASE dcsa_tnt_v1;
 CREATE DATABASE dcsa_tnt_v1 WITH TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'English_United States.1252' LC_CTYPE = 'English_United States.1252';
 
 
-\connect dcsa_tnt_v1
+connect dcsa_tnt_v1
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -42,10 +42,10 @@ SET row_security = off;
 
 --
 -- TOC entry 6 (class 2615 OID 24585)
--- Name: dcsa v1.2; Type: SCHEMA; Schema: -; Owner: -
+-- Name: dcsa_v1.2; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA "dcsa v1.2";
+CREATE SCHEMA "dcsa_v1.2";
 
 
 --
@@ -58,10 +58,10 @@ CREATE SCHEMA "dcsa v2.0";
 
 --
 -- TOC entry 691 (class 1247 OID 24677)
--- Name: empty_indicator_code; Type: TYPE; Schema: dcsa v1.2; Owner: -
+-- Name: empty_indicator_code; Type: TYPE; Schema: dcsa_v1.2; Owner: -
 --
 
-CREATE TYPE "dcsa v1.2".empty_indicator_code AS ENUM (
+CREATE TYPE "dcsa_v1.2".empty_indicator_code AS ENUM (
     'EMPTY',
     'LADEN'
 );
@@ -69,10 +69,10 @@ CREATE TYPE "dcsa v1.2".empty_indicator_code AS ENUM (
 
 --
 -- TOC entry 673 (class 1247 OID 24640)
--- Name: event_classifier_code; Type: TYPE; Schema: dcsa v1.2; Owner: -
+-- Name: event_classifier_code; Type: TYPE; Schema: dcsa_v1.2; Owner: -
 --
 
-CREATE TYPE "dcsa v1.2".event_classifier_code AS ENUM (
+CREATE TYPE "dcsa_v1.2".event_classifier_code AS ENUM (
     'PLN',
     'ACT',
     'EST'
@@ -81,10 +81,10 @@ CREATE TYPE "dcsa v1.2".event_classifier_code AS ENUM (
 
 --
 -- TOC entry 676 (class 1247 OID 24648)
--- Name: event_type; Type: TYPE; Schema: dcsa v1.2; Owner: -
+-- Name: event_type; Type: TYPE; Schema: dcsa_v1.2; Owner: -
 --
 
-CREATE TYPE "dcsa v1.2".event_type AS ENUM (
+CREATE TYPE "dcsa_v1.2".event_type AS ENUM (
     'EQUIPMENT',
     'TRANSPORT',
     'SHIPMENT',
@@ -94,10 +94,10 @@ CREATE TYPE "dcsa v1.2".event_type AS ENUM (
 
 --
 -- TOC entry 670 (class 1247 OID 24619)
--- Name: mode_of_transport_code; Type: TYPE; Schema: dcsa v1.2; Owner: -
+-- Name: mode_of_transport_code; Type: TYPE; Schema: dcsa_v1.2; Owner: -
 --
 
-CREATE TYPE "dcsa v1.2".mode_of_transport_code AS ENUM (
+CREATE TYPE "dcsa_v1.2".mode_of_transport_code AS ENUM (
     '0',
     '1',
     '2',
@@ -173,12 +173,12 @@ SET default_table_access_method = heap;
 
 --
 -- TOC entry 209 (class 1259 OID 24586)
--- Name: event; Type: TABLE; Schema: dcsa v1.2; Owner: -
+-- Name: event; Type: TABLE; Schema: dcsa_v1.2; Owner: -
 --
 
-CREATE TABLE "dcsa v1.2".event (
-    event_classifier_code "dcsa v1.2".event_classifier_code NOT NULL,
-    event_type "dcsa v1.2".event_type NOT NULL,
+CREATE TABLE "dcsa_v1.2".event (
+    event_classifier_code text NOT NULL,
+    event_type text NOT NULL,
     event_date_time date NOT NULL,
     event_id text NOT NULL,
     event_type_code text NOT NULL
@@ -187,56 +187,55 @@ CREATE TABLE "dcsa v1.2".event (
 
 --
 -- TOC entry 212 (class 1259 OID 24670)
--- Name: equipment_event; Type: TABLE; Schema: dcsa v1.2; Owner: -
+-- Name: equipment_event; Type: TABLE; Schema: dcsa_v1.2; Owner: -
 --
 
-CREATE TABLE "dcsa v1.2".equipment_event (
+CREATE TABLE "dcsa_v1.2".equipment_event (
     equipment_reference text NOT NULL,
     facility_type_code text NOT NULL,
     un_location_code text NOT NULL,
     facility_code text NOT NULL,
     other_facility text NOT NULL,
-    empty_indicator_code "dcsa v1.2".empty_indicator_code NOT NULL
+    empty_indicator_code text NOT NULL
 )
-INHERITS ("dcsa v1.2".event);
+INHERITS ("dcsa_v1.2".event);
 
 
 --
 -- TOC entry 210 (class 1259 OID 24657)
--- Name: shipment_event; Type: TABLE; Schema: dcsa v1.2; Owner: -
+-- Name: shipment_event; Type: TABLE; Schema: dcsa_v1.2; Owner: -
 --
 
-CREATE TABLE "dcsa v1.2".shipment_event (
+CREATE TABLE "dcsa_v1.2".shipment_event (
     shipment_information_type_code text
 )
-INHERITS ("dcsa v1.2".event);
+INHERITS ("dcsa_v1.2".event);
 
 
 --
 -- TOC entry 211 (class 1259 OID 24664)
--- Name: transport_event; Type: TABLE; Schema: dcsa v1.2; Owner: -
+-- Name: transport_event; Type: TABLE; Schema: dcsa_v1.2; Owner: -
 --
 
-CREATE TABLE "dcsa v1.2".transport_event (
+CREATE TABLE "dcsa_v1.2".transport_event (
     transport_reference text,
     transport_leg_reference text,
     facility_type_code text,
     un_location_code text,
     facility_code text,
     other_facility text,
-    mode_of_transport_code "dcsa v1.2".mode_of_transport_code
-)
-INHERITS ("dcsa v1.2".event);
+    mode_of_transport_code text)
+INHERITS ("dcsa_v1.2".event);
 
 
 --
 -- TOC entry 213 (class 1259 OID 24681)
--- Name: transport_equipment_event; Type: TABLE; Schema: dcsa v1.2; Owner: -
+-- Name: transport_equipment_event; Type: TABLE; Schema: dcsa_v1.2; Owner: -
 --
 
-CREATE TABLE "dcsa v1.2".transport_equipment_event (
+CREATE TABLE "dcsa_v1.2".transport_equipment_event (
 )
-INHERITS ("dcsa v1.2".equipment_event, "dcsa v1.2".transport_event, "dcsa v1.2".event);
+INHERITS ("dcsa_v1.2".equipment_event, "dcsa_v1.2".transport_event, "dcsa_v1.2".event);
 
 
 --
@@ -334,116 +333,6 @@ CREATE TABLE "dcsa v2.0".transport_event (
     event_classifier_code "dcsa v2.0"."EventClassifierCode" NOT NULL,
     event_type_code "dcsa v2.0"."EventTypeCode" NOT NULL
 );
-
-
---
--- TOC entry 2915 (class 0 OID 24670)
--- Dependencies: 212
--- Data for Name: equipment_event; Type: TABLE DATA; Schema: dcsa v1.2; Owner: -
---
-
-COPY "dcsa v1.2".equipment_event (event_classifier_code, event_type, event_date_time, event_id, event_type_code, equipment_reference, facility_type_code, un_location_code, facility_code, other_facility, empty_indicator_code) FROM stdin;
-\.
-
-
---
--- TOC entry 2912 (class 0 OID 24586)
--- Dependencies: 209
--- Data for Name: event; Type: TABLE DATA; Schema: dcsa v1.2; Owner: -
---
-
-COPY "dcsa v1.2".event (event_classifier_code, event_type, event_date_time, event_id, event_type_code) FROM stdin;
-\.
-
-
---
--- TOC entry 2913 (class 0 OID 24657)
--- Dependencies: 210
--- Data for Name: shipment_event; Type: TABLE DATA; Schema: dcsa v1.2; Owner: -
---
-
-COPY "dcsa v1.2".shipment_event (event_classifier_code, event_type, event_date_time, event_id, event_type_code, shipment_information_type_code) FROM stdin;
-\.
-
-
---
--- TOC entry 2916 (class 0 OID 24681)
--- Dependencies: 213
--- Data for Name: transport_equipment_event; Type: TABLE DATA; Schema: dcsa v1.2; Owner: -
---
-
-COPY "dcsa v1.2".transport_equipment_event (event_classifier_code, event_type, event_date_time, event_id, event_type_code, equipment_reference, facility_type_code, un_location_code, facility_code, other_facility, empty_indicator_code, transport_reference, transport_leg_reference, mode_of_transport_code) FROM stdin;
-\.
-
-
---
--- TOC entry 2914 (class 0 OID 24664)
--- Dependencies: 211
--- Data for Name: transport_event; Type: TABLE DATA; Schema: dcsa v1.2; Owner: -
---
-
-COPY "dcsa v1.2".transport_event (event_classifier_code, event_type, event_date_time, event_id, event_type_code, transport_reference, transport_leg_reference, facility_type_code, un_location_code, facility_code, other_facility, mode_of_transport_code) FROM stdin;
-\.
-
-
---
--- TOC entry 2906 (class 0 OID 16504)
--- Dependencies: 203
--- Data for Name: mode_of_transport; Type: TABLE DATA; Schema: dcsa v2.0; Owner: -
---
-
-COPY "dcsa v2.0".mode_of_transport (code, name, description, "DCSA_transport_type") FROM stdin;
-\.
-
-
---
--- TOC entry 2907 (class 0 OID 16507)
--- Dependencies: 204
--- Data for Name: old_transport; Type: TABLE DATA; Schema: dcsa v2.0; Owner: -
---
-
-COPY "dcsa v2.0".old_transport (id, reference, name, mode_of_transport) FROM stdin;
-\.
-
-
---
--- TOC entry 2908 (class 0 OID 16510)
--- Dependencies: 205
--- Data for Name: old_vessel; Type: TABLE DATA; Schema: dcsa v2.0; Owner: -
---
-
-COPY "dcsa v2.0".old_vessel (imo_number, name, flag, call_sign_number, operator_carrier_code, transport_id) FROM stdin;
-\.
-
-
---
--- TOC entry 2909 (class 0 OID 16516)
--- Dependencies: 206
--- Data for Name: shipment_event; Type: TABLE DATA; Schema: dcsa v2.0; Owner: -
---
-
-COPY "dcsa v2.0".shipment_event (id, event_type, event_date_time, event_classifier_code, shipment_information_type_code, event_type_code, transport_call_id) FROM stdin;
-\.
-
-
---
--- TOC entry 2910 (class 0 OID 16525)
--- Dependencies: 207
--- Data for Name: transport_equipment_event; Type: TABLE DATA; Schema: dcsa v2.0; Owner: -
---
-
-COPY "dcsa v2.0".transport_equipment_event (id, event_type, event_date_time, event_classifier_code, transport_reference, transport_leg_reference, equipment_reference, facility_type_code, un_location_code, facility_code, other_facility, empty_indicator_code, mode_of_transport_code, event_type_code) FROM stdin;
-\.
-
-
---
--- TOC entry 2911 (class 0 OID 16531)
--- Dependencies: 208
--- Data for Name: transport_event; Type: TABLE DATA; Schema: dcsa v2.0; Owner: -
---
-
-COPY "dcsa v2.0".transport_event (id, event_type, event_date_time, transport_call_id, delay_reason_code, vessel_schedule_change_remark, event_classifier_code, event_type_code) FROM stdin;
-\.
 
 
 --
