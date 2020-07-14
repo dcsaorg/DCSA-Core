@@ -21,7 +21,7 @@ import reactor.core.publisher.Mono;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value = "events", consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
+@RequestMapping(value = "events", produces = {MediaType.APPLICATION_JSON_VALUE})
 @Tag(name = "Events", description = "the event API")
 public class EventController extends BaseController<EventService, Event, String> {
 
