@@ -1,29 +1,29 @@
 -- A script to initialize the tables relevant for the DCSA TNT interface v1.2
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; -- Used to generate UUIDs
 
-DROP TYPE IF EXISTS "dcsa_v1.2".empty_indicator_code CASCADE;
-CREATE TYPE "dcsa_v1.2".empty_indicator_code AS ENUM (
+DROP TYPE IF EXISTS dcsa_v1_1.empty_indicator_code CASCADE;
+CREATE TYPE dcsa_v1_1.empty_indicator_code AS ENUM (
     'EMPTY',
     'LADEN'
 );
 
-DROP TYPE IF EXISTS "dcsa_v1.2".event_classifier_code CASCADE;
-CREATE TYPE "dcsa_v1.2".event_classifier_code AS ENUM (
+DROP TYPE IF EXISTS dcsa_v1_1.event_classifier_code CASCADE;
+CREATE TYPE dcsa_v1_1.event_classifier_code AS ENUM (
     'PLN',
     'ACT',
     'EST'
 );
 
-DROP TYPE IF EXISTS "dcsa_v1.2".event_type CASCADE;
-CREATE TYPE "dcsa_v1.2".event_type AS ENUM (
+DROP TYPE IF EXISTS dcsa_v1_1.event_type CASCADE;
+CREATE TYPE dcsa_v1_1.event_type AS ENUM (
     'EQUIPMENT',
     'TRANSPORT',
     'SHIPMENT',
     'TRANSPORTEQUIPMENT'
 );
 
-DROP TYPE IF EXISTS "dcsa_v1.2".mode_of_transport_code CASCADE;
-CREATE TYPE "dcsa_v1.2".mode_of_transport_code AS ENUM (
+DROP TYPE IF EXISTS dcsa_v1_1.mode_of_transport_code CASCADE;
+CREATE TYPE dcsa_v1_1.mode_of_transport_code AS ENUM (
     '0',
     '1',
     '2',
@@ -36,17 +36,17 @@ CREATE TYPE "dcsa_v1.2".mode_of_transport_code AS ENUM (
     '9'
 );
 
-DROP TABLE IF EXISTS "dcsa_v1.2".event CASCADE;
-CREATE TABLE "dcsa_v1.2".event (
-    event_classifier_code text NOT NULL,
+DROP TABLE IF EXISTS dcsa_v1_1.event CASCADE;
+CREATE TABLE dcsa_v1_1.event (
+    event_classifier_code dcsa_v1_1.event_classifier_code NOT NULL,
     event_type text NOT NULL,
     event_date_time date NOT NULL,
     event_id uuid DEFAULT uuid_generate_v4(),
     event_type_code text NOT NULL
 );
 
-DROP TABLE IF EXISTS "dcsa_v1.2".equipment_event CASCADE;
-CREATE TABLE "dcsa_v1.2".equipment_event (
+DROP TABLE IF EXISTS dcsa_v1_1.equipment_event CASCADE;
+CREATE TABLE dcsa_v1_1.equipment_event (
     equipment_reference text NOT NULL,
     facility_type_code text NOT NULL,
     un_location_code text NOT NULL,
@@ -54,18 +54,18 @@ CREATE TABLE "dcsa_v1.2".equipment_event (
     other_facility text NOT NULL,
     empty_indicator_code text NOT NULL
 )
-INHERITS ("dcsa_v1.2".event);
+INHERITS (dcsa_v1_1.event);
 
 
-DROP TABLE IF EXISTS "dcsa_v1.2".shipment_event CASCADE;
-CREATE TABLE "dcsa_v1.2".shipment_event (
+DROP TABLE IF EXISTS dcsa_v1_1.shipment_event CASCADE;
+CREATE TABLE dcsa_v1_1.shipment_event (
     shipment_information_type_code text
 )
-INHERITS ("dcsa_v1.2".event);
+INHERITS (dcsa_v1_1.event);
 
 
-DROP TABLE IF EXISTS "dcsa_v1.2".transport_event CASCADE;
-CREATE TABLE "dcsa_v1.2".transport_event (
+DROP TABLE IF EXISTS dcsa_v1_1.transport_event CASCADE;
+CREATE TABLE dcsa_v1_1.transport_event (
     transport_reference text,
     transport_leg_reference text,
     facility_type_code text,
@@ -73,12 +73,12 @@ CREATE TABLE "dcsa_v1.2".transport_event (
     facility_code text,
     other_facility text,
     mode_of_transport_code text)
-INHERITS ("dcsa_v1.2".event);
+INHERITS (dcsa_v1_1.event);
 
 -- We don't inherit from transport and equipment tables here,
 -- to avoid receiving transport-equipment events when selecting for transport OR equipment events.
-DROP TABLE IF EXISTS "dcsa_v1.2".transport_equipment_event CASCADE;
-CREATE TABLE "dcsa_v1.2".transport_equipment_event (
+DROP TABLE IF EXISTS "dcsa_v1_1".transport_equipment_event CASCADE;
+CREATE TABLE "dcsa_v1_1".transport_equipment_event (
     equipment_reference text NOT NULL,
     facility_type_code text NOT NULL,
     un_location_code text NOT NULL,
@@ -88,5 +88,6 @@ CREATE TABLE "dcsa_v1.2".transport_equipment_event (
     transport_reference text NOT NULL,
     transport_leg_reference text NOT NULL,
     mode_of_transport_code text NOT NULL)
-INHERITS ("dcsa_v1.2".event);
+INHERITS ("dcsa_v1_1".event);
+
 
