@@ -22,7 +22,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "events", produces = {MediaType.APPLICATION_JSON_VALUE})
-@Tag(name = "Events", description = "the event API")
+@Tag(name = "Events", description = "The event API")
 public class EventController extends BaseController<EventService, Event, String> {
 
     private final EventService eventService;
@@ -39,7 +39,7 @@ public class EventController extends BaseController<EventService, Event, String>
 
     @Operation(summary = "Find all Events", description = "Finds all Events in the database", tags = { "Events" })
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "successful operation",
+            @ApiResponse(responseCode = "200", description = "Successful operation",
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = Event.class))))
     })
     @Override
@@ -51,7 +51,7 @@ public class EventController extends BaseController<EventService, Event, String>
             @Parameter(in = ParameterIn.PATH, name = "id", description="Id of the Event to be obtained. Cannot be empty.", required=true),
     })
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "successful operation"),
+            @ApiResponse(responseCode = "200", description = "Successful operation"),
             @ApiResponse(responseCode = "404", description = "Event not found")
     })
     @Override

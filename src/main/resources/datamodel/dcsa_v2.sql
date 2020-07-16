@@ -35,7 +35,7 @@ CREATE TYPE dcsa_v2_0.EventTypeCode AS ENUM (
 
 DROP TABLE IF EXISTS dcsa_v2_0.equipment_event CASCADE;
 CREATE TABLE dcsa_v2_0.equipment_event (
-    id integer NOT NULL,
+    id uuid NOT NULL,
     event_type dcsa_v2_0.EventType NOT NULL,
     event_date_time timestamp with time zone NOT NULL,
     event_classifier_code dcsa_v2_0.EventClassifierCode NOT NULL,
@@ -46,12 +46,12 @@ CREATE TABLE dcsa_v2_0.equipment_event (
     other_facility character varying(50),
     empty_indicator_code dcsa_v2_0.EmptyIndicatorCode NOT NULL,
     event_type_code dcsa_v2_0.EventTypeCode NOT NULL,
-    transport_call_id integer NOT NULL
+    transport_call_id uuid NOT NULL
 );
 
 DROP TABLE IF EXISTS dcsa_v2_0.schedule CASCADE;
 CREATE TABLE dcsa_v2_0.schedule (
-    id integer NOT NULL,
+    id uuid NOT NULL,
     vessel_operator_carrier_code character varying(10) NOT NULL,
     vessel_partner_carrier_code character varying(10),
     start_date date,
@@ -62,19 +62,19 @@ CREATE TABLE dcsa_v2_0.schedule (
 
 DROP TABLE IF EXISTS dcsa_v2_0.shipment_event CASCADE;
 CREATE TABLE dcsa_v2_0.shipment_event (
-    id integer NOT NULL,
+    id uuid NOT NULL,
     event_type dcsa_v2_0.EventType NOT NULL,
     event_date_time timestamp with time zone NOT NULL,
     event_classifier_code dcsa_v2_0.EventClassifierCode NOT NULL,
     shipment_information_type_code character varying(3) NOT NULL,
     event_type_code dcsa_v2_0.EventTypeCode NOT NULL,
-    transport_call_id integer NOT NULL
+    transport_call_id uuid NOT NULL
 );
 
 DROP TABLE IF EXISTS dcsa_v2_0.transport_call CASCADE;
 CREATE TABLE dcsa_v2_0.transport_call (
-    id integer NOT NULL,
-    schedule_id integer NOT NULL,
+    id uuid NOT NULL,
+    schedule_id uuid NOT NULL,
     carrier_service_code character varying,
     vessel_imo_number character varying(7),
     vessel_name character varying(35),
@@ -89,7 +89,7 @@ CREATE TABLE dcsa_v2_0.transport_call (
 
 DROP TABLE IF EXISTS dcsa_v2_0.transport_equipment_event CASCADE;
 CREATE TABLE dcsa_v2_0.transport_equipment_event (
-    id integer NOT NULL,
+    id uuid NOT NULL,
     event_type dcsa_v2_0.EventType NOT NULL,
     event_date_time timestamp with time zone NOT NULL,
     event_classifier_code dcsa_v2_0.EventClassifierCode NOT NULL,
@@ -107,10 +107,10 @@ CREATE TABLE dcsa_v2_0.transport_equipment_event (
 
 DROP TABLE IF EXISTS dcsa_v2_0.transport_event CASCADE;
 CREATE TABLE dcsa_v2_0.transport_event (
-    id integer NOT NULL,
+    id uuid NOT NULL,
     event_type dcsa_v2_0.EventType NOT NULL,
     event_date_time timestamp with time zone NOT NULL,
-    transport_call_id integer NOT NULL,
+    transport_call_id uuid NOT NULL,
     delay_reason_code character varying(3),
     vessel_schedule_change_remark character varying(250),
     event_classifier_code dcsa_v2_0.EventClassifierCode NOT NULL,
