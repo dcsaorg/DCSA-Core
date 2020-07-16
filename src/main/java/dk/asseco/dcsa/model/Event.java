@@ -1,8 +1,6 @@
 package dk.asseco.dcsa.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import dk.asseco.dcsa.model.enums.EventClassifierCode;
-import dk.asseco.dcsa.model.enums.EventType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;

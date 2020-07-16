@@ -14,6 +14,9 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, St
     private final EventRepository eventRepository;
     private final ShipmentEventServiceImpl shipmentEventService;
     private final TransportEventServiceImpl transportEventService;
+    private final TransportEquipmentEventServiceImpl transportEquipmentEventService;
+    private final EquipmentEventServiceImpl equipmentEventService;
+
 
     @Override
     EventRepository getRepository() {
@@ -29,7 +32,9 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, St
     public <T extends Event> Flux<T> findAllTypes() {
         return Flux.merge(
                 (Flux<T>) shipmentEventService.findAll(),
-                (Flux<T>) transportEventService.findAll()
+                (Flux<T>) transportEventService.findAll(),
+                (Flux<T>) transportEquipmentEventService.findAll(),
+                (Flux<T>) equipmentEventService.findAll()
         );
 //        return Flux.merge(
 //                shipmentEventService.findAll(),

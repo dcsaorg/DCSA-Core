@@ -1,4 +1,5 @@
 -- A script to initialize the tables relevant for the DCSA TNT interface v1.2
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; -- Used to generate UUIDs
 
 DROP TYPE IF EXISTS "dcsa_v1.2".empty_indicator_code CASCADE;
 CREATE TYPE "dcsa_v1.2".empty_indicator_code AS ENUM (
@@ -40,7 +41,7 @@ CREATE TABLE "dcsa_v1.2".event (
     event_classifier_code text NOT NULL,
     event_type text NOT NULL,
     event_date_time date NOT NULL,
-    event_id text NOT NULL,
+    event_id uuid DEFAULT uuid_generate_v4(),
     event_type_code text NOT NULL
 );
 
@@ -74,8 +75,18 @@ CREATE TABLE "dcsa_v1.2".transport_event (
     mode_of_transport_code text)
 INHERITS ("dcsa_v1.2".event);
 
+-- We don't inherit from transport and equipment tables here,
+-- to avoid receiving transport-equipment events when selecting for transport OR equipment events.
 DROP TABLE IF EXISTS "dcsa_v1.2".transport_equipment_event CASCADE;
 CREATE TABLE "dcsa_v1.2".transport_equipment_event (
-)
-INHERITS ("dcsa_v1.2".equipment_event, "dcsa_v1.2".transport_event, "dcsa_v1.2".event);
+    equipment_reference text NOT NULL,
+    facility_type_code text NOT NULL,
+    un_location_code text NOT NULL,
+    facility_code text NOT NULL,
+    other_facility text NOT NULL,
+    empty_indicator_code text NOT NULL,
+    transport_reference text NOT NULL,
+    transport_leg_reference text NOT NULL,
+    mode_of_transport_code text NOT NULL)
+INHERITS ("dcsa_v1.2".event);
 
