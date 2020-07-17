@@ -129,3 +129,31 @@ VALUES (
     'DEPA',
     'WTF',
     uuid('8b64d20b-523b-4491-b2e5-32cfa5174eee'));
+
+INSERT INTO dcsa_v2_0.shipment(
+    shipment_id,
+    booking_reference,
+    booking_datetime,
+    transport_document_id,
+    transport_document_type_code,
+    shipper_name,
+    consignee_name,
+    collection_origin,
+    collection_dateTime,
+    delivery_destination,
+    delivery_datetime,
+    carrier_code
+) VALUES (
+    12321234,
+    'BR1239719871',
+    DATE '2020-03-07',
+    'BL32147109',
+    'BOL',
+    'Magic Wands Inc.',
+    'The Mage Guild',
+    '5, Mountain Road, The land beyond the sea',
+    DATE '2020-03-10',
+    '125, Valley Street, The land nearby',
+    DATE '2020-04-10',
+    'SMDG-ZIM'
+);

@@ -23,4 +23,5 @@ Populate the databases with tables
 ```
 cat dcsa_tnt_v1.sql | psql -U dcsa_db_owner dcsa_openapi
 cat dcsa_v2.sql | psql -U dcsa_db_owner dcsa_openapi
+cat populate_testdata.sql | psql -U dcsa_db_owner dcsa_openapi
 ```

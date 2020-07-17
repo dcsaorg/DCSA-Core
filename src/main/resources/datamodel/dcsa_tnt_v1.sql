@@ -88,5 +88,3 @@ CREATE TABLE dcsa_v1_1.transport_equipment_event (
     transport_leg_reference text NOT NULL,
     mode_of_transport_code text NOT NULL)
 INHERITS (dcsa_v1_1.event);
-
-
