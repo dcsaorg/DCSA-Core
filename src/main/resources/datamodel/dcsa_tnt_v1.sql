@@ -37,7 +37,7 @@ CREATE TYPE dcsa_v1_1.mode_of_transport_code AS ENUM (
 
 DROP TABLE IF EXISTS dcsa_v1_1.event CASCADE;
 CREATE TABLE dcsa_v1_1.event (
-    event_classifier_code dcsa_v1_1.event_classifier_code NOT NULL,
+    event_classifier_code text NOT NULL,
     event_type text NOT NULL,
     event_date_time date NOT NULL,
     event_id uuid DEFAULT uuid_generate_v4(),

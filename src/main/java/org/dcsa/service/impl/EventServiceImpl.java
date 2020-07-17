@@ -1,12 +1,15 @@
 package org.dcsa.service.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.dcsa.model.Event;
+import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.EventRepository;
 import org.dcsa.service.EventService;
-import org.dcsa.service.TransportEventService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -28,16 +31,18 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, St
         return "Event";
     }
 
+    @Override
+    public Mono<Event> findById(String id) {
+        return super.findById(id);
+    }
 
-    public <T extends Event> Flux<T> findAllTypes() {
+    @Override
+    public <T extends Event> Flux<T> findAllTypes(List<EventType> eventType, String bookingReference, String equipmentReference) {
         return Flux.merge(
-                (Flux<T>) shipmentEventService.findAll(),
-                (Flux<T>) transportEventService.findAll(),
-                (Flux<T>) transportEquipmentEventService.findAll(),
-                (Flux<T>) equipmentEventService.findAll()
+                (Flux<T>) shipmentEventService.findShipmentEvents(eventType, bookingReference, equipmentReference),
+                (Flux<T>) transportEventService.findTransportEvents(eventType, bookingReference, equipmentReference),
+                (Flux<T>) transportEquipmentEventService.findTransportEquipmentEvents(eventType, bookingReference, equipmentReference),
+                (Flux<T>) equipmentEventService.findEquipmentEvents(eventType, bookingReference, equipmentReference)
         );
-//        return Flux.merge(
-//                shipmentEventService.findAll(),
-//                transportEventService.findAll());
     }
 }
