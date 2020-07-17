@@ -8,6 +8,62 @@ INSERT INTO dcsa_v1_1.shipment_event (
     )
     VALUES ('PLN', 'SHIPMENT', '2020-07-15', 'e48f2bc0-c746-11ea-a3ff-db48243a89f4', 'DEPA', 'Some type code text');
 
+INSERT INTO "dcsa_v1_1".equipment_event(
+	event_classifier_code,
+	event_type,
+	event_date_time,
+	event_type_code,
+	equipment_reference,
+	facility_type_code,
+	un_location_code,
+	facility_code,
+	other_facility,
+	empty_indicator_code
+	)
+	VALUES ('ACT', 'EQUIPMENT', TO_DATE('2003/05/03 21:02:44', 'yyyy/mm/dd hh24:mi:ss'), 'ARRI', 'equipref3453', 'HYDRO', 'LA', 'LAHO', '', 'EMPTY');
+
+INSERT INTO "dcsa_v1_1".transport_equipment_event(
+	event_classifier_code,
+	event_type,
+	event_date_time,
+	event_type_code,
+	equipment_reference,
+	facility_type_code,
+	un_location_code,
+	facility_code,
+	other_facility,
+	empty_indicator_code,
+	transport_reference,
+	transport_leg_reference,
+	mode_of_transport_code
+	)
+	VALUES ('PLN', 'TRANSPORTEQUIPMENT', TO_DATE('2003/05/03 21:02:44', 'yyyy/mm/dd hh24:mi:ss'), 'ARRI', 'eqref123', 'factory', 'CPH', '2', 'no', 'LADEN', 'ref123', 'legref', '7');
+
+INSERT INTO "dcsa_v1_1".transport_event(
+	event_classifier_code,
+	event_type,
+	event_date_time,
+	event_type_code,
+	transport_reference,
+	transport_leg_reference,
+	facility_type_code,
+	un_location_code,
+	facility_code,
+	other_facility,
+	mode_of_transport_code
+	)
+	VALUES ('ACT', 'TRANSPORT', TO_DATE('2003/05/03 21:02:44', 'yyyy/mm/dd hh24:mi:ss'),  'DEPA', 'transportref123', 'legreference234', 'coal', 'PORT', 'NYC', 'no', '2');
+
+INSERT INTO "dcsa_v1_1".shipment_event(
+	event_classifier_code,
+	event_type,
+	event_date_time,
+	event_type_code,
+	shipment_information_type_code
+	)
+	VALUES ('PLN', 'SHIPMENT', TO_DATE('2003/05/03 21:02:44', 'yyyy/mm/dd hh24:mi:ss'), 'ARRI', 'shipment_type_code');	
+
+
 
 INSERT INTO dcsa_v2_0.schedule (
     id,

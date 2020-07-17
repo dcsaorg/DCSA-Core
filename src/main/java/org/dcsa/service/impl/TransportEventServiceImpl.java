@@ -1,14 +1,14 @@
 package org.dcsa.service.impl;
 
-import org.dcsa.model.Event;
-import org.dcsa.model.ShipmentEvent;
+import lombok.RequiredArgsConstructor;
 import org.dcsa.model.TransportEvent;
-import org.dcsa.repository.EventRepository;
+import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.TransportEventRepository;
 import org.dcsa.service.TransportEventService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -23,6 +23,14 @@ public class TransportEventServiceImpl extends BaseServiceImpl<TransportEventRep
     @Override
     public String getType() {
         return "TransportEvent";
+    }
+
+    public Flux<TransportEvent> findTransportEvents(List<EventType> eventType, String bookingReference, String equipmentReference) {
+        if (!eventType.contains(EventType.TRANSPORT)) return Flux.empty(); // Return empty if TRANSPORT event type is not defined
+        if (bookingReference!=null ) return Flux.empty(); //If bookingReference is defined, we return empty - since bookingReferences don't exist in transportEvents
+        if (equipmentReference!=null ) return Flux.empty(); //If equipmentReference is defined, we return empty - since equipmentReferences don't exist in transportEvents
+
+        return transportEventRepository.findTransportEventsByFilters(EventType.TRANSPORT);
     }
 
 }

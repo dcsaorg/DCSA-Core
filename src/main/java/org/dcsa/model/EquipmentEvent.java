@@ -5,15 +5,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.dcsa.model.enums.EmptyIndicatorCode;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import javax.persistence.Entity;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.xml.bind.annotation.XmlRootElement;
 
-@Table("transport_equipment_event")
+@Table("equipment_event")
 @Data
 @XmlRootElement
 @NoArgsConstructor
+@Entity
+//@Query= "SELECT a FROM EquipmentEvent a WHERE (:eventType IS NULL or a.eventType =:eventType) AND (?2 IS NULL or a.equipmentReference =?2) ")
+//@NamedQueries({
+//        @NamedQuery(name="EquipmentEvent.test",
+//                query= "SELECT a FROM EquipmentEvent a WHERE (?1 IS NULL or a.eventType =?1) AND (?2 IS NULL or a.equipmentReference =?2) ")
+//})
 public class EquipmentEvent extends Event implements GetId<String>{
 
 
@@ -41,10 +51,6 @@ public class EquipmentEvent extends Event implements GetId<String>{
     @JsonProperty("otherFacility")
     @Column("other_facility")
     private String otherFacility;
-
-    @JsonProperty("modeOfTransportCode")
-    @Column("mode_of_transport_code")
-    private String modeOfTransportCode;
 
 
 }

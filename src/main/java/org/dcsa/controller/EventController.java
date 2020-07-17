@@ -1,6 +1,7 @@
 package org.dcsa.controller;
 
 import org.dcsa.model.Event;
+import org.dcsa.model.enums.EventType;
 import org.dcsa.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,11 +14,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -42,9 +43,9 @@ public class EventController extends BaseController<EventService, Event, String>
             @ApiResponse(responseCode = "200", description = "Successful operation",
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = Event.class))))
     })
-    @Override
-    public Flux<Event> findAll() {
-        return eventService.findAllTypes();
+    @GetMapping
+    public Flux<Event> findAll(@RequestParam(required = false, defaultValue = "EQUIPMENT,SHIPMENT,TRANSPORT,TRANSPORTEQUIPMENT") List<EventType> eventType, @RequestParam(required = false) String bookingReference, @RequestParam(required = false) String equipmentReference) {
+        return eventService.findAllTypes(eventType, bookingReference, equipmentReference);
     }
 
     @Operation(summary = "Find Event by ID", description = "Returns a single Event", tags = { "Event" }, parameters = {

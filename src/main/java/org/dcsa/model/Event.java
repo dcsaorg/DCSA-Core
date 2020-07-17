@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import javax.persistence.Entity;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.sql.Date;
 
@@ -14,6 +15,7 @@ import java.sql.Date;
 @Data
 @XmlRootElement
 @NoArgsConstructor
+@Entity
 public class Event extends AuditBase implements GetId<String>{
 
     @Id

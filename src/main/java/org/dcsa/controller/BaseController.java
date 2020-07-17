@@ -16,10 +16,10 @@ public abstract class BaseController<S extends BaseService<T, I>, T extends GetI
     abstract S getService();
     abstract String getType();
 
-    @GetMapping()
-    public Flux<T> findAll() {
-        return getService().findAll();
-    }
+//    @GetMapping()
+//    public Flux<T> findAll() {
+//        return getService().findAll();
+//    }
 
     @GetMapping("{id}")
     public Mono<T> findById(@PathVariable I id) {
