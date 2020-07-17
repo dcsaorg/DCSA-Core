@@ -8,7 +8,7 @@
 		<version>2.3.0.M4</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>dk.asseco</groupId>
+	<groupId>org.dcsa</groupId>
 	<artifactId>dcsa_backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>war</packaging>
