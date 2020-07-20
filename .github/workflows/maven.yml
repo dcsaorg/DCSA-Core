@@ -36,8 +36,6 @@ jobs:
       run: ls -a
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: Start PostgreSQL server
-      run: sudo service postgresql start  
     - name: Run sql scripts
       run: psql -f src/main/resources/datamodel/set_up_databases.sql  
     - name: Run backend
