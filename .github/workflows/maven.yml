@@ -28,7 +28,7 @@ jobs:
         postgresql user: dcsa_db_owner 
         postgresql password: ${{ secrets.psql_pw }}   
     - name: list dirs
-      run: ls -a target/  
+      run: ls -a
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Start PostgreSQL server
