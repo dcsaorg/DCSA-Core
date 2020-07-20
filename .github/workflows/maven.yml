@@ -32,7 +32,7 @@ jobs:
     - name: list dirs
       run: ls -a target/  
     - name: Run backend
-      run: java -jar target/dcsa_backend*.war
+      run: java -jar target/dcsa_backend*.war &
     - name: Checkout
       uses: actions/checkout@v2.3.1
       with:
