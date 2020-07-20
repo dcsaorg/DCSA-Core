@@ -37,7 +37,7 @@ jobs:
         # POSTGRES_PASSWORD - superuser password
         postgresql password: ${{ secrets.psql_pw }}
         # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
-        postgresql init scripts: src/main/resources/datamodel   
+       # postgresql init scripts: src/main/resources/datamodel   
     - name: Run backend
       run: java -jar target/dcsa_backend*.war &
     - name: Checkout
