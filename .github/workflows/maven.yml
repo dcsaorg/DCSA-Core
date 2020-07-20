@@ -20,9 +20,17 @@ jobs:
       uses: actions/setup-java@v1.3.0
       with:
       # The Java version to make available on the path. Takes a whole or semver Java version, or 1.x syntax (e.g. 1.8 => Java 8.x)
-        java-version: 11
+        java-version: 11    
+    - name: Setup PostgreSQL
+      uses: Harmon758/postgresql-action@v1.0.0
+      with:
+        postgresql db: dcsa_openapi
+        postgresql user: dcsa_db_owner 
+        postgresql password: ${{ secrets.psql_pw }}   
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+    - name: list dirs
+      run: ll  
     - name: Checkout
       uses: actions/checkout@v2.3.1
       with:
