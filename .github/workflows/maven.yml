@@ -28,14 +28,7 @@ jobs:
     - name: Setup PostgreSQL With Init Scripts
       uses: m4nu56/postgresql-action@1.0
       with:
-        # Version of PostgreSQL to use
-        # POSTGRES_DB - name for the default database that is created
-        postgresql db: dcsa_openapi 
-        # POSTGRES_USER - create the specified user with superuser power
-        postgresql user: dcsa_db_owner
-        # POSTGRES_PASSWORD - superuser password
         postgresql password: ${{ secrets.psql_pw }}
-        # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
         postgresql init scripts: src/main/resources/datamodel   
     - name: Run backend
       run: java -jar target/dcsa_backend*.war &
