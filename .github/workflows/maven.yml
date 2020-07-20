@@ -28,6 +28,6 @@ jobs:
       with:
         repository: dcsaorg/DCSA-API-Validator
         ref: master
-        token: ${{ github.token }}
+        token: ${{ secrets.read_repo_pat }}
     - name: Build with Maven
       run: mvn -B package --file pom.xml
