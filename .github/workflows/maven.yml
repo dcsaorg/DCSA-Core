@@ -13,17 +13,6 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:12
-        env:
-          POSTGRES_USER: dcsa_db_owner
-          POSTGRES_PASSWORD: ${{ secrets.psql_pw }}
-          POSTGRES_DB: dcsa_openapi
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
     - uses: actions/checkout@v2
@@ -36,8 +25,19 @@ jobs:
       run: ls -a
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: Run sql scripts
-      run: psql -f src/main/resources/datamodel/set_up_databases.sql  
+    - name: Setup PostgreSQL With Init Scripts
+      uses: m4nu56/postgresql-action@1.0
+      with:
+        # Version of PostgreSQL to use
+        postgresql version: 
+        # POSTGRES_DB - name for the default database that is created
+        postgresql db: dcsa_openapi 
+        # POSTGRES_USER - create the specified user with superuser power
+        postgresql user: dcsa_db_owner
+        # POSTGRES_PASSWORD - superuser password
+        postgresql password: ${{ secrets.psql_pw }}
+        # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
+        postgresql init scripts: src/main/resources/datamodel   
     - name: Run backend
       run: java -jar target/dcsa_backend*.war &
     - name: Checkout
