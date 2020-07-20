@@ -34,7 +34,7 @@ jobs:
     - name: Start PostgreSQL server
       run: sudo service postgresql start
     - name: Run sql scripts
-      run: psql -d dcsa_openapi-U dcsa_db_owner -f src/main/resources/datamodel/set_up_databases.sql  
+      run: psql -f src/main/resources/datamodel/set_up_databases.sql  
     - name: Run backend
       run: java -jar target/dcsa_backend*.war &
     - name: Checkout
