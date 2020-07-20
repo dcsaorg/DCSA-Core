@@ -26,6 +26,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2.3.1
       with:
-        repository: https://github.com/dcsaorg/DCSA-API-Validator
+        repository: dcsaorg/DCSA-API-Validator
     - name: Build with Maven
       run: mvn -B package --file pom.xml
