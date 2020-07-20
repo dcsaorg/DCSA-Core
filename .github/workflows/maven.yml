@@ -29,6 +29,8 @@ jobs:
         postgresql password: ${{ secrets.psql_pw }}   
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+    - name: Run backend
+      run: java -jar target/dcsa-backend*.war
     - name: list dirs
       run: ls -a target/
     - name: Checkout
