@@ -30,7 +30,7 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Run sql scripts
-      run: psql -U dcsa_db_owner -f src/main/resources/datamodel/set_up_databases.sql  
+      run: psql -d dcsa_openapi-U dcsa_db_owner -f src/main/resources/datamodel/set_up_databases.sql  
     - name: list dirs
       run: ls -a target/  
     - name: Run backend
