@@ -1,16 +1,13 @@
 package org.dcsa.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import javax.persistence.Entity;
+import javax.xml.bind.annotation.XmlRootElement;
 import org.dcsa.model.enums.EmptyIndicatorCode;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
-import javax.persistence.Entity;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.xml.bind.annotation.XmlRootElement;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Table("equipment_event")
 @Data
