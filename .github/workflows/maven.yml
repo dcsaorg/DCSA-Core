@@ -27,14 +27,14 @@ jobs:
         postgresql db: dcsa_openapi
         postgresql user: dcsa_db_owner 
         postgresql password: ${{ secrets.psql_pw }}   
+    - name: list dirs
+      run: ls -a target/  
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Start PostgreSQL server
-      run: postgres -D /usr/local/pgsql/data >logfile 2>&1 &
+      run: service postgresql start
     - name: Run sql scripts
       run: psql -d dcsa_openapi-U dcsa_db_owner -f src/main/resources/datamodel/set_up_databases.sql  
-    - name: list dirs
-      run: ls -a target/  
     - name: Run backend
       run: java -jar target/dcsa_backend*.war &
     - name: Checkout
