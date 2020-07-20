@@ -13,6 +13,17 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_USER: dcsa_db_owner
+          POSTGRES_PASSWORD: ${{ secrets.psql_pw }}
+          POSTGRES_DB: dcsa_openapi
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
     - uses: actions/checkout@v2
@@ -20,19 +31,11 @@ jobs:
       uses: actions/setup-java@v1.3.0
       with:
       # The Java version to make available on the path. Takes a whole or semver Java version, or 1.x syntax (e.g. 1.8 => Java 8.x)
-        java-version: 11    
-    - name: Setup PostgreSQL
-      uses: Harmon758/postgresql-action@v1.0.0
-      with:
-        postgresql db: dcsa_openapi
-        postgresql user: dcsa_db_owner 
-        postgresql password: ${{ secrets.psql_pw }}   
+        java-version: 11        
     - name: list dirs
       run: ls -a
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: Start PostgreSQL server
-      run: sudo service postgresql start
     - name: Run sql scripts
       run: psql -f src/main/resources/datamodel/set_up_databases.sql  
     - name: Run backend
