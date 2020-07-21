@@ -14,10 +14,10 @@ pgclient.connect();
 const createdb =   fs.readFileSync('src/main/resources/datamodel/create_database.sql').toString();
 console.log(createdb);
 
-pgclient.query('CREATE DATABASE dcsa_openapi', (err, res) => {
+pgclient.query('CREATE DATABASE dcsa_openapi ENCODING = 'UTF8' ;', (err, res) => {
     if (err) throw err
 });
-pgclient.end()
+
 
 
 const setupdb =   fs.readFileSync('src/main/resources/datamodel/setup_database.sql').toString();
@@ -54,4 +54,5 @@ dcsaclient.query('SELECT * FROM dcsa_v1_1.events', (err, res) => {
     if (err) throw err
     console.log(err, res.rows) // Print data
     dcsaclient.end()
+    pgclient.end()
 });
