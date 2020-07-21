@@ -7,8 +7,8 @@ spring:
     name: dcsa_openapi
     properties:
       schema: dcsa_v1_1
-    username: dcsa_db_owner
-    password: 9c072fe8-c59c-11ea-b8d1-7b6577e9f3f5
+    username: postgres
+    password: postgres
     initialization-mode: always
 
 server:
