@@ -4,7 +4,7 @@ spring:
     name: DCSA-Backend
   r2dbc:
     url: r2dbc:postgresql://postgres:5432
-    name: dcsa_openapi
+    name: postgres
     properties:
       schema: dcsa_v1_1
     username: postgres
