@@ -11,12 +11,19 @@ const pgclient = new Client({
 
 pgclient.connect();
 
-const createdb =   fs.readFileSync('src/main/resources/datamodel/setup_databases.sql').toString();
+const createdb =   fs.readFileSync('src/main/resources/datamodel/create_database.sql').toString();
+const setupdb =   fs.readFileSync('src/main/resources/datamodel/setup_database.sql').toString();
 const dcsa_tnt_v1 =  fs.readFileSync('src/main/resources/datamodel/dcsa_tnt_v1.sql').toString();
 const dcsa_v2 =  fs.readFileSync('src/main/resources/datamodel/dcsa_v2.sql').toString();
 const data =  fs.readFileSync('src/main/resources/datamodel/test_data.sql').toString();
 
+console.log(createdb);
+
 pgclient.query(createdb, (err, res) => {
+    if (err) throw err
+});
+
+lient.query(setupdb, (err, res) => {
     if (err) throw err
 });
 
