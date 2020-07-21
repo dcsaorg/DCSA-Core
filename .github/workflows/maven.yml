@@ -14,7 +14,6 @@ jobs:
 
     runs-on: ubuntu-latest
      # Docker Hub image that `container-job` executes in
-    container: node:10.18-jessie
     services:
       # Label used to access the service container
       postgres:
