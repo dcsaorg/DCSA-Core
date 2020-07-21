@@ -39,6 +39,8 @@ jobs:
         java-version: 11        
        # Performs a clean installation of all dependencies in the `package.json` file
       # For more information, see https://docs.npmjs.com/cli/ci.html
+    - name: Install npm
+      run: npm install
     - name: Install dependencies
       run: npm ci
     - name: Connect to PostgreSQL
