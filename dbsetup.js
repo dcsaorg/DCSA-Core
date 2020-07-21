@@ -14,7 +14,7 @@ pgclient.connect();
 const createdb =   fs.readFileSync('src/main/resources/datamodel/create_database.sql').toString();
 console.log(createdb);
 
-pgclient.query('CREATE DATABASE dcsa_openapi ENCODING = 'UTF8' ;', (err, res) => {
+pgclient.query("CREATE DATABASE dcsa_openapi ENCODING = 'UTF8' ;", (err, res) => {
     if (err) throw err
 });
 
