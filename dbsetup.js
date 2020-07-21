@@ -27,7 +27,7 @@ pgclient.query(dcsa_tnt_v1, (err, res) => {
 pgclient.query(dcsa_v2, (err, res) => {
     if (err) throw err
 });
-pgclient.query(test_data, (err, res) => {
+pgclient.query(data, (err, res) => {
     if (err) throw err
 });
 
