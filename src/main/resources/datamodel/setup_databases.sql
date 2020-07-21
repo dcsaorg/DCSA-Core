@@ -1,6 +1,6 @@
 -- Database setup script
 -- Needs to be executed by user postgres or equivalent
-
+SET AUTOCOMMIT = ON
 CREATE DATABASE dcsa_openapi ENCODING = 'UTF8' ;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; -- Used to generate UUIDs
