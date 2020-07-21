@@ -23,7 +23,7 @@ pgclient.query(createdb, (err, res) => {
     if (err) throw err
 });
 
-lient.query(setupdb, (err, res) => {
+pgclient.query(setupdb, (err, res) => {
     if (err) throw err
 });
 
