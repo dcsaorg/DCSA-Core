@@ -4,8 +4,8 @@ const fs = require('fs');
 const pgclient = new Client({
     host: process.env.POSTGRES_HOST,
     port: process.env.POSTGRES_PORT,
-    user: 'postgres',
-    password: 'postgres',
+    user: 'dcsa_db_owner',
+    password: '9c072fe8-c59c-11ea-b8d1-7b6577e9f3f5',
     database: 'dcsa_openapi'
 });
 
