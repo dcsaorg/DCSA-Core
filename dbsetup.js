@@ -14,7 +14,7 @@ pgclient.connect();
 const createdb =   fs.readFileSync('src/main/resources/datamodel/create_database.sql').toString();
 console.log(createdb);
 
-pgclient.query( client.query('CREATE DATABASE dcsa_openapi', (err, res) => {
+pgclient.query('CREATE DATABASE dcsa_openapi', (err, res) => {
     if (err) throw err
 });
 pgclient.end()
