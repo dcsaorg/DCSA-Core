@@ -1,7 +1,6 @@
 -- Database setup script
 -- Needs to be executed by user postgres or equivalent
 
-DROP DATABASE IF EXISTS dcsa_openapi;
 CREATE DATABASE dcsa_openapi ENCODING = 'UTF8' ;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; -- Used to generate UUIDs
