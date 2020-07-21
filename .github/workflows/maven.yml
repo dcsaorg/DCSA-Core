@@ -44,12 +44,6 @@ jobs:
       # For more information, see https://docs.npmjs.com/cli/ci.html
     - name: Install dependencies
       run: npm i pg && npm i fs && apt-get update && apt-get install -y maven  
-    - name: Setup PostgreSQL
-      uses: Harmon758/postgresql-action@v1.0.0
-      with:
-        postgresql db: dcsa_openapi
-        postgresql user: dcsa_db_owner 
-        postgresql password: ${{ secrets.psql_pw }}
     - name: Connect to PostgreSQL
       # Runs a script that creates a PostgreSQL client, populates
       # the client with data, and retrieves data
