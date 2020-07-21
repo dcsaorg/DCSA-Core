@@ -3,27 +3,36 @@ const { Client } = require('pg');
 const pgclient = new Client({
     host: process.env.POSTGRES_HOST,
     port: process.env.POSTGRES_PORT,
-    user: 'postgres',
+    user: 'dcsa_',
     password: 'postgres',
-    database: 'postgres'
+    database: 'dcsa_openapi'
 });
 
 pgclient.connect();
 
-const table = 'CREATE TABLE student(id SERIAL PRIMARY KEY, firstName VARCHAR(40) NOT NULL, lastName VARCHAR(40) NOT NULL, age INT, address VARCHAR(80), email VARCHAR(40))'
-const text = 'INSERT INTO student(firstname, lastname, age, address, email) VALUES($1, $2, $3, $4, $5) RETURNING *'
-const values = ['Mona the', 'Octocat', 9, '88 Colin P Kelly Jr St, San Francisco, CA 94107, United States', 'octocat@github.com']
+const createdb = const dataSql = fs.readFileSync('.src/main/resources/datamodel/setup_databases.sql').toString();
+const dcsa_tnt_v1 = const dataSql = fs.readFileSync('.src/main/resources/datamodel/dcsa_tnt_v1.sql').toString();
+const dcsa_v2 = const dataSql = fs.readFileSync('.src/main/resources/datamodel/dcsa_v2.sql').toString();
+const data = const dataSql = fs.readFileSync('.src/main/resources/datamodel/test_data.sql').toString();
 
-pgclient.query(table, (err, res) => {
+pgclient.query(createdb, (err, res) => {
     if (err) throw err
 });
 
-pgclient.query(text, values, (err, res) => {
+pgclient.query(dcsa_tnt_v1, (err, res) => {
     if (err) throw err
 });
 
-pgclient.query('SELECT * FROM student', (err, res) => {
+pgclient.query(dcsa_v2, (err, res) => {
     if (err) throw err
-    console.log(err, res.rows) // Print the data in student table
+});
+pgclient.query(test_data, (err, res) => {
+    if (err) throw err
+});
+
+
+pgclient.query('SELECT * FROM dcsa_v1_1.events', (err, res) => {
+    if (err) throw err
+    console.log(err, res.rows) // Print data
     pgclient.end()
 });
