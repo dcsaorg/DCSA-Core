@@ -52,6 +52,9 @@ jobs:
         POSTGRES_HOST: postgres
         # The default PostgreSQL port
         POSTGRES_PORT: 5432
+        
+    - name: list dirs
+      run: ls -a
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Run backend
