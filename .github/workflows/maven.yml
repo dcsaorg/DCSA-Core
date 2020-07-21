@@ -30,6 +30,9 @@ jobs:
       with:
         postgresql password: ${{ secrets.psql_pw }}
         postgresql init scripts: src/main/resources/datamodel   
+        
+    - name: Run SQL scripts
+      run: psql -c "BEGIN TRANSACTION;" -f 001.sql -f 002.sql -f 003.sql -f 004.sql -c "COMMIT;"
     - name: Run backend
       run: java -jar target/dcsa_backend*.war &
     - name: Checkout
