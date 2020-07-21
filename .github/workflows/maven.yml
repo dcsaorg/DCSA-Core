@@ -14,6 +14,7 @@ jobs:
 
     runs-on: ubuntu-latest
      # Docker Hub image that `container-job` executes in
+    container: node:10.18-jessie 
     services:
       # Label used to access the service container
       postgres:
@@ -39,7 +40,7 @@ jobs:
        # Performs a clean installation of all dependencies in the `package.json` file
       # For more information, see https://docs.npmjs.com/cli/ci.html
     - name: Install dependencies
-      run: npm i pg
+      run: npm i pg && apt install maven  
     - name: Connect to PostgreSQL
       # Runs a script that creates a PostgreSQL client, populates
       # the client with data, and retrieves data
