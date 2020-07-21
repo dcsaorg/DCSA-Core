@@ -37,7 +37,5 @@ pgclient.query(data, (err, res) => {
 
 pgclient.query('SELECT * FROM dcsa_v1_1.event', (err, res) => {
     if (err) throw err
-    console.log(err, res.rows) // Print data
-    dcsaclient.end()
-    
+    console.log(err, res.rows) // Print data    
 });
