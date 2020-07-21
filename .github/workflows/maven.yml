@@ -56,8 +56,8 @@ jobs:
         # The default PostgreSQL port
         POSTGRES_PORT: 5432
         
-    - name: list dirs
-      run: ls -a
+    - name: test connect
+      run: psql -h postgres -p 5432 -U postgres -W postgres postgres
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Run backend
