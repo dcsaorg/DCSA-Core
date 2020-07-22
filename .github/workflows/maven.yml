@@ -39,34 +39,19 @@ jobs:
       with:
       # The Java version to make available on the path. Takes a whole or semver Java version, or 1.x syntax (e.g. 1.8 => Java 8.x)
         java-version: 11        
-    #- name: Install dependencies
-     # run: npm i pg && npm i fs && apt-get update && apt-get install -y maven  
-    #- name: Connect to PostgreSQL
-      # Runs a script that creates a PostgreSQL client, populates
-      # the client with data, and retrieves data
-    #  run: node dbsetup.js
-      # Environment variable used by the `client.js` script to create
-      # a new PostgreSQL client.
-     # env:
-        # The hostname used to communicate with the PostgreSQL service container
-      #  POSTGRES_HOST: postgres
-        # The default PostgreSQL port
-       # POSTGRES_PORT: 5432    
-    - name: test connect
+    - name: Run SQL scripts
       run: PGPASSWORD=postgres psql -h 127.0.0.53 -U postgres -W postgres  -f src/main/resources/datamodel/create_database.sql -f src/main/resources/datamodel/dcsa_tnt_v1.sql -f src/main/resources/datamodel/dcsa_v2.sql -f src/main/resources/datamodel/test_data.sql
-   # - name: Add postgres hostname
-   #   run: sudo echo "127.0.0.53 postgres" >> /etc/hosts
-    - name: cat
-      run: cat /etc/hosts  
-    - name: Build with Maven
+    
+    - name: Build backend
       run: mvn -B package --file pom.xml
     - name: Run backend
       run: java -jar target/dcsa_backend*.war &
-    - name: Checkout
+
+    - name: Checkout dcsaorg/DCSA-API-Validator 
       uses: actions/checkout@v2.3.1
       with:
         repository: dcsaorg/DCSA-API-Validator
         ref: master
         token: ${{ secrets.read_repo_pat }}
-    - name: Build with Maven
+    - name: Run testsuite
       run: mvn -B package --file pom.xml
