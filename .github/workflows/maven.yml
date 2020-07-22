@@ -54,8 +54,8 @@ jobs:
        # POSTGRES_PORT: 5432    
     - name: test connect
       run: PGPASSWORD=postgres psql -h 127.0.0.53 -U postgres -W postgres  -f src/main/resources/datamodel/create_database.sql -f src/main/resources/datamodel/dcsa_tnt_v1.sql -f src/main/resources/datamodel/dcsa_v2.sql -f src/main/resources/datamodel/test_data.sql
-    - name: Add postgres hostname
-      run: sudo echo "127.0.0.53 postgres" >> /etc/hosts
+   # - name: Add postgres hostname
+   #   run: sudo echo "127.0.0.53 postgres" >> /etc/hosts
     - name: cat
       run: cat /etc/hosts  
     - name: Build with Maven
