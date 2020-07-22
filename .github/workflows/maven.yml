@@ -62,7 +62,7 @@ jobs:
         # You can find this token here: https://dashboard.ngrok.com/get-started/setup
         # NGROK_TOKEN: 
         NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
-
+        USER: runner
         # This password you will use when authorizing via SSH 
         # USER_PASS: 
         USER_PASS: ${{ secrets.SSH_USER_PASS }}
