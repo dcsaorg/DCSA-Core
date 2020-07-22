@@ -4,11 +4,11 @@ spring:
     name: DCSA-Backend
   r2dbc:
     url: r2dbc:postgresql://postgres:5432
-    name: postgres
+    name: dcsa_openapi
     properties:
       schema: dcsa_v1_1
-    username: postgres
-    password: postgres
+    username: dcsa_db_owner
+    password: 9c072fe8-c59c-11ea-b8d1-7b6577e9f3f5
     initialization-mode: always
 
 server:

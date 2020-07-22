@@ -53,7 +53,7 @@ jobs:
         # The default PostgreSQL port
        # POSTGRES_PORT: 5432    
     - name: test connect
-      run: PGPASSWORD=postgres psql -h 127.0.0.53 -U postgres -W postgres -f -f create_databases.sql -f dcsa_tnt_v1.sql -f dcsa_v2.sql -f test_data.sql
+      run: PGPASSWORD=postgres psql -h 127.0.0.53 -U postgres -W postgres -f -f src/main/resources/datamodel/create_databases.sql -f src/main/resources/datamodel/dcsa_tnt_v1.sql -f src/main/resources/datamodel/dcsa_v2.sql -f src/main/resources/datamodel/test_data.sql
     - name: cat
       run: cat /etc/resolv.conf
     - name: Build with Maven
