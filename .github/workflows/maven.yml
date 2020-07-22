@@ -53,8 +53,9 @@ jobs:
         # The default PostgreSQL port
        # POSTGRES_PORT: 5432    
     - name: test connect
+      run: psql -h 127.0.0.53 -U postgres -W postgres
+    - name: cat
       run: cat /etc/resolv.conf
-      #run: psql -h postgres -U postgres -W postgres
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Run backend
