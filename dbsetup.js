@@ -18,8 +18,6 @@ const pgclient = new Client({
 
 pgclient.connect();
 
-console.log(process.env.POSTGRES_HOST);
-console.log(process.env.POSTGRES_PORT);
 
 pgclient.query(setupdb, (err, res) => {
     if (err) throw err
