@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.dcsa.model.*;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.EventRepository;
+import org.dcsa.repository.EventSubscriptionRepository;
 import org.dcsa.service.EventService;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -19,6 +20,7 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, St
     private final TransportEventServiceImpl transportEventService;
     private final TransportEquipmentEventServiceImpl transportEquipmentEventService;
     private final EquipmentEventServiceImpl equipmentEventService;
+    private final EventSubscriptionRepository eventSubscriptionRepository;
 
 
     @Override
@@ -47,18 +49,32 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, St
     }
 
     @Override
-    public  <T extends Event> Mono<T> saveAll(Event event) {
+    public <T extends Event> Mono<T> saveAll(Event event) {
+        Mono<T> returnEvent;
+        Flux<String> callbackUrls;
+
         switch (event.getEventType()) {
             case "SHIPMENT":
-                return (Mono<T>) shipmentEventService.save((ShipmentEvent) event);
+                returnEvent = (Mono<T>) shipmentEventService.save((ShipmentEvent) event);
+                callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
+                break;
             case "TRANSPORT":
-                return (Mono<T>) transportEventService.save((TransportEvent) event);
+                returnEvent = (Mono<T>) transportEventService.save((TransportEvent) event);
+                callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
+                break;
             case "TRANSPORTEQUIPMENT":
-               return (Mono<T>) transportEquipmentEventService.save((TransportEquipmentEvent) event);
+                returnEvent = (Mono<T>) transportEquipmentEventService.save((TransportEquipmentEvent) event);
+                callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), ((TransportEquipmentEvent) event).getEquipmentReference());
+                break;
             case "EQUIPMENT":
-                return (Mono<T>) equipmentEventService.save((EquipmentEvent) event);
+                returnEvent = (Mono<T>) equipmentEventService.save((EquipmentEvent) event);
+                callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), ((EquipmentEvent) event).getEquipmentReference());
+                break;
             default:
                 throw new IllegalStateException("Unexpected value: " + event.getEventType());
         }
+        //Check all subscriptions
+        callbackUrls.toStream().forEach(callbackUrl -> System.out.println("POST "+ callbackUrl));
+        return returnEvent;
     }
 }
