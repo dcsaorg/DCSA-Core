@@ -1,6 +1,8 @@
 package org.dcsa.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
@@ -9,13 +11,24 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import javax.persistence.Entity;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.sql.Date;
+import java.util.Date;
 
 @Table("event")
 @Data
 @XmlRootElement
 @NoArgsConstructor
 @Entity
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.EXISTING_PROPERTY,
+        property = "eventType",
+        visible = true)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = EquipmentEvent.class, name="EQUIPMENT"),
+        @JsonSubTypes.Type(value = TransportEvent.class, name="TRANSPORT"),
+        @JsonSubTypes.Type(value = ShipmentEvent.class, name="SHIPMENT"),
+        @JsonSubTypes.Type(value = TransportEquipmentEvent.class, name="TRANSPORTEQUIPMENT")
+})
 public class Event extends AuditBase implements GetId<String>{
 
     @Id

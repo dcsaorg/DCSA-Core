@@ -32,4 +32,6 @@ public class ShipmentEventServiceImpl extends BaseServiceImpl<ShipmentEventRepos
         if (equipmentReference!=null ) return Flux.empty(); //If equipmentReference is defined, we return empty - since equipmentReferences don't exist in shipmentEvents
         return shipmentEventRepository.findShipmentEventsByFilters(EventType.SHIPMENT);
     }
+
+
 }

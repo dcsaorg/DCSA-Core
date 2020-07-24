@@ -2,6 +2,7 @@ package org.dcsa.model;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.relational.core.mapping.Column;
@@ -13,6 +14,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Data
 @XmlRootElement
 @NoArgsConstructor
+@JsonTypeName("SHIPMENT")
 public class ShipmentEvent extends Event implements GetId<String>{
 
     @JsonProperty("shipmentInformationTypeCode")
