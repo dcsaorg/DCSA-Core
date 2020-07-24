@@ -1,4 +1,5 @@
 -- A script to initialize the tables relevant for the DCSA TNT interface v1.2
+\connect dcsa_openapi
 
 DROP TYPE IF EXISTS dcsa_v1_1.empty_indicator_code CASCADE;
 CREATE TYPE dcsa_v1_1.empty_indicator_code AS ENUM (

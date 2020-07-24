@@ -1,5 +1,7 @@
 -- A script to initialize the tables relevant for the DCSA TNT interface v2.0
 
+\connect dcsa_openapi
+
 DROP TYPE IF EXISTS dcsa_v2_0.CarrierCodeListProvider CASCADE;
 CREATE TYPE dcsa_v2_0.CarrierCodeListProvider AS ENUM (
     'SMDG',
