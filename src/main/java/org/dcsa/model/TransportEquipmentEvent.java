@@ -2,6 +2,7 @@ package org.dcsa.model;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.dcsa.model.enums.EmptyIndicatorCode;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,6 +15,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Data
 @XmlRootElement
 @NoArgsConstructor
+@JsonTypeName("TRANSPORTEQUIPMENT")
 public class TransportEquipmentEvent extends Event implements GetId<String>{
 
     @JsonProperty("transportReference")

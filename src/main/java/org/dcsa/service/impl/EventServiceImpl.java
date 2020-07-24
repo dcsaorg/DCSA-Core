@@ -1,7 +1,7 @@
 package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.dcsa.model.Event;
+import org.dcsa.model.*;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.EventRepository;
 import org.dcsa.service.EventService;
@@ -44,5 +44,21 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, St
                 (Flux<T>) transportEquipmentEventService.findTransportEquipmentEvents(eventType, bookingReference, equipmentReference),
                 (Flux<T>) equipmentEventService.findEquipmentEvents(eventType, bookingReference, equipmentReference)
         );
+    }
+
+    @Override
+    public  <T extends Event> Mono<T> saveAll(Event event) {
+        switch (event.getEventType()) {
+            case "SHIPMENT":
+                return (Mono<T>) shipmentEventService.save((ShipmentEvent) event);
+            case "TRANSPORT":
+                return (Mono<T>) transportEventService.save((TransportEvent) event);
+            case "TRANSPORTEQUIPMENT":
+               return (Mono<T>) transportEquipmentEventService.save((TransportEquipmentEvent) event);
+            case "EQUIPMENT":
+                return (Mono<T>) equipmentEventService.save((EquipmentEvent) event);
+            default:
+                throw new IllegalStateException("Unexpected value: " + event.getEventType());
+        }
     }
 }

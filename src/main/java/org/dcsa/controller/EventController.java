@@ -59,4 +59,14 @@ public class EventController extends BaseController<EventService, Event, String>
     public Mono<Event> findById(@PathVariable String id) {
         return super.findById(id);
     }
+
+    @Operation(summary = "Find all Events", description = "Finds all Events in the database", tags = { "Events" })
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful operation")
+    })
+    @PostMapping(consumes = "application/json", produces = "application/json")
+    public Mono<Event> saveAll(@RequestBody Event event) {
+        return eventService.saveAll(event);
+    }
+
 }
