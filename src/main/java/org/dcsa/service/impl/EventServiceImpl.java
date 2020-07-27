@@ -11,6 +11,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -36,6 +37,13 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, St
     @Override
     public Mono<Event> findById(String id) {
         return super.findById(id);
+    }
+
+    @Override
+    public Mono<Events> findAllWrapped(Flux<Event> events) {
+        Events eventsWrapped = new Events();
+        eventsWrapped.setEvents(events.toStream().collect(Collectors.toList()));
+        return Mono.just(eventsWrapped);
     }
 
     @Override
