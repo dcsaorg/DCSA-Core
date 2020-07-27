@@ -1,0 +1,18 @@
+version: '3.5'
+services:
+    dcsa-backend:
+        build:
+           ../
+        ports:
+            - 9090:9090
+        logging:
+            options:
+                max-file: '10'
+                max-size: 200k
+    dcsa-test-db:
+        container_name: dcsa_db
+        build:
+            ../datamodel/
+        ports:
+            - 5432:5432
+
