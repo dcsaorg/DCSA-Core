@@ -6,12 +6,16 @@ import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.EventRepository;
 import org.dcsa.repository.EventSubscriptionRepository;
 import org.dcsa.service.EventService;
+import org.dcsa.util.CallbackHandler;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static io.restassured.RestAssured.*;
+import static org.hamcrest.Matchers.*;
 
 @RequiredArgsConstructor
 @Service
@@ -65,24 +69,27 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, St
             case "SHIPMENT":
                 returnEvent = (Mono<T>) shipmentEventService.save((ShipmentEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
+                new CallbackHandler(callbackUrls, (ShipmentEvent) event).start();
                 break;
             case "TRANSPORT":
                 returnEvent = (Mono<T>) transportEventService.save((TransportEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
+                new CallbackHandler(callbackUrls, (TransportEvent) event).start();
                 break;
             case "TRANSPORTEQUIPMENT":
                 returnEvent = (Mono<T>) transportEquipmentEventService.save((TransportEquipmentEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), ((TransportEquipmentEvent) event).getEquipmentReference());
+                new CallbackHandler(callbackUrls, (TransportEquipmentEvent) event).start();
                 break;
             case "EQUIPMENT":
                 returnEvent = (Mono<T>) equipmentEventService.save((EquipmentEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), ((EquipmentEvent) event).getEquipmentReference());
+                new CallbackHandler(callbackUrls, (EquipmentEvent) event).start();
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + event.getEventType());
         }
         //Check all subscriptions
-        callbackUrls.toStream().forEach(callbackUrl -> System.out.println("POST "+ callbackUrl));
         return returnEvent;
     }
 }
