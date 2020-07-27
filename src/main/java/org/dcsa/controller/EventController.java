@@ -1,6 +1,7 @@
 package org.dcsa.controller;
 
 import org.dcsa.model.Event;
+import org.dcsa.model.Events;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,8 +45,9 @@ public class EventController extends BaseController<EventService, Event, String>
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = Event.class))))
     })
     @GetMapping
-    public Flux<Event> findAll(@RequestParam(required = false, defaultValue = "EQUIPMENT,SHIPMENT,TRANSPORT,TRANSPORTEQUIPMENT") List<EventType> eventType, @RequestParam(required = false) String bookingReference, @RequestParam(required = false) String equipmentReference) {
-        return eventService.findAllTypes(eventType, bookingReference, equipmentReference);
+    public Mono<Events> findAll(@RequestParam(required = false, defaultValue = "EQUIPMENT,SHIPMENT,TRANSPORT,TRANSPORTEQUIPMENT") List<EventType> eventType, @RequestParam(required = false) String bookingReference, @RequestParam(required = false) String equipmentReference) {
+
+        return eventService.findAllWrapped(eventService.findAllTypes(eventType, bookingReference, equipmentReference));
     }
 
     @Operation(summary = "Find Event by ID", description = "Returns a single Event", tags = { "Event" }, parameters = {
