@@ -1,4 +1,5 @@
 -- A script to initialize the tables relevant for the DCSA TNT interface v1.2
+\connect dcsa_openapi
 
 
 DROP TABLE IF EXISTS dcsa_v1_1.event CASCADE;
