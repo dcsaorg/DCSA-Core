@@ -26,7 +26,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 //                query= "SELECT a FROM EquipmentEvent a WHERE (?1 IS NULL or a.eventType =?1) AND (?2 IS NULL or a.equipmentReference =?2) ")
 //})
 @JsonTypeName("EQUIPMENT")
-public class EquipmentEvent extends Event implements GetId<String>{
+public class EquipmentEvent extends Event {
 
 
 

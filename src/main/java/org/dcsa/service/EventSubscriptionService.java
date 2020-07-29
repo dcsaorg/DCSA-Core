@@ -7,12 +7,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
-public interface EventSubscriptionService extends BaseService<EventSubscription, String>{
+public interface EventSubscriptionService extends BaseService<EventSubscription, UUID>{
 
     Flux<EventSubscription> findAll();
 
-    Mono<EventSubscription> findById(String id);
+    Mono<EventSubscription> findById(UUID id);
 
     Mono<EventSubscription> save(EventSubscription eventSubscription);
 

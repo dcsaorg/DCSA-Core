@@ -20,12 +20,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "events", produces = {MediaType.APPLICATION_JSON_VALUE})
 @Tag(name = "Events", description = "The event API")
-public class EventController extends BaseController<EventService, Event, String> {
+public class EventController extends BaseController<EventService, Event, UUID> {
 
     private final EventService eventService;
 
@@ -58,8 +59,8 @@ public class EventController extends BaseController<EventService, Event, String>
             @ApiResponse(responseCode = "404", description = "Event not found")
     })
     @Override
-    public Mono<Event> findById(@PathVariable String id) {
-        return super.findById(id);
+    public Mono<Event> findById(@PathVariable UUID id) {
+        return eventService.findAnyById(id);
     }
 
     @Operation(summary = "Find all Events", description = "Finds all Events in the database", tags = { "Events" })

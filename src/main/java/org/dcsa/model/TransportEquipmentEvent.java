@@ -10,13 +10,14 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.UUID;
 
 @Table("transport_equipment_event")
 @Data
 @XmlRootElement
 @NoArgsConstructor
 @JsonTypeName("TRANSPORTEQUIPMENT")
-public class TransportEquipmentEvent extends Event implements GetId<String>{
+public class TransportEquipmentEvent extends Event{
 
     @JsonProperty("transportReference")
     @Column("transport_reference")
