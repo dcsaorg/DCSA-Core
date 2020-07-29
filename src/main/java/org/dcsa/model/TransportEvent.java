@@ -15,7 +15,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 @NoArgsConstructor
 @JsonTypeName("TRANSPORT")
-public class TransportEvent extends Event implements GetId<String>{
+public class TransportEvent extends Event {
 
     @JsonProperty("transportReference")
     @Column("transport_reference")

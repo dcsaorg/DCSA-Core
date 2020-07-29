@@ -6,11 +6,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
-public interface ShipmentEventService extends BaseService<ShipmentEvent, String> {
+public interface ShipmentEventService extends BaseService<ShipmentEvent, UUID> {
     Flux<ShipmentEvent> findAll();
 
-    Mono<ShipmentEvent> findById(String id);
+    Mono<ShipmentEvent> findById(UUID id);
 
     Flux<ShipmentEvent> findShipmentEvents(List<EventType> eventType, String bookingReference, String equipmentReference);
 }

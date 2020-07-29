@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.r2dbc.BadSqlGrammarException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -98,6 +99,16 @@ public abstract class BaseController<S extends BaseService<T, I>, T extends GetI
         } else {
             log.error(this.getClass().getSimpleName() + " R2dbcException!", ex);
             throw new DatabaseException("Internal error with database operation - please see log");
+        }
+    }
+    @ExceptionHandler(ServerWebInputException.class)
+    public void handle(ServerWebInputException ex) {
+        if (ex.getMessage().contains("Invalid UUID string:")) {
+                log.warn("Invalid UUID string");
+                throw new InvalidParameterException("Input was not a valid UUID format");
+        } else {
+            log.error(this.getClass().getSimpleName());
+            throw ex;
         }
     }
 }

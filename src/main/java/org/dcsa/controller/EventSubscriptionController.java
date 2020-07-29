@@ -20,12 +20,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "event-subscriptions", produces = {MediaType.APPLICATION_JSON_VALUE})
 @Tag(name = "Event Subscriptions", description = "The event subscription API")
-public class EventSubscriptionController extends BaseController<EventSubscriptionService, EventSubscription, String> {
+public class EventSubscriptionController extends BaseController<EventSubscriptionService, EventSubscription, UUID> {
 
     private final EventSubscriptionService eventSubscriptionService;
 

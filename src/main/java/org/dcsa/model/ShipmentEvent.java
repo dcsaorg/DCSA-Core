@@ -15,7 +15,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 @NoArgsConstructor
 @JsonTypeName("SHIPMENT")
-public class ShipmentEvent extends Event implements GetId<String>{
+public class ShipmentEvent extends Event{
 
     @JsonProperty("shipmentInformationTypeCode")
     @Column("shipment_information_type_code")

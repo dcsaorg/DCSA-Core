@@ -1,18 +1,21 @@
 package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.dcsa.exception.NotFoundException;
 import org.dcsa.model.TransportEvent;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.TransportEventRepository;
 import org.dcsa.service.TransportEventService;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
-public class TransportEventServiceImpl extends BaseServiceImpl<TransportEventRepository, TransportEvent, String> implements TransportEventService {
+public class TransportEventServiceImpl extends BaseServiceImpl<TransportEventRepository, TransportEvent, UUID> implements TransportEventService {
     private final TransportEventRepository transportEventRepository;
 
     @Override
@@ -23,6 +26,12 @@ public class TransportEventServiceImpl extends BaseServiceImpl<TransportEventRep
     @Override
     public String getType() {
         return "TransportEvent";
+    }
+
+    //Overriding base method here, as it marks empty results as an error, meaning we can't use switchOnEmpty()
+    @Override
+    public Mono<TransportEvent> findById(UUID id) {
+        return getRepository().findById(id);
     }
 
     public Flux<TransportEvent> findTransportEvents(List<EventType> eventType, String bookingReference, String equipmentReference) {

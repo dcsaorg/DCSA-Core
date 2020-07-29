@@ -10,18 +10,19 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import javax.persistence.Entity;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.UUID;
 
 @Table("event_subscription")
 @Data
 @XmlRootElement
 @NoArgsConstructor
 @Entity
-public class EventSubscription extends AuditBase implements GetId<String> {
+public class EventSubscription extends AuditBase implements GetId<UUID> {
 
     @Id
     @JsonProperty("subscriptionID")
     @Column("subscription_id")
-    private String id;
+    private UUID id;
 
     @JsonProperty("callbackUrl")
     @Column("callback_url")

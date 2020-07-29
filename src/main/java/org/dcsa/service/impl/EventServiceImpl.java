@@ -1,17 +1,20 @@
 package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.dcsa.exception.NotFoundException;
 import org.dcsa.model.*;
 import org.dcsa.model.enums.EventType;
-import org.dcsa.repository.EventRepository;
-import org.dcsa.repository.EventSubscriptionRepository;
+import org.dcsa.repository.*;
 import org.dcsa.service.EventService;
 import org.dcsa.util.CallbackHandler;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.*;
@@ -19,7 +22,7 @@ import static org.hamcrest.Matchers.*;
 
 @RequiredArgsConstructor
 @Service
-public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, String> implements EventService {
+public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, UUID> implements EventService {
     private final EventRepository eventRepository;
     private final ShipmentEventServiceImpl shipmentEventService;
     private final TransportEventServiceImpl transportEventService;
@@ -39,8 +42,17 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, St
     }
 
     @Override
-    public Mono<Event> findById(String id) {
-        return super.findById(id);
+    public <T extends Event> Mono<T> findAnyById(UUID id) {
+        Mono<T> event;
+
+        event = (Mono<T>) eventRepository.findById(UUID.randomUUID())
+                .switchIfEmpty(transportEventService.findById(id))
+                .switchIfEmpty(shipmentEventService.findById(id))
+                .switchIfEmpty(transportEquipmentEventService.findById(id))
+                .switchIfEmpty(equipmentEventService.findById(id))
+                .switchIfEmpty(Mono.error(new NotFoundException("No event was found with id: " + id)));
+
+        return event;
     }
 
     @Override

@@ -8,9 +8,11 @@ import org.dcsa.service.EventSubscriptionService;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.UUID;
+
 @RequiredArgsConstructor
 @Service
-public class EventSubscriptionServiceImpl extends BaseServiceImpl<EventSubscriptionRepository, EventSubscription, String> implements EventSubscriptionService {
+public class EventSubscriptionServiceImpl extends BaseServiceImpl<EventSubscriptionRepository, EventSubscription, UUID> implements EventSubscriptionService {
     private final EventSubscriptionRepository eventSubscrpitionRepository;
 
 

@@ -12,6 +12,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import javax.persistence.Entity;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Date;
+import java.util.UUID;
 
 @Table("event")
 @Data
@@ -29,12 +30,12 @@ import java.util.Date;
         @JsonSubTypes.Type(value = ShipmentEvent.class, name="SHIPMENT"),
         @JsonSubTypes.Type(value = TransportEquipmentEvent.class, name="TRANSPORTEQUIPMENT")
 })
-public class Event extends AuditBase implements GetId<String>{
+public class Event extends AuditBase implements GetId<UUID>{
 
     @Id
     @JsonProperty("eventID")
     @Column("event_id")
-    private String id;
+    private UUID id;
 
     @JsonProperty("eventDateTime")
     @Column("event_date_time")
