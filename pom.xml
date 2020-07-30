@@ -18,6 +18,7 @@
 	<properties>
 		<java.version>11</java.version>
 		<springdoc.version>1.3.2</springdoc.version>
+        <groovy.version>3.0.2</groovy.version>
 	</properties>
 
 	<dependencies>
@@ -51,7 +52,6 @@
 			<groupId>io.r2dbc</groupId>
 			<artifactId>r2dbc-postgresql</artifactId>
 			<version>0.8.3.RELEASE</version>
-			<scope>test</scope>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/javax.persistence/javax.persistence-api -->
@@ -87,10 +87,6 @@
             <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>
 		<dependency>
-			<groupId>io.r2dbc</groupId>
-			<artifactId>r2dbc-postgresql</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>io.rest-assured</groupId>
 			<artifactId>rest-assured</artifactId>
 			<version>4.3.1</version>
@@ -98,6 +94,11 @@
 		<dependency>
 			<groupId>io.rest-assured</groupId>
 			<artifactId>rest-assured-all</artifactId>
+			<version>4.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>io.rest-assured</groupId>
+			<artifactId>json-path</artifactId>
 			<version>4.3.1</version>
 		</dependency>
 	</dependencies>
