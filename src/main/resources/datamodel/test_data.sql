@@ -137,4 +137,4 @@ INSERT INTO dcsa_v1_1.event_subscription(
     bill_of_lading_number,
     equipment_reference
 )
-    VALUES ('localhost:9080/webhook/receive', 'TRANSPORT,EQUIPMENT', '', '', '');
+    VALUES ('localhost:4567/webhook/receive', '', '', '', '');
