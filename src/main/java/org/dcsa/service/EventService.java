@@ -19,5 +19,5 @@ public interface EventService extends BaseService<Event, UUID>{
 
     <T extends Event> Flux<T> findAllTypes(List<EventType> eventType, String bookingReference, String equipmentReference);
 
-    <T extends Event> Mono<T> saveAll(Event event);
+    <T extends Event> Mono<T> saveAny(Event event);
 }
