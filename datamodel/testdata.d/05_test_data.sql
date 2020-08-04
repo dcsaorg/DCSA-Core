@@ -131,3 +131,22 @@ VALUES (
     'DEPA',
     'WTF',
     uuid('8b64d20b-523b-4491-b2e5-32cfa5174eee'));
+
+
+INSERT INTO dcsa_v1_1.event_subscription(
+    callback_url,
+    event_type,
+    booking_reference,
+    bill_of_lading_number,
+    equipment_reference
+)
+    VALUES ('localhost:4567/webhook/receive', '', '', '', '');
+
+    INSERT INTO dcsa_v1_1.event_subscription(
+    callback_url,
+    event_type,
+    booking_reference,
+    bill_of_lading_number,
+    equipment_reference
+)
+    VALUES ('localhost:4567/webhook/receive-transport-events', 'TRANSPORT', '', '', '');

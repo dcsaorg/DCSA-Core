@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -63,13 +62,13 @@ public class EventController extends BaseController<EventService, Event, UUID> {
         return eventService.findAnyById(id);
     }
 
-    @Operation(summary = "Find all Events", description = "Finds all Events in the database", tags = { "Events" })
+    @Operation(summary = "Save any type of event", description = "Saves any type of event", tags = { "Events" })
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful operation")
     })
     @PostMapping(consumes = "application/json", produces = "application/json")
-    public Mono<Event> saveAll(@RequestBody Event event) {
-        return eventService.saveAll(event);
+    public Mono<Event> saveAny(@RequestBody Event event) {
+        return eventService.saveAny(event);
     }
 
 }

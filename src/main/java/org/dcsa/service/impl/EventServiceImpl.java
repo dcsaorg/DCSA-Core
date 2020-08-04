@@ -73,7 +73,7 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, UU
     }
 
     @Override
-    public <T extends Event> Mono<T> saveAll(Event event) {
+    public <T extends Event> Mono<T> saveAny(Event event) {
         Mono<T> returnEvent;
         Flux<String> callbackUrls;
 

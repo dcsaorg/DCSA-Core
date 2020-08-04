@@ -1,10 +1,13 @@
 package org.dcsa.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.dcsa.model.*;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import static io.restassured.RestAssured.given;
 
+@Slf4j
 public class CallbackHandler extends Thread {
 
     Flux<String> callbackUrls;
@@ -31,14 +34,18 @@ public class CallbackHandler extends Thread {
 
 @Override
     public void run (){
-        callbackUrls.toStream().forEach(callbackUrl ->
+        callbackUrls.parallel().runOn(Schedulers.elastic()).doOnNext(callbackUrl ->{
+            try{
+               Events eventsWrapper = new Events(event);
                 given()
                         .contentType("application/json")
-                        .body(event)
-                        .when()
-                        .post(callbackUrl).
-                        then().
-                        assertThat().
-                        statusCode(200));
+                        .body(eventsWrapper)
+                        .post(callbackUrl);
+            }
+        catch (Exception e)
+        {
+            log.warn("Failed to connect to "+callbackUrl,e);
+        }
+        }).subscribe();
     }
 }
