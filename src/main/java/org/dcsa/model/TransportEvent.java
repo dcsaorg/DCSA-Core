@@ -1,6 +1,5 @@
 package org.dcsa.model;
 
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Data;
@@ -8,11 +7,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import javax.xml.bind.annotation.XmlRootElement;
-
 @Table("transport_event")
 @Data
-@XmlRootElement
 @NoArgsConstructor
 @JsonTypeName("TRANSPORT")
 public class TransportEvent extends Event {
@@ -44,6 +40,4 @@ public class TransportEvent extends Event {
     @JsonProperty("modeOfTransportCode")
     @Column("mode_of_transport_code")
     private String modeOfTransportCode;
-
-
 }

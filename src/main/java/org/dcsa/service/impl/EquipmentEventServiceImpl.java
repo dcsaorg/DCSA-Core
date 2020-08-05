@@ -2,7 +2,6 @@ package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.dcsa.model.EquipmentEvent;
-import org.dcsa.model.TransportEvent;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.EquipmentEventRepository;
 import org.dcsa.service.EquipmentEventService;
@@ -16,8 +15,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Service
 public class EquipmentEventServiceImpl extends BaseServiceImpl<EquipmentEventRepository, EquipmentEvent, UUID> implements EquipmentEventService {
-    private final EquipmentEventRepository equipmentEventRepository;
 
+    private final EquipmentEventRepository equipmentEventRepository;
 
     @Override
     EquipmentEventRepository getRepository() {
@@ -36,10 +35,10 @@ public class EquipmentEventServiceImpl extends BaseServiceImpl<EquipmentEventRep
     }
 
     public Flux<EquipmentEvent> findEquipmentEvents(List<EventType> eventType, String bookingReference, String equipmentReference) {
-
-        if (!eventType.contains(EventType.EQUIPMENT)) return Flux.empty(); // Return empty if EQUIPMENT event type is not defined
-        if (bookingReference!=null ) return Flux.empty(); //If bookingReference is defined, we return empty - since bookingReferences don't exist in equipmentEvents
-
+        // Return empty if EQUIPMENT event type is not defined
+        if (!eventType.contains(EventType.EQUIPMENT)) return Flux.empty();
+        //If bookingReference is defined, we return empty - since bookingReferences don't exist in equipmentEvents
+        if (bookingReference!=null ) return Flux.empty();
         return equipmentEventRepository.findAllEquipmentEventsByFilters(EventType.EQUIPMENT, null, equipmentReference);
     }
 }

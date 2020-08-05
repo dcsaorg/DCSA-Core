@@ -36,11 +36,12 @@ public class ShipmentEventServiceImpl extends BaseServiceImpl<ShipmentEventRepos
     }
 
     public Flux<ShipmentEvent> findShipmentEvents(List<EventType> eventType, String bookingReference, String equipmentReference) {
-        if (!eventType.contains(EventType.SHIPMENT)) return Flux.empty(); // Return empty if SHIPMENT event type is not defined
-        if (bookingReference!=null ) return Flux.empty(); //If bookingReference is defined, we return empty - since bookingReferences don't exist in shipmentEvents
-        if (equipmentReference!=null ) return Flux.empty(); //If equipmentReference is defined, we return empty - since equipmentReferences don't exist in shipmentEvents
+        // Return empty if SHIPMENT event type is not defined
+        if (!eventType.contains(EventType.SHIPMENT)) return Flux.empty();
+        // If bookingReference is defined, we return empty - since bookingReferences don't exist in shipmentEvents
+        if (bookingReference!=null ) return Flux.empty();
+        // If equipmentReference is defined, we return empty - since equipmentReferences don't exist in shipmentEvents
+        if (equipmentReference!=null ) return Flux.empty();
         return shipmentEventRepository.findShipmentEventsByFilters(EventType.SHIPMENT);
     }
-
-
 }

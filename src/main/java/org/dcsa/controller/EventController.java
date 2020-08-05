@@ -1,9 +1,5 @@
 package org.dcsa.controller;
 
-import org.dcsa.model.Event;
-import org.dcsa.model.Events;
-import org.dcsa.model.enums.EventType;
-import org.dcsa.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -14,6 +10,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.dcsa.model.Event;
+import org.dcsa.model.Events;
+import org.dcsa.model.enums.EventType;
+import org.dcsa.service.EventService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -46,8 +46,8 @@ public class EventController extends BaseController<EventService, Event, UUID> {
     })
     @GetMapping
     public Mono<Events> findAll(@RequestParam(required = false, defaultValue = "EQUIPMENT,SHIPMENT,TRANSPORT,TRANSPORTEQUIPMENT") List<EventType> eventType, @RequestParam(required = false) String bookingReference, @RequestParam(required = false) String equipmentReference) {
-
         return eventService.findAllWrapped(eventService.findAllTypes(eventType, bookingReference, equipmentReference));
+
     }
 
     @Operation(summary = "Find Event by ID", description = "Returns a single Event", tags = { "Event" }, parameters = {
@@ -57,9 +57,10 @@ public class EventController extends BaseController<EventService, Event, UUID> {
             @ApiResponse(responseCode = "200", description = "Successful operation"),
             @ApiResponse(responseCode = "404", description = "Event not found")
     })
+//    @GetMapping("{id}")
     @Override
     public Mono<Event> findById(@PathVariable UUID id) {
-        return eventService.findAnyById(id);
+        return eventService.findById(id);
     }
 
     @Operation(summary = "Save any type of event", description = "Saves any type of event", tags = { "Events" })
@@ -67,8 +68,9 @@ public class EventController extends BaseController<EventService, Event, UUID> {
             @ApiResponse(responseCode = "200", description = "Successful operation")
     })
     @PostMapping(consumes = "application/json", produces = "application/json")
-    public Mono<Event> saveAny(@RequestBody Event event) {
-        return eventService.saveAny(event);
+    @Override
+    public Mono<Event> save(@RequestBody Event event) {
+        return eventService.save(event);
     }
 
 }

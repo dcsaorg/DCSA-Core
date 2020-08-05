@@ -1,15 +1,12 @@
 package org.dcsa.service;
 
 import org.dcsa.model.TransportEquipmentEvent;
-import org.dcsa.model.TransportEvent;
+import org.dcsa.model.enums.EventType;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface TransportEquipmentEventService extends BaseService<TransportEquipmentEvent, UUID>{
-
-    Flux<TransportEquipmentEvent> findAll();
-
-    Mono<TransportEquipmentEvent> findById(UUID id);
+    Flux<TransportEquipmentEvent> findTransportEquipmentEvents(List<EventType> eventType, String bookingReference, String equipmentReference);
 }

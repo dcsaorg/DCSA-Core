@@ -15,7 +15,6 @@ import java.util.UUID;
 public class EventSubscriptionServiceImpl extends BaseServiceImpl<EventSubscriptionRepository, EventSubscription, UUID> implements EventSubscriptionService {
     private final EventSubscriptionRepository eventSubscrpitionRepository;
 
-
     @Override
     EventSubscriptionRepository getRepository() {
         return eventSubscrpitionRepository;
@@ -25,9 +24,9 @@ public class EventSubscriptionServiceImpl extends BaseServiceImpl<EventSubscript
     public String getType() {
         return "EquipmentEvent";
     }
-
-    @Override
-    public Mono<EventSubscription> save(EventSubscription eventSubscription) {
-        return super.save(eventSubscription);
-    }
+//
+//    @Override
+//    public Mono<EventSubscription> save(EventSubscription eventSubscription) {
+//        return super.save(eventSubscription);
+//    }
 }

@@ -35,11 +35,12 @@ public class TransportEventServiceImpl extends BaseServiceImpl<TransportEventRep
     }
 
     public Flux<TransportEvent> findTransportEvents(List<EventType> eventType, String bookingReference, String equipmentReference) {
-        if (!eventType.contains(EventType.TRANSPORT)) return Flux.empty(); // Return empty if TRANSPORT event type is not defined
-        if (bookingReference!=null ) return Flux.empty(); //If bookingReference is defined, we return empty - since bookingReferences don't exist in transportEvents
-        if (equipmentReference!=null ) return Flux.empty(); //If equipmentReference is defined, we return empty - since equipmentReferences don't exist in transportEvents
-
+        // Return empty if TRANSPORT event type is not defined
+        if (!eventType.contains(EventType.TRANSPORT)) return Flux.empty();
+        // If bookingReference is defined, we return empty - since bookingReferences don't exist in transportEvents
+        if (bookingReference!=null ) return Flux.empty();
+        // If equipmentReference is defined, we return empty - since equipmentReferences don't exist in transportEvents
+        if (equipmentReference!=null ) return Flux.empty();
         return transportEventRepository.findTransportEventsByFilters(EventType.TRANSPORT);
     }
-
 }
