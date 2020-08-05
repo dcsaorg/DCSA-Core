@@ -24,9 +24,4 @@ public class EventSubscriptionServiceImpl extends BaseServiceImpl<EventSubscript
     public String getType() {
         return "EquipmentEvent";
     }
-//
-//    @Override
-//    public Mono<EventSubscription> save(EventSubscription eventSubscription) {
-//        return super.save(eventSubscription);
-//    }
 }
