@@ -37,6 +37,7 @@ public class CallbackHandler extends Thread {
         callbackUrls.parallel().runOn(Schedulers.elastic()).doOnNext(callbackUrl ->{
             try{
                Events eventsWrapper = new Events(event);
+               log.info("POSTing callback to "+callbackUrl);
                 given()
                         .contentType("application/json")
                         .body(eventsWrapper)
