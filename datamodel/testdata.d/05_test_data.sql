@@ -140,7 +140,7 @@ INSERT INTO dcsa_v1_1.event_subscription(
     bill_of_lading_number,
     equipment_reference
 )
-    VALUES ('localhost:4567/webhook/receive', '', '', '', '');
+    VALUES ('http://localhost:4567/webhook/receive', '', '', '', '');
 
     INSERT INTO dcsa_v1_1.event_subscription(
     callback_url,
@@ -149,4 +149,4 @@ INSERT INTO dcsa_v1_1.event_subscription(
     bill_of_lading_number,
     equipment_reference
 )
-    VALUES ('localhost:4567/webhook/receive-transport-events', 'TRANSPORT', '', '', '');
+    VALUES ('http://localhost:4567/webhook/receive-transport-events', 'TRANSPORT', '', '', '');
