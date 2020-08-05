@@ -150,3 +150,13 @@ INSERT INTO dcsa_v1_1.event_subscription(
     equipment_reference
 )
     VALUES ('localhost:4567/webhook/receive-transport-events', 'TRANSPORT', '', '', '');
+
+
+    INSERT INTO dcsa_v1_1.event_subscription(
+    callback_url,
+    event_type,
+    booking_reference,
+    bill_of_lading_number,
+    equipment_reference
+)
+    VALUES ('host.docker.internal:4567/webhook/receive-transport-events', 'TRANSPORT', '', '', '');
