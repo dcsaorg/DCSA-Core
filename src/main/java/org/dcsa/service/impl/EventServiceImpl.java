@@ -78,7 +78,7 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, UU
     public <T extends Event> Mono<T> saveAny(Event event) {
         Mono<T> returnEvent;
         Flux<String> callbackUrls;
-
+        log.warn("TRYINT TO SAVE AND THEN SEND event of TYPE"+event.getEventType());
         switch (event.getEventType()) {
             case "SHIPMENT":
                 returnEvent = (Mono<T>) shipmentEventService.save((ShipmentEvent) event);
