@@ -34,18 +34,16 @@ public class CallbackHandler extends Thread {
 
 @Override
     public void run (){
-        callbackUrls.parallel().runOn(Schedulers.elastic()).doOnNext(callbackUrl ->{
-            try{
-               Events eventsWrapper = new Events(event);
+        callbackUrls.parallel().runOn(Schedulers.elastic()).doOnNext(callbackUrl -> {
+            try {
+                Events eventsWrapper = new Events(event);
                 given()
                         .contentType("application/json")
                         .body(eventsWrapper)
                         .post(callbackUrl);
+            } catch (Exception e) {
+                log.warn("Failed to connect to "+callbackUrl,e);
             }
-        catch (Exception e)
-        {
-            log.warn("Failed to connect to "+callbackUrl,e);
-        }
         }).subscribe();
     }
 }

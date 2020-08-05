@@ -6,20 +6,17 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.dcsa.model.enums.EventClassifierCode;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import javax.persistence.Entity;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Date;
 import java.util.UUID;
 
 @Table("event")
 @Data
-@XmlRootElement
 @NoArgsConstructor
-@Entity
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.EXISTING_PROPERTY,
@@ -31,7 +28,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = ShipmentEvent.class, name="SHIPMENT"),
         @JsonSubTypes.Type(value = TransportEquipmentEvent.class, name="TRANSPORTEQUIPMENT")
 })
-public class Event extends AuditBase implements GetId<UUID>{
+public abstract class Event extends AuditBase implements GetId<UUID>{
 
     @Id
     @JsonProperty("eventID")
@@ -49,7 +46,7 @@ public class Event extends AuditBase implements GetId<UUID>{
 
     @JsonProperty("eventClassifierCode")
     @Column("event_classifier_code")
-    private String eventClassifierCode;
+    private EventClassifierCode eventClassifierCode;
 
     @JsonProperty("eventType")
     @Column("event_type")

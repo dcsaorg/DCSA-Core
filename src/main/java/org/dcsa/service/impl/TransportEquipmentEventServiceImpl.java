@@ -33,10 +33,12 @@ public class TransportEquipmentEventServiceImpl extends BaseServiceImpl<Transpor
     public Mono<TransportEquipmentEvent> findById(UUID id) {
         return getRepository().findById(id);
     }
-    public Flux<TransportEquipmentEvent> findTransportEquipmentEvents(List<EventType> eventType, String bookingReference, String equipmentReference) {
-        if (!eventType.contains(EventType.TRANSPORTEQUIPMENT)) return Flux.empty(); // Return empty if TRANSPORTEQUIPMENT event type is not defined
-        if (bookingReference!=null ) return Flux.empty(); //If bookingReference is defined, we return empty - since bookingReferences don't exist in equipmentEvents
 
+    public Flux<TransportEquipmentEvent> findTransportEquipmentEvents(List<EventType> eventType, String bookingReference, String equipmentReference) {
+        // Return empty if TRANSPORTEQUIPMENT event type is not defined
+        if (!eventType.contains(EventType.TRANSPORTEQUIPMENT)) return Flux.empty();
+        // If bookingReference is defined, we return empty - since bookingReferences don't exist in equipmentEvents
+        if (bookingReference!=null ) return Flux.empty();
         return transportEquipmentEventRepository.findTransportEquipmentEventsByFilters(EventType.TRANSPORTEQUIPMENT, null, equipmentReference);
     }
 }
