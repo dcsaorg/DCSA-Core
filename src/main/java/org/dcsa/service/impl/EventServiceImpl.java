@@ -1,6 +1,7 @@
 package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dcsa.exception.NotFoundException;
 import org.dcsa.model.*;
 import org.dcsa.model.enums.EventType;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, UUID> implements EventService {
@@ -81,6 +83,7 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, UU
             case "SHIPMENT":
                 returnEvent = (Mono<T>) shipmentEventService.save((ShipmentEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
+                log.warn("CALLBACK URLS: "+callbackUrls.blockFirst());
                 returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (ShipmentEvent) it).start()).subscribe();
                 break;
             case "TRANSPORT":
