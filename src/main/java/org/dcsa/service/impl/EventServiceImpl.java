@@ -81,22 +81,22 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, UU
             case "SHIPMENT":
                 returnEvent = (Mono<T>) shipmentEventService.save((ShipmentEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
-                new CallbackHandler(callbackUrls, (ShipmentEvent) event).start();
+                returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (ShipmentEvent) it).start()).subscribe();
                 break;
             case "TRANSPORT":
                 returnEvent = (Mono<T>) transportEventService.save((TransportEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
-                new CallbackHandler(callbackUrls, (TransportEvent) event).start();
+                returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (TransportEvent) it).start()).subscribe();
                 break;
             case "TRANSPORTEQUIPMENT":
                 returnEvent = (Mono<T>) transportEquipmentEventService.save((TransportEquipmentEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), ((TransportEquipmentEvent) event).getEquipmentReference());
-                new CallbackHandler(callbackUrls, (TransportEquipmentEvent) event).start();
+                returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (TransportEquipmentEvent) it).start()).subscribe();
                 break;
             case "EQUIPMENT":
                 returnEvent = (Mono<T>) equipmentEventService.save((EquipmentEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), ((EquipmentEvent) event).getEquipmentReference());
-                new CallbackHandler(callbackUrls, (EquipmentEvent) event).start();
+                returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (EquipmentEvent) it).start()).subscribe();
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + event.getEventType());
