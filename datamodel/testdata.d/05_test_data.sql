@@ -116,21 +116,21 @@ VALUES (
 
 INSERT INTO dcsa_v2_0.shipment_event (
     id,
+    shipment_id,
     event_classifier_code,
     event_type,
     event_date_time,
     event_type_code,
-    shipment_information_type_code,
-    transport_call_id
+    shipment_information_type_code
     )
 VALUES (
     uuid('784871e7-c9cd-4f59-8d88-2e033fa799a1'),
+    uuid('6e2d856c-d871-11ea-a630-03e5334d1800'),
     'PLN',
     'SHIPMENT',
     '2020-07-15',
     'DEPA',
-    'WTF',
-    uuid('8b64d20b-523b-4491-b2e5-32cfa5174eee'));
+    'WTF');
 
 
 INSERT INTO dcsa_v1_1.event_subscription(
@@ -161,3 +161,32 @@ INSERT INTO dcsa_v1_1.event_subscription(
     equipment_reference
 )
     VALUES ('http://172.17.0.1:4567/webhook/receive', '', '', '', '');
+
+
+INSERT INTO dcsa_v2_0.shipment(
+    shipment_id,
+    booking_reference,
+    booking_datetime,
+    transport_document_id,
+    transport_document_type_code,
+    shipper_name,
+    consignee_name,
+    collection_origin,
+    collection_dateTime,
+    delivery_destination,
+    delivery_datetime,
+    carrier_code
+) VALUES (
+    uuid('6e2d856c-d871-11ea-a630-03e5334d1800'),
+    'BR1239719871',
+    DATE '2020-03-07',
+    'BL32147109',
+    'BOL',
+    'Magic Wands Inc.',
+    'The Mage Guild',
+    '5, Mountain Road, The land beyond the sea',
+    DATE '2020-03-10',
+    '125, Valley Street, The land nearby',
+    DATE '2020-04-10',
+    'SMDG-ZIM'
+);
