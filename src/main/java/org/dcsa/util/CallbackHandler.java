@@ -44,7 +44,7 @@ public class CallbackHandler extends Thread {
             }
         catch (Exception e)
         {
-            log.warn("Failed to connect to "+callbackUrl,e);
+            log.warn("Failed to connect to "+callbackUrl+ " "+ e.getMessage());
         }
         }).subscribe();
     }
