@@ -17,4 +17,5 @@ services:
             ../datamodel/
         ports:
             - 5432:5432
+            - 4567:4567
 
