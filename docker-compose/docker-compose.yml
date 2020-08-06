@@ -5,6 +5,7 @@ services:
            ../
         ports:
             - 9090:9090
+            - 4567:4567
         logging:
             options:
                 max-file: '10'
@@ -17,5 +18,5 @@ services:
             ../datamodel/
         ports:
             - 5432:5432
-            - 4567:4567
+
 
