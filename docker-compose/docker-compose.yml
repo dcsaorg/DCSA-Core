@@ -9,7 +9,6 @@ services:
             options:
                 max-file: '10'
                 max-size: 200k
-        network_mode: host        
     dcsa-test-db:
         container_name: dcsa_db
         environment:
