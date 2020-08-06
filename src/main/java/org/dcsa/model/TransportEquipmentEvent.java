@@ -1,23 +1,18 @@
 package org.dcsa.model;
 
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import org.dcsa.model.enums.EmptyIndicatorCode;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.dcsa.model.enums.EmptyIndicatorCode;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import javax.xml.bind.annotation.XmlRootElement;
-import java.util.UUID;
-
 @Table("transport_equipment_event")
 @Data
-@XmlRootElement
 @NoArgsConstructor
 @JsonTypeName("TRANSPORTEQUIPMENT")
-public class TransportEquipmentEvent extends Event{
+public class TransportEquipmentEvent extends Event {
 
     @JsonProperty("transportReference")
     @Column("transport_reference")
@@ -54,6 +49,4 @@ public class TransportEquipmentEvent extends Event{
     @JsonProperty("modeOfTransportCode")
     @Column("mode_of_transport_code")
     private String modeOfTransportCode;
-
-
 }

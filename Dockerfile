@@ -8,5 +8,5 @@ RUN apt-get update \
 
 EXPOSE 9090
 ENV db_hostname dcsa_db
-COPY target/dcsa_backend-0.0.1-SNAPSHOT.war .
-CMD java -jar dcsa_backend-0.0.1-SNAPSHOT.war
+COPY target/dcsa_backend-*.war .
+CMD java -jar dcsa_backend-*.war

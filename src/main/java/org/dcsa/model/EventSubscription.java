@@ -8,15 +8,11 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import javax.persistence.Entity;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.UUID;
 
 @Table("event_subscription")
 @Data
-@XmlRootElement
 @NoArgsConstructor
-@Entity
 public class EventSubscription extends AuditBase implements GetId<UUID> {
 
     @Id
@@ -44,5 +40,4 @@ public class EventSubscription extends AuditBase implements GetId<UUID> {
     @JsonProperty("equipmentReference")
     @Column("equipment_reference")
     private String equipmentReference;
-
 }

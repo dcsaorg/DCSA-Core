@@ -10,14 +10,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface EventService extends BaseService<Event, UUID>{
-
-    Flux<Event> findAll();
-
-    <T extends Event> Mono<T> findAnyById(UUID id);
-
     Mono<Events> findAllWrapped(Flux<Event> events);
-
-    <T extends Event> Flux<T> findAllTypes(List<EventType> eventType, String bookingReference, String equipmentReference);
-
-    <T extends Event> Mono<T> saveAny(Event event);
+    Flux<Event> findAllTypes(List<EventType> eventType, String bookingReference, String equipmentReference);
 }
