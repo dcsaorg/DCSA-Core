@@ -154,9 +154,6 @@ ALTER TABLE ONLY dcsa_v2_0.equipment_event
 ALTER TABLE ONLY dcsa_v2_0.schedule
     ADD CONSTRAINT schedule_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY dcsa_v2_0.shipment_event
-    ADD CONSTRAINT shipment_event_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY dcsa_v2_0.transport_call
     ADD CONSTRAINT transport_call_pkey PRIMARY KEY (id);
 
@@ -166,21 +163,8 @@ ALTER TABLE ONLY dcsa_v2_0.transport_equipment_event
 ALTER TABLE ONLY dcsa_v2_0.transport_event
     ADD CONSTRAINT transport_event_pkey PRIMARY KEY (id);
 
-CREATE INDEX equipment_event_to_transport_call_fk ON dcsa_v2_0.equipment_event USING btree (transport_call_id);
-
-CREATE INDEX fki_shipment_event_transport_call_id_fkey ON dcsa_v2_0.shipment_event USING btree (transport_call_id);
-
-CREATE INDEX schedule_fk ON dcsa_v2_0.transport_call USING btree (schedule_id);
-
-CREATE INDEX transport_equipment_event_to_mode_of_transport ON dcsa_v2_0.transport_equipment_event USING btree (mode_of_transport_code);
-
-CREATE INDEX transport_event_to_transport_call_fk ON dcsa_v2_0.transport_event USING btree (transport_call_id);
-
 ALTER TABLE ONLY dcsa_v2_0.equipment_event
     ADD CONSTRAINT equipment_event_transport_call_id_fkey FOREIGN KEY (transport_call_id) REFERENCES dcsa_v2_0.transport_call(id);
-
-ALTER TABLE ONLY dcsa_v2_0.shipment_event
-    ADD CONSTRAINT shipment_event_transport_call_id_fkey FOREIGN KEY (transport_call_id) REFERENCES dcsa_v2_0.transport_call(id);
 
 ALTER TABLE ONLY dcsa_v2_0.transport_call
     ADD CONSTRAINT transport_call_schedule_id_fkey FOREIGN KEY (schedule_id) REFERENCES dcsa_v2_0.schedule(id);
