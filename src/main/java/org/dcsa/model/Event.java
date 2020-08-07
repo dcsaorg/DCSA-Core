@@ -35,6 +35,7 @@ public abstract class Event extends AuditBase implements GetId<UUID>{
     @Column("event_id")
     private UUID id;
 
+
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     public Date getEventDateTime() {
         return eventDateTime;

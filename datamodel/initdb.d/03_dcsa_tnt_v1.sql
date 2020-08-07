@@ -69,7 +69,7 @@ CREATE TABLE dcsa_v1_1.event_subscription (
 
 DROP TABLE IF EXISTS dcsa_v1_1.shipment CASCADE;
 CREATE TABLE dcsa_v1_1.shipment (
-    shipment_id uuid NOT NULL,
+    shipment_id uuid DEFAULT uuid_generate_v4() PRIMARY KEY NOT NULL,
     booking_reference text, -- The identifier for a shipment, which is issued by and unique within each of the carriers.
     booking_datetime timestamp, -- The date and time of the booking request.
     blnumber varchar(20), -- Transport Document ID is an identifier that links to a shipment. Bill of lading is the legal document issued to the customer which confirms the carrier's receipt of the cargo from the customer acknowledging goods being shipped and specifying the terms of delivery.
