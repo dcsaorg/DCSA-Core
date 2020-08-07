@@ -25,6 +25,7 @@ INHERITS (dcsa_v1_1.event);
 
 DROP TABLE IF EXISTS dcsa_v1_1.shipment_event CASCADE;
 CREATE TABLE dcsa_v1_1.shipment_event (
+    shipment_id uuid NOT NULL,
     shipment_information_type_code text
 )
 INHERITS (dcsa_v1_1.event);
@@ -66,6 +67,17 @@ CREATE TABLE dcsa_v1_1.event_subscription (
     equipment_reference text
     );
 
-
-
-
+DROP TABLE IF EXISTS dcsa_v1_1.shipment CASCADE;
+CREATE TABLE dcsa_v1_1.shipment (
+    shipment_id uuid DEFAULT uuid_generate_v4() PRIMARY KEY NOT NULL,
+    booking_reference text, -- The identifier for a shipment, which is issued by and unique within each of the carriers.
+    booking_datetime timestamp, -- The date and time of the booking request.
+    blnumber varchar(20), -- Transport Document ID is an identifier that links to a shipment. Bill of lading is the legal document issued to the customer which confirms the carrier's receipt of the cargo from the customer acknowledging goods being shipped and specifying the terms of delivery.
+    shipper_name varchar(50), -- The name of the shipper, who requested the booking
+    consignee_name varchar(50), -- The name of the consignee
+    collection_origin varchar(250), -- The location through which the shipment originates. It can be defined as a UN Location Code value or an address. The customer (shipper) needs to place a booking in order to ship the cargo (commodity) from an origin to destination. This attribute specifies the location of the origin.
+    collection_dateTime timestamp, -- The date and the time that the shipment items need to be collected from the origin.
+    delivery_destination varchar(250), -- The location to which the shipment is destined. It can be defined as a UN Location Code value or an address. The customer (shipper) needs to place a booking in order to ship the cargo (commodity) from an origin to destination. This attribute specifies the location of the destination. Also known as 'place of carrier delivery'.
+    delivery_datetime timestamp , -- The date (and when possible time) that the shipment items need to be delivered to the destination.
+    carrier_code varchar(10) -- The Carrier Code represents a concatenation of the Code List Provider Code and the Code List Provider. A hyphen is used between the two codes. The unique carrier identifier is sourced from either the NMFTA SCAC codes list or the SMDG Master Liner codes list.
+    );
