@@ -5,11 +5,11 @@ import org.dcsa.model.GetId;
 import org.dcsa.service.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public abstract class BaseServiceImpl<R extends ReactiveCrudRepository<T, I>, T extends GetId<I>, I> implements BaseService<T, I> {
+public abstract class BaseServiceImpl<R extends R2dbcRepository<T, I>, T extends GetId<I>, I> implements BaseService<T, I> {
     abstract R getRepository();
     abstract String getType();
 

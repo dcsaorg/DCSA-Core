@@ -15,6 +15,8 @@ import org.dcsa.model.EventSubscription;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.service.EventSubscriptionService;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -26,7 +28,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping(value = "event-subscriptions", produces = {MediaType.APPLICATION_JSON_VALUE})
 @Tag(name = "Event Subscriptions", description = "The event subscription API")
-public class EventSubscriptionController extends BaseController<EventSubscriptionService, EventSubscription, UUID> {
+public class EventSubscriptionController extends ExtendedBaseController<EventSubscriptionService, EventSubscription, UUID> {
 
     private final EventSubscriptionService eventSubscriptionService;
 
@@ -46,8 +48,8 @@ public class EventSubscriptionController extends BaseController<EventSubscriptio
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = EventSubscription.class))))
     })
     @GetMapping
-    public Flux<EventSubscription> findAll() {
-        return eventSubscriptionService.findAll();
+    public Flux<EventSubscription> findAll(ServerHttpResponse response, ServerHttpRequest request) {
+        return super.findAll(response, request);
     }
 
     @Operation(summary = "Find all Events", description = "Finds all Events in the database", tags = { "Events" })

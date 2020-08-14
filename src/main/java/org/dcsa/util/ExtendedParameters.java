@@ -1,0 +1,179 @@
+package org.dcsa.util;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+@Configuration
+public class ExtendedParameters {
+    // ":" used as default separator between column to sort by and the direction (ASC or DESC)
+    // This can be changed in the Application.yaml file to | by writing:
+    // sort:
+    //   direction:
+    //     separator: \|
+    @Value( "${sort.direction.separator::}" )
+    private String sortDirectionSeparator;
+
+    // "ASC" used as default specification for ascending sort
+    // This can be changed in the Application.yaml file to "a" by writing:
+    // sort:
+    //   direction:
+    //     ascending: a
+    @Value( "${sort.direction.ascending:ASC}" )
+    private String sortDirectionAscendingName;
+
+    // "DESC" used as default specification for descending sort
+    // This can be changed in the Application.yaml file to "d" by writing:
+    // sort:
+    //   direction:
+    //     descending: d
+    @Value( "${sort.direction.descending:DESC}" )
+    private String sortDirectionDescendingName;
+
+    // "sort" used as sorting parameter
+    // This can be changed in the Application.yaml file to "orderBy" by writing:
+    // sort:
+    //   sortName: orderBy
+    @Value( "${sort.sortName:sort}" )
+    private String sortParameterName;
+
+    // Default pagination pageSize set to ALL elements
+    // This can be changed in the Application.yaml file to 20 by writing:
+    // pagination:
+    //   defaultPageSize: 20
+    @Value( "${pagination.defaultPageSize:#{null}}" )
+    private Integer defaultPageSize;
+
+    // Default pagination pageSize variable name set to "limit"
+    // This can be changed in Application.yaml file to "pageSize" by writing:
+    // pagination:
+    //   config:
+    //     pageSizeName: pageSize
+    @Value( "${pagination.config.pageSizeName:limit}" )
+    private String paginationPageSizeName;
+
+    // Default pagination cursor variable name set to "cursor"
+    // This can be changed in Application.yaml fil to "page" by writing:
+    // pagination:
+    //   config:
+    //     cursorName: page
+    @Value( "${pagination.config.cursorName:cursor}" )
+    private String paginationCursorName;
+
+    // Default current-page header name set to "Current-Page"
+    // This can be changed in Application.yaml fil to "current" by writing:
+    // pagination:
+    //   config:
+    //     currentPageName: current
+    @Value( "${pagination.config.currentPageName:Current-Page}" )
+    private String paginationCurrentPageName;
+
+    // Default current-page header name set to "Next-Page"
+    // This can be changed in Application.yaml fil to "next" by writing:
+    // pagination:
+    //   config:
+    //     currentPageName: next
+    @Value( "${pagination.config.nextPageName:Next-Page}" )
+    private String paginationNextPageName;
+
+    // Default current-page header name set to "Previous-Page"
+    // This can be changed in Application.yaml fil to "previous" by writing:
+    // pagination:
+    //   config:
+    //     currentPageName: previous
+    @Value( "${pagination.config.previousPageName:Previous-Page}" )
+    private String paginationPreviousPageName;
+
+    // Default current-page header name set to "First-Page"
+    // This can be changed in Application.yaml fil to "first" by writing:
+    // pagination:
+    //   config:
+    //     currentPageName: first
+    @Value( "${pagination.config.firstPageName:First-Page}" )
+    private String paginationFirstPageName;
+
+    // Set a list of reserved parameters that the extended base controller should ignore
+    // This can be changed in Application.yaml fil to "expand,show" by writing:
+    // pagination:
+    //   config:
+    //     currentPageName: expand,show
+    @Value( "${pagination.reservedParameters:#{null}}" )
+    private String reservedParameters;
+
+    // Set the encryption key used to encrypt cursor (KeySet) based pagination. If null - no encryption will be used.
+    // This can be changed in Application.yaml fil to "xyz123" by writing:
+    // pagination:
+    //   encryptionKey: xyz123
+    @Value( "${pagination.encryptionKey:#{null}}" )
+    private String encryptionKey;
+
+    // Set the internal pagination parameter name to "|Offset|". It is important that this name does NOT
+    // conflict with field names. It needs to be unique!
+    // This can be changed in Application.yaml fil to "|index|" by writing:
+    // pagination:
+    //   internal
+    //     cursor: |index|
+    @Value( "${pagination.internal.cursor:|Offset|}" )
+    private String indexCursor;
+
+    public String getSortDirectionSeparator() {
+        return sortDirectionSeparator;
+    }
+
+    public String getSortDirectionAscendingName() {
+        return sortDirectionAscendingName;
+    }
+
+    public String getSortDirectionDescendingName() {
+        return sortDirectionDescendingName;
+    }
+
+    public String getSortParameterName() {
+        return sortParameterName;
+    }
+
+    public Integer getDefaultPageSize() {
+        return defaultPageSize;
+    }
+
+    public String getPaginationPageSizeName() {
+        return paginationPageSizeName;
+    }
+
+    public String getPaginationCursorName() {
+        return paginationCursorName;
+    }
+
+    public String getPaginationCurrentPageName() {
+        return paginationCurrentPageName;
+    }
+
+    public String getPaginationNextPageName() {
+        return paginationNextPageName;
+    }
+
+    public String getPaginationPreviousPageName() {
+        return paginationPreviousPageName;
+    }
+
+    public String getPaginationFirstPageName() {
+        return paginationFirstPageName;
+    }
+
+    public List<String> getReservedParameters() {
+        return reservedParameters != null ?
+                Arrays.asList(reservedParameters.split("\\\\s*,\\\\s*")) :
+                Collections.emptyList();
+    }
+
+    public String getEncryptionKey() {
+        return encryptionKey;
+    }
+
+    public String getIndexCursor() {
+        return indexCursor;
+    }
+}

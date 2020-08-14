@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.UUID;
 
-public interface EventService extends BaseService<Event, UUID>{
+public interface EventService extends ExtendedBaseService<Event, UUID>{
     Mono<Events> findAllWrapped(Flux<Event> events);
     Flux<Event> findAllTypes(List<EventType> eventType, String bookingReference, String equipmentReference);
 }
