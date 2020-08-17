@@ -8,7 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Table("aggregated_events")
@@ -35,13 +35,13 @@ public class Event extends AuditBase implements GetId<UUID> {
 
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    public LocalDate getEventDateTime() {
+    public OffsetDateTime getEventDateTime() {
         return eventDateTime;
     }
 
     @JsonProperty("eventDateTime")
     @Column("event_date_time")
-    private LocalDate eventDateTime;
+    private OffsetDateTime eventDateTime;
 
     @JsonProperty("eventClassifierCode")
     @Column("event_classifier_code")

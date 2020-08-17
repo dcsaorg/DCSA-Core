@@ -9,7 +9,7 @@ INSERT INTO dcsa_v1_1.shipment_event (
     shipment_id,
     shipment_information_type_code
     )
-    VALUES ('PLN', 'SHIPMENT', '2020-07-15', 'e48f2bc0-c746-11ea-a3ff-db48243a89f4', 'DEPA', uuid('5e51e72c-d872-11ea-811c-0f8f10a32ea1'), 'Some type code text');
+    VALUES ('PLN', 'SHIPMENT', TO_DATE('2020/07/15 13:14:15', 'yyyy/mm/dd hh24:mi:ss'), 'e48f2bc0-c746-11ea-a3ff-db48243a89f4', 'DEPA', uuid('5e51e72c-d872-11ea-811c-0f8f10a32ea1'), 'Some type code text');
 
 INSERT INTO "dcsa_v1_1".equipment_event(
 	event_classifier_code,

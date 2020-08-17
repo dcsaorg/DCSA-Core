@@ -25,7 +25,6 @@ public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>
         return getService().getModelClass().getSimpleName();
     }
 
-//    @Override
     @GetMapping()
     public Flux<T> findAll(ServerHttpResponse response, ServerHttpRequest request) {
         ExtendedRequest<T> extendedRequest = new ExtendedRequest<>(extendedParameters, getService().getModelClass());

@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS dcsa_v1_1.event CASCADE;
 CREATE TABLE dcsa_v1_1.event (
     event_classifier_code text NOT NULL,
     event_type text NOT NULL,
-    event_date_time date NOT NULL,
+    event_date_time timestamp with time zone NOT NULL,
     event_id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     event_type_code text NOT NULL
 );
