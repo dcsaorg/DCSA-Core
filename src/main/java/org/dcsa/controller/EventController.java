@@ -10,10 +10,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.dcsa.exception.GetException;
 import org.dcsa.model.Event;
 import org.dcsa.model.Events;
-import org.dcsa.model.enums.EventType;
 import org.dcsa.service.EventService;
+import org.dcsa.util.ExtendedParameters;
+import org.dcsa.util.ExtendedRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -21,25 +24,28 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "events", produces = {MediaType.APPLICATION_JSON_VALUE})
 @Tag(name = "Events", description = "The event API")
-public class EventController extends ExtendedBaseController<EventService, Event, UUID> {
+public class EventController extends BaseController<EventService, Event, UUID> {
 
     private final EventService eventService;
+
+    @Autowired
+    private ExtendedParameters extendedParameters;
+
+    @Override
+    String getType() {
+        return getService().getModelClass().getSimpleName();
+    }
 
     @Override
     EventService getService() {
         return eventService;
-    }
-
-    @Override
-    String getType() {
-        return "Events";
     }
 
     @Operation(summary = "Find all Events", description = "Finds all Events in the database", tags = { "Events" })
@@ -48,11 +54,19 @@ public class EventController extends ExtendedBaseController<EventService, Event,
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = Event.class))))
     })
     @GetMapping
-    public Flux<Event> findAll(ServerHttpResponse response, ServerHttpRequest request) {
-        return super.findAll(response, request);
-//    public Mono<Events> findAll(@RequestParam(required = false, defaultValue = "EQUIPMENT,SHIPMENT,TRANSPORT,TRANSPORTEQUIPMENT") List<EventType> eventType, @RequestParam(required = false) String bookingReference, @RequestParam(required = false) String equipmentReference) {
-//        return eventService.findAllWrapped(eventService.findAllTypes(eventType, bookingReference, equipmentReference));
+    public Mono<Events> findAll(ServerHttpResponse response, ServerHttpRequest request) {
+        ExtendedRequest<Event> extendedRequest = new ExtendedRequest<>(extendedParameters, Event.class);
+        try {
+            Map<String,String> params = request.getQueryParams().toSingleValueMap();;
+            extendedRequest.parseParameter(params);
+        } catch (GetException getException) {
+            return Mono.error(getException);
+        }
 
+        Flux<Event> result = getService().findAllExtended(extendedRequest);
+        // Add Link headers to the response
+        extendedRequest.insertPaginationHeaders(response, request);
+        return eventService.findAllWrapped(result);
     }
 
     @Operation(summary = "Find Event by ID", description = "Returns a single Event", tags = { "Event" }, parameters = {

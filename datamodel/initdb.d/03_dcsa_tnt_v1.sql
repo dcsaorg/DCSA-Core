@@ -81,3 +81,73 @@ CREATE TABLE dcsa_v1_1.shipment (
     delivery_datetime timestamp , -- The date (and when possible time) that the shipment items need to be delivered to the destination.
     carrier_code varchar(10) -- The Carrier Code represents a concatenation of the Code List Provider Code and the Code List Provider. A hyphen is used between the two codes. The unique carrier identifier is sourced from either the NMFTA SCAC codes list or the SMDG Master Liner codes list.
     );
+
+DROP VIEW IF EXISTS dcsa_v1_1.aggregated_events CASCADE;
+CREATE VIEW dcsa_v1_1.aggregated_events AS
+ SELECT transport_event.event_id,
+    transport_event.event_type,
+    transport_event.event_classifier_code,
+    transport_event.event_type_code,
+    transport_event.event_date_time,
+    transport_event.transport_reference,
+    NULL::text AS equipment_reference,
+    NULL::text AS shipment_information_type_code,
+	transport_event.facility_type_code,
+	transport_event.un_location_code,
+	transport_event.facility_code,
+	transport_event.other_facility,
+	NULL::text AS empty_indicator_code,
+	transport_event.transport_leg_reference,
+	transport_event.mode_of_transport_code
+   FROM dcsa_v1_1.transport_event
+UNION
+ SELECT shipment_event.event_id,
+    shipment_event.event_type,
+    shipment_event.event_classifier_code,
+    shipment_event.event_type_code,
+    shipment_event.event_date_time,
+    NULL::text AS transport_reference,
+    NULL::text AS equipment_reference,
+    shipment_event.shipment_information_type_code,
+	NULL::text AS facility_type_code,
+	NULL::text AS un_location_code,
+	NULL::text AS facility_code,
+	NULL::text AS other_facility,
+	NULL::text AS empty_indicator_code,
+	NULL::text AS transport_leg_reference,
+	NULL::text AS mode_of_transport_code
+   FROM dcsa_v1_1.shipment_event
+UNION
+ SELECT equipment_event.event_id,
+    equipment_event.event_type,
+    equipment_event.event_classifier_code,
+    equipment_event.event_type_code,
+    equipment_event.event_date_time,
+    NULL::text AS transport_reference,
+    equipment_event.equipment_reference,
+    NULL::text AS shipment_information_type_code,
+	equipment_event.facility_type_code,
+	equipment_event.un_location_code,
+	equipment_event.facility_code,
+	equipment_event.other_facility,
+	equipment_event.empty_indicator_code,
+	NULL::text AS transport_leg_reference,
+	NULL::text AS mode_of_transport_code
+   FROM dcsa_v1_1.equipment_event
+UNION
+ SELECT transport_equipment_event.event_id,
+    transport_equipment_event.event_type,
+    transport_equipment_event.event_classifier_code,
+    transport_equipment_event.event_type_code,
+    transport_equipment_event.event_date_time,
+    transport_equipment_event.transport_reference,
+    transport_equipment_event.equipment_reference,
+    NULL::text AS shipment_information_type_code,
+    transport_equipment_event.facility_type_code,
+	transport_equipment_event.un_location_code,
+	transport_equipment_event.facility_code,
+	transport_equipment_event.other_facility,
+	transport_equipment_event.empty_indicator_code,
+	transport_equipment_event.transport_leg_reference,
+	transport_equipment_event.mode_of_transport_code
+   FROM dcsa_v1_1.transport_equipment_event;

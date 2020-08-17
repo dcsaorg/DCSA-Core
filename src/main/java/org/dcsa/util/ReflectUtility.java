@@ -24,30 +24,54 @@ public class ReflectUtility {
      * @throws InvocationTargetException if the underlying method throws an exception
      */
     public static void setValue(Object obj, String columnName, Class<?> objClass, Object objectValue) throws IllegalAccessException, InvocationTargetException {
-        Field[] fields = obj.getClass().getDeclaredFields();
+        setValue(obj, obj.getClass(), columnName, objClass, objectValue);
+    }
+
+    /**
+     * Tries to set a value on an object using the specific class of the object. First it tries to use the Column annotation on the field. If there are no
+     * matches, then it tries to use the field name directly. If the field is not public it tries to find a setter
+     * method to use instead.
+     * @param obj the object to set the value on
+     * @param clazz the class of the object to set the value on
+     * @param columnName the name of the database column containing the value
+     * @param objClass the type of the value to set
+     * @param objectValue the value
+     * @throws IllegalAccessException if the setter method is not public
+     * @throws InvocationTargetException if the underlying method throws an exception
+     */
+    private static boolean setValue(Object obj, Class<?> clazz, String columnName, Class<?> valueClass, Object value) throws IllegalAccessException, InvocationTargetException {
+        Field[] fields = clazz.getDeclaredFields();
         // Test for @Column annotation to match columnName of Row
         for (Field field: fields) {
             Column column = field.getAnnotation(Column.class);
             if (column != null && columnName.equals(column.value())) {
                 try {
-                    field.set(obj, objectValue);
+                    field.set(obj, value);
                 } catch (IllegalAccessException illegalAccessException) {
-                    setValueUsingMethod(obj, field.getName(), objClass, objectValue);
+                    setValueUsingMethod(obj, clazz, field.getName(), valueClass, value);
                 }
-                return;
+                return true;
             }
         }
         // Test for @Column annotation to match field name
         for (Field field: fields) {
             if (columnName.equals(field.getName())) {
                 try {
-                    field.set(obj, objectValue);
+                    field.set(obj, value);
                 } catch (IllegalAccessException illegalAccessException) {
-                    setValueUsingMethod(obj, field.getName(), objClass, objectValue);
+                    setValueUsingMethod(obj, clazz, field.getName(), valueClass, value);
                 }
-                return;
+                return true;
             }
         }
+        // Try the super class
+        clazz = clazz.getSuperclass();
+        if (clazz != Object.class) {
+            if (setValue(obj, clazz, columnName, valueClass, value)) {
+                return true;
+            }
+        }
+
         // Error if here
         throw new IllegalAccessException("Neither the field or a @Column annotation has been found matching the name: " + columnName + " on " + obj.getClass().getSimpleName());
     }
@@ -56,12 +80,13 @@ public class ReflectUtility {
      * Sets a value on an object using setter methods instead of fieldName.
      * Throws RunTimeException if
      * @param obj the object on which to set a value
+     * @param clazz the class of the object on which to set a value
      * @param fieldName the name of the field to find a setter method in order to set a value
      * @param objClass the type of the object to set
      * @param objectValue the value to set
      */
-    public static void setValueUsingMethod(Object obj, String fieldName, Class<?> objClass, Object objectValue) throws IllegalAccessException, InvocationTargetException {
-        Method method = getSetterMethodFromName(obj.getClass(), fieldName, objClass);
+    public static void setValueUsingMethod(Object obj, Class<?> clazz, String fieldName, Class<?> objClass, Object objectValue) throws IllegalAccessException, InvocationTargetException {
+        Method method = getSetterMethodFromName(clazz, fieldName, objClass);
         method.invoke(obj, objectValue);
     }
 

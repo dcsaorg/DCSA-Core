@@ -1,5 +1,10 @@
 package org.dcsa.util;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.r2dbc.spi.Row;
+import io.r2dbc.spi.RowMetadata;
 import org.dcsa.exception.GetException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.relational.core.mapping.Table;
@@ -189,7 +194,7 @@ public class ExtendedRequest<T> {
     }
 
     public String getQuery() {
-        return "select * from " + getTableName() + getFilterString() + getSortString() + getOffsetString() + getLimitString();
+        return "select * from \"" + getTableName() + "\"" + getFilterString() + getSortString() + getOffsetString() + getLimitString();
     }
 
     public String getTableName() {
@@ -200,11 +205,31 @@ public class ExtendedRequest<T> {
         return table.value();
     }
 
-    public T getModelClassInstance() {
+    public boolean ignoreUnknownProperties() {
+        JsonIgnoreProperties jsonIgnoreProperties = modelClass.getAnnotation(JsonIgnoreProperties.class);
+        return jsonIgnoreProperties != null && jsonIgnoreProperties.ignoreUnknown();
+    }
+
+    public T getModelClassInstance(Row row, RowMetadata meta) {
         try {
-            Constructor<T> constructor = modelClass.getDeclaredConstructor();
-            return constructor.newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            JsonSubTypes jsonSubTypes = modelClass.getAnnotation(JsonSubTypes.class);
+            JsonTypeInfo jsonTypeInfo = modelClass.getAnnotation(JsonTypeInfo.class);
+            if (jsonSubTypes != null && jsonTypeInfo != null) {
+                String property = jsonTypeInfo.property();
+                String columnName = ReflectUtility.transformFromFieldNameToColumnName(modelClass, property);
+                Object value = row.get(columnName);
+                for (JsonSubTypes.Type type : jsonSubTypes.value()) {
+                    if (type.name().equals(value)) {
+                        Constructor<?> constructor = type.value().getDeclaredConstructor();
+                        return (T) constructor.newInstance();
+                    }
+                }
+                throw new GetException("Unmatched sub-type: " + value + " of " + modelClass.getSimpleName());
+            } else {
+                Constructor<T> constructor = modelClass.getDeclaredConstructor();
+                return constructor.newInstance();
+            }
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | NoSuchFieldException e) {
             throw new GetException("Error when creating a new instance of: " + modelClass.getSimpleName());
         }
     }

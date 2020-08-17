@@ -1,16 +1,13 @@
 package org.dcsa.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.dcsa.exception.*;
 import org.dcsa.model.GetId;
 import org.dcsa.service.BaseService;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.r2dbc.BadSqlGrammarException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerWebInputException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -18,11 +15,6 @@ public abstract class BaseController<S extends BaseService<T, I>, T extends GetI
 
     abstract S getService();
     abstract String getType();
-
-    @GetMapping()
-    public Flux<T> findAll(ServerHttpResponse response, ServerHttpRequest request) {
-        return getService().findAll();
-    }
 
     @GetMapping("{id}")
     public Mono<T> findById(@PathVariable I id) {

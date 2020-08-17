@@ -1,8 +1,6 @@
 package org.dcsa.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,9 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.dcsa.model.Event;
 import org.dcsa.model.EventSubscription;
-import org.dcsa.model.enums.EventType;
 import org.dcsa.service.EventSubscriptionService;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -21,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -35,11 +30,6 @@ public class EventSubscriptionController extends ExtendedBaseController<EventSub
     @Override
     EventSubscriptionService getService() {
         return eventSubscriptionService;
-    }
-
-    @Override
-    String getType() {
-        return "Events";
     }
 
     @Operation(summary = "Find all Events", description = "Finds all Events in the database", tags = { "Events" })

@@ -1,11 +1,11 @@
 package org.dcsa.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.dcsa.exception.GetException;
 import org.dcsa.model.GetId;
 import org.dcsa.service.ExtendedBaseService;
 import org.dcsa.util.ExtendedParameters;
 import org.dcsa.util.ExtendedRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -25,7 +25,7 @@ public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>
         return getService().getModelClass().getSimpleName();
     }
 
-    @Override
+//    @Override
     @GetMapping()
     public Flux<T> findAll(ServerHttpResponse response, ServerHttpRequest request) {
         ExtendedRequest<T> extendedRequest = new ExtendedRequest<>(extendedParameters, getService().getModelClass());

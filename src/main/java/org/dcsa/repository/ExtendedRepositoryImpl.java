@@ -1,11 +1,11 @@
 package org.dcsa.repository;
 
-import org.dcsa.exception.DatabaseException;
-import org.dcsa.util.ExtendedRequest;
-import org.dcsa.util.ReflectUtility;
 import io.r2dbc.spi.ColumnMetadata;
 import io.r2dbc.spi.ConnectionFactory;
 import lombok.RequiredArgsConstructor;
+import org.dcsa.exception.DatabaseException;
+import org.dcsa.util.ExtendedRequest;
+import org.dcsa.util.ReflectUtility;
 import org.springframework.data.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
 
@@ -21,7 +21,7 @@ public class ExtendedRepositoryImpl<T> implements ExtendedRepository<T> {
                 .execute(extendedRequest.getQuery())
                 .map((row, meta) -> {
                     // Get a new instance of the Object to return
-                    T object = extendedRequest.getModelClassInstance();
+                    T object = extendedRequest.getModelClassInstance(row, meta);
 
                     // Run through all columns
                     for (String columnName : meta.getColumnNames()) {
@@ -34,7 +34,9 @@ public class ExtendedRepositoryImpl<T> implements ExtendedRepository<T> {
                             try {
                                 ReflectUtility.setValue(object, columnName, c, value);
                             } catch (IllegalAccessException | InvocationTargetException exception) {
-                                throw new DatabaseException("Not possible to map value to columnName:" + columnName + " on object " + object.getClass().getSimpleName(), exception);
+                                if (!extendedRequest.ignoreUnknownProperties()) {
+                                    throw new DatabaseException("Not possible to map value to columnName:" + columnName + " on object " + object.getClass().getSimpleName(), exception);
+                                }
                             }
                         } else {
                             throw new DatabaseException("Type for columnName: " + columnName + " is null");
