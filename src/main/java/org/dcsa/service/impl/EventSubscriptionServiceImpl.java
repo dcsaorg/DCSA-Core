@@ -2,26 +2,24 @@ package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.dcsa.model.EventSubscription;
-import org.dcsa.repository.EquipmentEventRepository;
 import org.dcsa.repository.EventSubscriptionRepository;
 import org.dcsa.service.EventSubscriptionService;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
-public class EventSubscriptionServiceImpl extends BaseServiceImpl<EventSubscriptionRepository, EventSubscription, UUID> implements EventSubscriptionService {
-    private final EventSubscriptionRepository eventSubscrpitionRepository;
+public class EventSubscriptionServiceImpl extends ExtendedBaseServiceImpl<EventSubscriptionRepository, EventSubscriptionRepository, EventSubscription, UUID> implements EventSubscriptionService {
+    private final EventSubscriptionRepository eventSubscriptionRepository;
 
     @Override
     EventSubscriptionRepository getRepository() {
-        return eventSubscrpitionRepository;
+        return eventSubscriptionRepository;
     }
 
     @Override
-    public String getType() {
-        return "EquipmentEvent";
+    public Class<EventSubscription> getModelClass() {
+        return EventSubscription.class;
     }
 }

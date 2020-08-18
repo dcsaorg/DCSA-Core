@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
-public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, UUID> implements EventService {
+public class EventServiceImpl extends ExtendedBaseServiceImpl<EventRepository, EventRepository, Event, UUID> implements EventService {
     private final EventRepository eventRepository;
     private final ShipmentEventServiceImpl shipmentEventService;
     private final TransportEventServiceImpl transportEventService;
@@ -32,8 +32,8 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, UU
     }
 
     @Override
-    public String getType() {
-        return "Event";
+    public Class<Event> getModelClass() {
+        return Event.class;
     }
 
     @Override
@@ -67,22 +67,22 @@ public class EventServiceImpl extends BaseServiceImpl<EventRepository, Event, UU
         Flux<String> callbackUrls;
 
         switch (event.getEventType()) {
-            case "SHIPMENT":
+            case SHIPMENT:
                 returnEvent = shipmentEventService.save((ShipmentEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
                 returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (ShipmentEvent) it).start()).subscribe();
                 break;
-            case "TRANSPORT":
+            case TRANSPORT:
                 returnEvent = transportEventService.save((TransportEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
                 returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (TransportEvent) it).start()).subscribe();
                 break;
-            case "TRANSPORTEQUIPMENT":
+            case TRANSPORTEQUIPMENT:
                 returnEvent = transportEquipmentEventService.save((TransportEquipmentEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), ((TransportEquipmentEvent) event).getEquipmentReference());
                 returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (TransportEquipmentEvent) it).start()).subscribe();
                 break;
-            case "EQUIPMENT":
+            case EQUIPMENT:
                 returnEvent = equipmentEventService.save((EquipmentEvent) event);
                 callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), ((EquipmentEvent) event).getEquipmentReference());
                 returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (EquipmentEvent) it).start()).subscribe();

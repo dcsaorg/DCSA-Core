@@ -49,4 +49,12 @@ public class TransportEquipmentEvent extends Event {
     @JsonProperty("modeOfTransportCode")
     @Column("mode_of_transport_code")
     private String modeOfTransportCode;
+
+    public void setEmptyIndicatorCode(String emptyIndicatorCode) {
+        this.emptyIndicatorCode = EmptyIndicatorCode.valueOf(emptyIndicatorCode);
+    }
+
+    public void setEmptyIndicatorCode(EmptyIndicatorCode emptyIndicatorCode) {
+        this.emptyIndicatorCode = emptyIndicatorCode;
+    }
 }

@@ -37,4 +37,12 @@ public class EquipmentEvent extends Event {
     @JsonProperty("otherFacility")
     @Column("other_facility")
     private String otherFacility;
+
+    public void setEmptyIndicatorCode(String emptyIndicatorCode) {
+        this.emptyIndicatorCode = EmptyIndicatorCode.valueOf(emptyIndicatorCode);
+    }
+
+    public void setEmptyIndicatorCode(EmptyIndicatorCode emptyIndicatorCode) {
+        this.emptyIndicatorCode = emptyIndicatorCode;
+    }
 }

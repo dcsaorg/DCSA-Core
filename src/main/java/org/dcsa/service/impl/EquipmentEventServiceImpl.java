@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
-public class EquipmentEventServiceImpl extends BaseServiceImpl<EquipmentEventRepository, EquipmentEvent, UUID> implements EquipmentEventService {
+public class EquipmentEventServiceImpl extends ExtendedBaseServiceImpl<EquipmentEventRepository, EquipmentEventRepository, EquipmentEvent, UUID> implements EquipmentEventService {
 
     private final EquipmentEventRepository equipmentEventRepository;
 
@@ -24,8 +24,8 @@ public class EquipmentEventServiceImpl extends BaseServiceImpl<EquipmentEventRep
     }
 
     @Override
-    public String getType() {
-        return "EquipmentEvent";
+    public Class<EquipmentEvent> getModelClass() {
+        return EquipmentEvent.class;
     }
 
     //Overriding base method here, as it marks empty results as an error, meaning we can't use switchOnEmpty()

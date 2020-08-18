@@ -1,22 +1,21 @@
 package org.dcsa.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dcsa.model.enums.EventClassifierCode;
+import org.dcsa.model.enums.EventType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import java.util.Date;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@Table("event")
+@Table("aggregated_events")
 @Data
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.EXISTING_PROPERTY,
@@ -28,7 +27,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = ShipmentEvent.class, name="SHIPMENT"),
         @JsonSubTypes.Type(value = TransportEquipmentEvent.class, name="TRANSPORTEQUIPMENT")
 })
-public abstract class Event extends AuditBase implements GetId<UUID>{
+public class Event extends AuditBase implements GetId<UUID> {
 
     @Id
     @JsonProperty("eventID")
@@ -37,13 +36,13 @@ public abstract class Event extends AuditBase implements GetId<UUID>{
 
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    public Date getEventDateTime() {
+    public OffsetDateTime getEventDateTime() {
         return eventDateTime;
     }
 
     @JsonProperty("eventDateTime")
     @Column("event_date_time")
-    private Date eventDateTime;
+    private OffsetDateTime eventDateTime;
 
     @JsonProperty("eventClassifierCode")
     @Column("event_classifier_code")
@@ -51,9 +50,25 @@ public abstract class Event extends AuditBase implements GetId<UUID>{
 
     @JsonProperty("eventType")
     @Column("event_type")
-    private String eventType;
+    private EventType eventType;
 
     @JsonProperty("eventTypeCode")
     @Column("event_type_code")
     private String eventTypeCode;
+
+    public void setEventClassifierCode(String eventClassifierCode) {
+        this.eventClassifierCode = EventClassifierCode.valueOf(eventClassifierCode);
+    }
+
+    public void setEventClassifierCode(EventClassifierCode eventClassifierCode) {
+        this.eventClassifierCode = eventClassifierCode;
+    }
+
+    public void setEventType(String eventType) {
+        this.eventType = EventType.valueOf(eventType);
+    }
+
+    public void setEventType(EventType eventType) {
+        this.eventType = eventType;
+    }
 }

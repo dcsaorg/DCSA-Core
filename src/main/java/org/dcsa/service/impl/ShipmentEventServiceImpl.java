@@ -2,7 +2,6 @@ package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.dcsa.model.ShipmentEvent;
-import org.dcsa.model.TransportEvent;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.ShipmentEventRepository;
 import org.dcsa.service.ShipmentEventService;
@@ -16,7 +15,7 @@ import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
-public class ShipmentEventServiceImpl extends BaseServiceImpl<ShipmentEventRepository, ShipmentEvent, UUID> implements ShipmentEventService {
+public class ShipmentEventServiceImpl extends ExtendedBaseServiceImpl<ShipmentEventRepository, ShipmentEventRepository, ShipmentEvent, UUID> implements ShipmentEventService {
     private final ShipmentEventRepository shipmentEventRepository;
 
     @Override
@@ -25,8 +24,8 @@ public class ShipmentEventServiceImpl extends BaseServiceImpl<ShipmentEventRepos
     }
 
     @Override
-    public String getType() {
-        return "ShipmentEvent";
+    public Class<ShipmentEvent> getModelClass() {
+        return ShipmentEvent.class;
     }
 
     //Overriding base method here, as it marks empty results as an error, meaning we can't use switchOnEmpty()

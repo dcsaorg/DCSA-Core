@@ -1,7 +1,6 @@
 package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.dcsa.exception.NotFoundException;
 import org.dcsa.model.TransportEvent;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.TransportEventRepository;
@@ -15,7 +14,7 @@ import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
-public class TransportEventServiceImpl extends BaseServiceImpl<TransportEventRepository, TransportEvent, UUID> implements TransportEventService {
+public class TransportEventServiceImpl extends ExtendedBaseServiceImpl<TransportEventRepository, TransportEventRepository, TransportEvent, UUID> implements TransportEventService {
     private final TransportEventRepository transportEventRepository;
 
     @Override
@@ -24,8 +23,8 @@ public class TransportEventServiceImpl extends BaseServiceImpl<TransportEventRep
     }
 
     @Override
-    public String getType() {
-        return "TransportEvent";
+    public Class<TransportEvent> getModelClass() {
+        return TransportEvent.class;
     }
 
     //Overriding base method here, as it marks empty results as an error, meaning we can't use switchOnEmpty()

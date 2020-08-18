@@ -10,15 +10,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.dcsa.model.Event;
-import org.dcsa.model.Events;
-import org.dcsa.model.enums.EventType;
+import org.dcsa.exception.GetException;
+import org.dcsa.model.*;
 import org.dcsa.service.EventService;
+import org.dcsa.util.ExtendedEventRequest;
+import org.dcsa.util.ExtendedParameters;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -29,14 +34,17 @@ public class EventController extends BaseController<EventService, Event, UUID> {
 
     private final EventService eventService;
 
-    @Override
-    EventService getService() {
-        return eventService;
-    }
+    @Autowired
+    private ExtendedParameters extendedParameters;
 
     @Override
     String getType() {
-        return "Events";
+        return getService().getModelClass().getSimpleName();
+    }
+
+    @Override
+    EventService getService() {
+        return eventService;
     }
 
     @Operation(summary = "Find all Events", description = "Finds all Events in the database", tags = { "Events" })
@@ -45,9 +53,20 @@ public class EventController extends BaseController<EventService, Event, UUID> {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = Event.class))))
     })
     @GetMapping
-    public Mono<Events> findAll(@RequestParam(required = false, defaultValue = "EQUIPMENT,SHIPMENT,TRANSPORT,TRANSPORTEQUIPMENT") List<EventType> eventType, @RequestParam(required = false) String bookingReference, @RequestParam(required = false) String equipmentReference) {
-        return eventService.findAllWrapped(eventService.findAllTypes(eventType, bookingReference, equipmentReference));
+    public Mono<Events> findAll(ServerHttpResponse response, ServerHttpRequest request) {
+        ExtendedEventRequest extendedEventRequest = new ExtendedEventRequest(extendedParameters,
+                new Class[] {EquipmentEvent.class, ShipmentEvent.class, TransportEvent.class, TransportEquipmentEvent.class});
+        try {
+            Map<String,String> params = request.getQueryParams().toSingleValueMap();
+            extendedEventRequest.parseParameter(params);
+        } catch (GetException getException) {
+            return Mono.error(getException);
+        }
 
+        Flux<Event> result = getService().findAllExtended(extendedEventRequest);
+        // Add Link headers to the response
+        extendedEventRequest.insertPaginationHeaders(response, request);
+        return eventService.findAllWrapped(result);
     }
 
     @Operation(summary = "Find Event by ID", description = "Returns a single Event", tags = { "Event" }, parameters = {
@@ -60,7 +79,7 @@ public class EventController extends BaseController<EventService, Event, UUID> {
 //    @GetMapping("{id}")
     @Override
     public Mono<Event> findById(@PathVariable UUID id) {
-        return eventService.findById(id);
+        return super.findById(id);
     }
 
     @Operation(summary = "Save any type of event", description = "Saves any type of event", tags = { "Events" })
@@ -70,7 +89,7 @@ public class EventController extends BaseController<EventService, Event, UUID> {
     @PostMapping(consumes = "application/json", produces = "application/json")
     @Override
     public Mono<Event> save(@RequestBody Event event) {
-        return eventService.save(event);
+        return super.save(event);
     }
 
 }

@@ -7,6 +7,6 @@ import reactor.core.publisher.Flux;
 import java.util.List;
 import java.util.UUID;
 
-public interface TransportEventService extends BaseService<TransportEvent, UUID> {
+public interface TransportEventService extends ExtendedBaseService<TransportEvent, UUID> {
     Flux<TransportEvent> findTransportEvents(List<EventType> eventType, String bookingReference, String equipmentReference);
 }

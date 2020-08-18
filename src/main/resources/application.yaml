@@ -1,4 +1,29 @@
 
+# Possibility to change the separator between the sortable field and the direction (ASC or DESC). Default value is : (colon) - can be changed to e.g. | by writing
+#sort:
+#  direction:
+#    separator: \|
+
+# Pagination settings
+pagination:
+#  # encryptionKey needs to be one of the following sizes: 128, 192 or 256 bits - in the example below it is 128 bit (= 16 bytes)
+#  encryptionKey: xyz123wersdgf354
+#  config:
+#    # Change name of cursor parameter name
+#    cursorName:
+#    # Change name of pageSize parameter name
+#    pageSizeName:
+#    # Change name of current-page header name
+#    currentPageName:
+#    # Change name of next-page header name
+#    nextPageName:
+#    # Change name of previous-page header name
+#    previousPageName:
+#    # Change name of first-page header name
+#    firstPageName:
+#  # Possibility to change the default pagination size. If not specified all results will be returned as default
+  defaultPageSize: 20
+
 spring:
   application:
     name: DCSA-Backend
