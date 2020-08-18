@@ -92,13 +92,14 @@ CREATE VIEW dcsa_v1_1.aggregated_events AS
     transport_event.transport_reference,
     NULL::text AS equipment_reference,
     NULL::text AS shipment_information_type_code,
-	transport_event.facility_type_code,
-	transport_event.un_location_code,
-	transport_event.facility_code,
-	transport_event.other_facility,
-	NULL::text AS empty_indicator_code,
-	transport_event.transport_leg_reference,
-	transport_event.mode_of_transport_code
+	NULL::UUID AS shipment_id,
+    transport_event.facility_type_code,
+    transport_event.un_location_code,
+    transport_event.facility_code,
+    transport_event.other_facility,
+    NULL::text AS empty_indicator_code,
+    transport_event.transport_leg_reference,
+    transport_event.mode_of_transport_code
    FROM dcsa_v1_1.transport_event
 UNION
  SELECT shipment_event.event_id,
@@ -109,13 +110,14 @@ UNION
     NULL::text AS transport_reference,
     NULL::text AS equipment_reference,
     shipment_event.shipment_information_type_code,
-	NULL::text AS facility_type_code,
-	NULL::text AS un_location_code,
-	NULL::text AS facility_code,
-	NULL::text AS other_facility,
-	NULL::text AS empty_indicator_code,
-	NULL::text AS transport_leg_reference,
-	NULL::text AS mode_of_transport_code
+    shipment_event.shipment_id,
+    NULL::text AS facility_type_code,
+    NULL::text AS un_location_code,
+    NULL::text AS facility_code,
+    NULL::text AS other_facility,
+    NULL::text AS empty_indicator_code,
+    NULL::text AS transport_leg_reference,
+    NULL::text AS mode_of_transport_code
    FROM dcsa_v1_1.shipment_event
 UNION
  SELECT equipment_event.event_id,
@@ -126,13 +128,14 @@ UNION
     NULL::text AS transport_reference,
     equipment_event.equipment_reference,
     NULL::text AS shipment_information_type_code,
-	equipment_event.facility_type_code,
-	equipment_event.un_location_code,
-	equipment_event.facility_code,
-	equipment_event.other_facility,
-	equipment_event.empty_indicator_code,
-	NULL::text AS transport_leg_reference,
-	NULL::text AS mode_of_transport_code
+	NULL::UUID AS shipment_id,
+    equipment_event.facility_type_code,
+    equipment_event.un_location_code,
+    equipment_event.facility_code,
+    equipment_event.other_facility,
+    equipment_event.empty_indicator_code,
+    NULL::text AS transport_leg_reference,
+    NULL::text AS mode_of_transport_code
    FROM dcsa_v1_1.equipment_event
 UNION
  SELECT transport_equipment_event.event_id,
@@ -143,11 +146,12 @@ UNION
     transport_equipment_event.transport_reference,
     transport_equipment_event.equipment_reference,
     NULL::text AS shipment_information_type_code,
+	NULL::UUID AS shipment_id,
     transport_equipment_event.facility_type_code,
-	transport_equipment_event.un_location_code,
-	transport_equipment_event.facility_code,
-	transport_equipment_event.other_facility,
-	transport_equipment_event.empty_indicator_code,
-	transport_equipment_event.transport_leg_reference,
-	transport_equipment_event.mode_of_transport_code
+    transport_equipment_event.un_location_code,
+    transport_equipment_event.facility_code,
+    transport_equipment_event.other_facility,
+    transport_equipment_event.empty_indicator_code,
+    transport_equipment_event.transport_leg_reference,
+    transport_equipment_event.mode_of_transport_code
    FROM dcsa_v1_1.transport_equipment_event;
