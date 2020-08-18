@@ -119,6 +119,14 @@ public class ExtendedParameters {
     @Value( "${pagination.internal.cursor:|Offset|}" )
     private String indexCursor;
 
+    // Set the splitter for Enum values. If multiple Enum values are specified - a list will be created by splitting
+    // on the specified value.
+    // This can be changed in Application.yaml fil to "|" by writing:
+    // enum:
+    //   split: |
+    @Value( "${enum.split:,}" )
+    private String enumSplit;
+
     public String getSortDirectionSeparator() {
         return sortDirectionSeparator;
     }
@@ -175,5 +183,9 @@ public class ExtendedParameters {
 
     public String getIndexCursor() {
         return indexCursor;
+    }
+
+    public String getEnumSplit() {
+        return enumSplit;
     }
 }

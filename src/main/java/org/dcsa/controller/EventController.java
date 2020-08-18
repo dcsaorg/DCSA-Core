@@ -11,11 +11,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.dcsa.exception.GetException;
-import org.dcsa.model.Event;
-import org.dcsa.model.Events;
+import org.dcsa.model.*;
 import org.dcsa.service.EventService;
+import org.dcsa.util.ExtendedEventRequest;
 import org.dcsa.util.ExtendedParameters;
-import org.dcsa.util.ExtendedRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -55,17 +54,18 @@ public class EventController extends BaseController<EventService, Event, UUID> {
     })
     @GetMapping
     public Mono<Events> findAll(ServerHttpResponse response, ServerHttpRequest request) {
-        ExtendedRequest<Event> extendedRequest = new ExtendedRequest<>(extendedParameters, Event.class);
+        ExtendedEventRequest extendedEventRequest = new ExtendedEventRequest(extendedParameters,
+                new Class[] {EquipmentEvent.class, ShipmentEvent.class, TransportEvent.class, TransportEquipmentEvent.class});
         try {
-            Map<String,String> params = request.getQueryParams().toSingleValueMap();;
-            extendedRequest.parseParameter(params);
+            Map<String,String> params = request.getQueryParams().toSingleValueMap();
+            extendedEventRequest.parseParameter(params);
         } catch (GetException getException) {
             return Mono.error(getException);
         }
 
-        Flux<Event> result = getService().findAllExtended(extendedRequest);
+        Flux<Event> result = getService().findAllExtended(extendedEventRequest);
         // Add Link headers to the response
-        extendedRequest.insertPaginationHeaders(response, request);
+        extendedEventRequest.insertPaginationHeaders(response, request);
         return eventService.findAllWrapped(result);
     }
 

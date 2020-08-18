@@ -34,8 +34,8 @@ public class ReflectUtility {
      * @param obj the object to set the value on
      * @param clazz the class of the object to set the value on
      * @param columnName the name of the database column containing the value
-     * @param objClass the type of the value to set
-     * @param objectValue the value
+     * @param valueClass the type of the value to set
+     * @param value the value
      * @throws IllegalAccessException if the setter method is not public
      * @throws InvocationTargetException if the underlying method throws an exception
      */
@@ -108,6 +108,42 @@ public class ReflectUtility {
     }
 
     /**
+     * Gets the return type of the getter method corresponding to fieldName
+     * @param clazz the class to investigate
+     * @param fieldName the name of the field to retrieve the returnType
+     * @return Class if the return type of the method is found
+     * @throws NoSuchMethodException if no method corresponding to fieldName is found
+     */
+    public static Class<?> getReturnTypeFromGetterMethod(Class<?> clazz, String fieldName) {
+        Method method = ReflectUtility.getGetterMethodFromName(clazz, fieldName);
+        return method.getReturnType();
+    }
+
+    /**
+     * Finds the getter method on clazz corresponding to the name fieldName. Tries first with the raw name, then prefixing
+     * with "get" and at last prefix with "is"
+     * @param clazz the class to investigate
+     * @param fieldName the name of the field to find a getter method for
+     * @return the method corresponding to fieldName
+     * @throws MethodNotFoundException if no method corresponding to fieldName is found
+     */
+    public static Method getGetterMethodFromName(Class<?> clazz, String fieldName) {
+        try {
+            // Try the raw field name as a method call
+            return getMethod(clazz, fieldName);
+        } catch (Exception exception) {
+            String capitalizedFieldName = capitalize(fieldName);
+            try {
+                // Prefix with "get"
+                return getMethod(clazz, "get" + capitalizedFieldName);
+            } catch (Exception exception2) {
+                // Prefix with "is"
+                return getMethod(clazz, "is" + capitalizedFieldName);
+            }
+        }
+    }
+
+    /**
      * Investigate if a class contains a method be the name methodName with arguments corresponding to valueFieldTypes.
      * The method must be public.
      * Throws a MethodNotFoundException if the method requested is not public or does not exist
@@ -141,7 +177,7 @@ public class ReflectUtility {
 
     /**
      * Transforms a field name to a column name that can be used by a database query. If no @Column annotation exists
-     * then fieldName is used
+     * then fieldName is used. If no match on clazz it will try the super class until Object.class is reached
      *
      * @param clazz the Class
      * @param fieldName the name to convert
@@ -149,18 +185,27 @@ public class ReflectUtility {
      * @throws NoSuchFieldException if fieldName does not exist on clazz
      */
     public static String transformFromFieldNameToColumnName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        Field field = clazz.getDeclaredField(fieldName);
-        Column column = field.getDeclaredAnnotation(Column.class);
-        if (column != null) {
-            return column.value();
-        } else {
-            return fieldName;
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            Column column = field.getDeclaredAnnotation(Column.class);
+            if (column != null) {
+                return column.value();
+            } else {
+                return fieldName;
+            }
+        } catch (NoSuchFieldException noSuchFieldException) {
+            // Try the super class
+            clazz = clazz.getSuperclass();
+            if (clazz != Object.class) {
+                return transformFromFieldNameToColumnName(clazz, fieldName);
+            }
+            throw noSuchFieldException;
         }
     }
 
     /**
      * Transforms a field name to a JSON name that can be used as a query parameter. If no @JsonProperty annotation exists
-     * then fieldName is used
+     * then fieldName is used. If no match on clazz it will try the super class until Object.class is reached
      *
      * @param clazz the Class
      * @param fieldName the name to convert
@@ -168,12 +213,21 @@ public class ReflectUtility {
      * @throws NoSuchFieldException if fieldName does not exist on clazz
      */
     public static String transformFromFieldNameToJsonName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        Field field = clazz.getDeclaredField(fieldName);
-        JsonProperty jsonName = field.getDeclaredAnnotation(JsonProperty.class);
-        if (jsonName != null) {
-            return jsonName.value();
-        } else {
-            return fieldName;
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            JsonProperty jsonName = field.getDeclaredAnnotation(JsonProperty.class);
+            if (jsonName != null) {
+                return jsonName.value();
+            } else {
+                return fieldName;
+            }
+        } catch (NoSuchFieldException noSuchFieldException) {
+            // Try the super class
+            clazz = clazz.getSuperclass();
+            if (clazz != Object.class) {
+                return transformFromFieldNameToJsonName(clazz, fieldName);
+            }
+            throw noSuchFieldException;
         }
     }
 
@@ -183,6 +237,7 @@ public class ReflectUtility {
      * it checks if the name corresponds to jsonName - if it does it will return the corresponding property name.
      * If all field names have been checked for a JsonProperty corresponding to the name and no matches have been found
      * it checks if there is an exact match with a property name. If so - the property name is returned.
+     * If there is no match in clazz it will continue with the super class until the Object.class is reached
      * This method throws a NoSuchFieldException if the field does not exist
      * @param clazz the class to investigate
      * @param jsonName the json name to transform into a property name
@@ -204,6 +259,12 @@ public class ReflectUtility {
         if (fieldName != null) {
             return fieldName;
         } else {
+            // Try the super class
+            clazz = clazz.getSuperclass();
+            if (clazz != Object.class) {
+                return transformFromJsonNameToFieldName(clazz, jsonName);
+            }
+            // No matching fieldName - throw an exception
             throw new NoSuchFieldException("Field " + jsonName + " is neither specified as a JsonProperty nor is it a field on " + clazz.getSimpleName());
         }
     }

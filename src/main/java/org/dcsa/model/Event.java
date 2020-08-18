@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dcsa.model.enums.EventClassifierCode;
+import org.dcsa.model.enums.EventType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -49,7 +50,7 @@ public class Event extends AuditBase implements GetId<UUID> {
 
     @JsonProperty("eventType")
     @Column("event_type")
-    private String eventType;
+    private EventType eventType;
 
     @JsonProperty("eventTypeCode")
     @Column("event_type_code")
@@ -61,5 +62,13 @@ public class Event extends AuditBase implements GetId<UUID> {
 
     public void setEventClassifierCode(EventClassifierCode eventClassifierCode) {
         this.eventClassifierCode = eventClassifierCode;
+    }
+
+    public void setEventType(String eventType) {
+        this.eventType = EventType.valueOf(eventType);
+    }
+
+    public void setEventType(EventType eventType) {
+        this.eventType = eventType;
     }
 }

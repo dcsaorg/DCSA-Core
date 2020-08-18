@@ -1,14 +1,11 @@
 package org.dcsa.util;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
 import org.dcsa.exception.GetException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.relational.core.mapping.Table;
-import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 
@@ -17,13 +14,16 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
+import javax.el.MethodNotFoundException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ExtendedRequest<T> {
 
@@ -34,13 +34,14 @@ public class ExtendedRequest<T> {
     private static final String INDEX_SPLIT = "=";
     private static final String SORT_SPLIT = "=";
     private static final String SORT_SEPARATOR = ",";
+    private static final String ENUM_SEPARATOR = ",";
 
     private Sort sort;
     private Filter filter;
     private Integer limit;
     private Integer indexCursor;
 
-    private final ExtendedParameters extendedParameters;
+    final ExtendedParameters extendedParameters;
     private final Class<T> modelClass;
     private Boolean isCursor = null;
 
@@ -98,16 +99,21 @@ public class ExtendedRequest<T> {
                 String[] fieldAndDirection = sortableValue.split(extendedParameters.getSortDirectionSeparator());
                 try {
                     // Verify that the field exists on the model class and transform it from JSON-name to FieldName
-                    fieldAndDirection[0] = ReflectUtility.transformFromJsonNameToFieldName(modelClass, fieldAndDirection[0]);
-                    updateSort(fieldAndDirection);
+                    fieldAndDirection[0] = transformFromJsonNameToFieldName(fieldAndDirection[0]);
                 } catch (NoSuchFieldException noSuchFieldException) {
                     throw new GetException("Sort parameter not correctly specified. Field: " + fieldAndDirection[0] + " does not exist. Use - {fieldName}" + extendedParameters.getSortDirectionSeparator() + "[ASC|DESC]");
                 }
+                updateSort(fieldAndDirection);
             }
             if (!fromCursor) {
                 isCursor = false;
             }
         }
+    }
+
+    String transformFromJsonNameToFieldName(String jsonName) throws NoSuchFieldException {
+        // Verify that the field exists on the model class and transform it from JSON-name to FieldName
+        return ReflectUtility.transformFromJsonNameToFieldName(modelClass, jsonName);
     }
 
     private void updateSort(String[] fieldDirection) {
@@ -162,17 +168,41 @@ public class ExtendedRequest<T> {
         }
 
         try {
-            String field = ReflectUtility.transformFromJsonNameToFieldName(modelClass, parameter);
+            String fieldName = transformFromJsonNameToFieldName(parameter);
             if (filter == null) {
                 filter = new Filter();
             }
-            filter.addFilter(field, value);
+            Class<?> returnType = getFilterParameterReturnType(fieldName);
+            // Test if the return type is an Enum
+            if (returnType.getEnumConstants() != null) {
+                // Return type IS Enum - split a possible list on EnumSplitter defined in extendedParameters and force exact match in filtering
+                String[] enumList = value.split(extendedParameters.getEnumSplit());
+                for (String enumItem : enumList) {
+                    filter.addEnumFilter(fieldName, enumItem);
+                }
+            } else if ("String".equals(returnType.getSimpleName())) {
+                if ("NULL".equals(value)) {
+                    filter.addExactFilter(fieldName, value, false);
+                } else {
+                    filter.addStringFilter(fieldName, value);
+                }
+            } else if ("UUID".equals(returnType.getSimpleName())) {
+                filter.addExactFilter(fieldName, value, !"NULL".equals(value));
+            } else if ("Integer".equals(returnType.getSimpleName()) || "Long".equals(returnType.getSimpleName())) {
+                filter.addExactFilter(fieldName, value, true);
+            }
             if (!fromCursor) {
                 isCursor = false;
             }
         } catch (NoSuchFieldException noSuchFieldException) {
             throw new GetException("Filter parameter not recognized: " + parameter);
+        } catch (MethodNotFoundException methodNotFoundException) {
+            throw new GetException("Getter method corresponding to parameter: " + parameter + " not found!");
         }
+    }
+
+    Class<?> getFilterParameterReturnType(String fieldName) throws MethodNotFoundException {
+        return ReflectUtility.getReturnTypeFromGetterMethod(modelClass, fieldName);
     }
 
     private void parseCursorParameter(String cursorValue) {
@@ -194,7 +224,7 @@ public class ExtendedRequest<T> {
     }
 
     public String getQuery() {
-        return "select * from \"" + getTableName() + "\"" + getFilterString() + getSortString() + getOffsetString() + getLimitString();
+        return "select * from " + getTableName() + getFilterString() + getSortString() + getOffsetString() + getLimitString();
     }
 
     public String getTableName() {
@@ -212,45 +242,89 @@ public class ExtendedRequest<T> {
 
     public T getModelClassInstance(Row row, RowMetadata meta) {
         try {
-            JsonSubTypes jsonSubTypes = modelClass.getAnnotation(JsonSubTypes.class);
-            JsonTypeInfo jsonTypeInfo = modelClass.getAnnotation(JsonTypeInfo.class);
-            if (jsonSubTypes != null && jsonTypeInfo != null) {
-                String property = jsonTypeInfo.property();
-                String columnName = ReflectUtility.transformFromFieldNameToColumnName(modelClass, property);
-                Object value = row.get(columnName);
-                for (JsonSubTypes.Type type : jsonSubTypes.value()) {
-                    if (type.name().equals(value)) {
-                        Constructor<?> constructor = type.value().getDeclaredConstructor();
-                        return (T) constructor.newInstance();
-                    }
-                }
-                throw new GetException("Unmatched sub-type: " + value + " of " + modelClass.getSimpleName());
-            } else {
-                Constructor<T> constructor = modelClass.getDeclaredConstructor();
-                return constructor.newInstance();
-            }
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | NoSuchFieldException e) {
+            Constructor<T> constructor = modelClass.getDeclaredConstructor();
+            return constructor.newInstance();
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new GetException("Error when creating a new instance of: " + modelClass.getSimpleName());
         }
     }
 
     private String getFilterString() {
         if (filter != null) {
-            List<Criteria> criteriaList = new ArrayList<>();
+            StringBuilder sb = new StringBuilder(" WHERE ");
+            boolean flag = false;
             for (int i = 0; i < filter.getFilterSize(); i++) {
                 try {
-                    String field = ReflectUtility.transformFromFieldNameToColumnName(modelClass, filter.getFieldName(i));
+                    String field = transformFromFieldNameToColumnName(filter.getFieldName(i));
                     String value = filter.getFieldValue(i);
-                    // TODO: SQL injection should be tested here...
-                    criteriaList.add(Criteria.where(field).like("%" + value + "%"));
+                    if (sb.length() != " WHERE ".length()) {
+                        if (filter.getEnumMatch(i)) {
+                            if (flag) {
+                                sb.append(" OR ");
+                            } else {
+                                sb.append(" AND (");
+                                flag = true;
+                            }
+                        } else {
+                            if (flag) {
+                                sb.append(") AND ");
+                                flag = false;
+                            } else {
+                                sb.append(" AND ");
+                            }
+                        }
+                    } else {
+                        if (filter.getEnumMatch(i)) {
+                            sb.append("(");
+                            flag = true;
+                        }
+                    }
+                    value = sanitizeValue(value);
+                    if (filter.getExactMatch(i)) {
+                        sb.append(field).append("=");
+                        if (filter.getStringValue(i)) {
+                            sb.append("'").append(value).append("'");
+                        } else {
+                            sb.append(value);
+                        }
+                    } else {
+                        sb.append(field).append(" like '%").append(value).append("%'");
+                    }
                 } catch (NoSuchFieldException noSuchFieldException) {
                     throw new GetException("Cannot map fieldName: " + filter.getFieldName(i) + " to a database column name when creating internal sql filter");
                 }
             }
-            return " WHERE " + Criteria.from(criteriaList).toString();
+            if (flag) {
+                sb.append(")");
+            }
+            return sb.toString();
         } else {
             return "";
         }
+    }
+
+    // Transform <, >, </, (“, “), (‘, ‘), “, etc. to html code
+    // # $ ? /” \”
+    private String sanitizeValue(String value) {
+        // TODO: SQL injection should be tested here...
+        value = value.replaceAll("-", "&#45;");
+        value = value.replaceAll("<", "&#lt;");
+        value = value.replaceAll(">", "&#gt;");
+        value = value.replaceAll("\\)", "&#40;");
+        value = value.replaceAll("\\(", "&#41;");
+        value = value.replaceAll("'", "&#apos;");
+        value = value.replaceAll("#", "&#35;");
+        value = value.replaceAll("\\$", "&#44;");
+        value = value.replaceAll("\\?", "&#63;");
+        value = value.replaceAll("\\\\", "&#92;");
+        value = value.replaceAll("/", "&#47;");
+        value = value.replaceAll("%", "&#37;");
+
+        return value;
+    }
+
+    String transformFromFieldNameToColumnName(String fieldName) throws NoSuchFieldException {
+        return ReflectUtility.transformFromFieldNameToColumnName(modelClass, fieldName);
     }
 
     private String getSortString() {
@@ -263,7 +337,7 @@ public class ExtendedRequest<T> {
                 // Verify that the field exists
                 String fieldName = order.getProperty();
                 try {
-                    String columnName = ReflectUtility.transformFromFieldNameToColumnName(modelClass, fieldName);
+                    String columnName = transformFromFieldNameToColumnName(fieldName);
                     sb.append(columnName);
                 } catch (NoSuchFieldException noSuchFieldException) {
                     throw new GetException("Cannot map fieldName: " + fieldName + " to a database column name when creating internal sql sorting");
@@ -384,7 +458,7 @@ public class ExtendedRequest<T> {
                     sb.append(SORT_SEPARATOR);
                 }
                 try {
-                    String jsonName = ReflectUtility.transformFromFieldNameToJsonName(modelClass, order.getProperty());
+                    String jsonName = transformFromFieldNameToJsonName(order.getProperty());
                     sb.append(jsonName);
                 } catch (NoSuchFieldException noSuchFieldException) {
                     throw new GetException("Cannot map fieldName: " + order.getProperty() + " to JSON property when creating internal sort-query parameter");
@@ -398,6 +472,10 @@ public class ExtendedRequest<T> {
         }
     }
 
+    String transformFromFieldNameToJsonName(String fieldName) throws NoSuchFieldException {
+        return ReflectUtility.transformFromFieldNameToJsonName(modelClass, fieldName);
+    }
+
     private void encodeFilter(StringBuilder sb) {
         if (filter != null) {
             for (int i = 0; i < filter.getFilterSize(); i++) {
@@ -405,7 +483,7 @@ public class ExtendedRequest<T> {
                     sb.append(PARAMETER_SPLIT);
                 }
                 try {
-                    String jsonName = ReflectUtility.transformFromFieldNameToJsonName(modelClass, filter.getFieldName(i));
+                    String jsonName = transformFromFieldNameToJsonName(filter.getFieldName(i));
                     sb.append(jsonName);
                 } catch (NoSuchFieldException noSuchFieldException) {
                     throw new GetException("Cannot map fieldName: " + filter.getFieldName(i) + " to JSON property when creating internal filter-query parameter");
