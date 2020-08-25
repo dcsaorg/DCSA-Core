@@ -7,27 +7,30 @@ import reactor.core.scheduler.Schedulers;
 
 import static io.restassured.RestAssured.given;
 
+/**
+ * A class calling callBackHandlers when subscriptions are activated because an event has been triggered
+ */
 @Slf4j
 public class CallbackHandler extends Thread {
 
     Flux<String> callbackUrls;
     Event event;
 
-    public CallbackHandler (Flux<String> callbackUrls, ShipmentEvent event){
+    public CallbackHandler (Flux<String> callbackUrls, ShipmentEvent event) {
         this.callbackUrls=callbackUrls;
         this.event=event;
     }
 
-    public CallbackHandler (Flux<String> callbackUrls, TransportEvent event){
+    public CallbackHandler (Flux<String> callbackUrls, TransportEvent event) {
         this.callbackUrls=callbackUrls;
         this.event=event;
     }
 
-    public CallbackHandler (Flux<String> callbackUrls, EquipmentEvent event){
+    public CallbackHandler (Flux<String> callbackUrls, EquipmentEvent event) {
         this.callbackUrls=callbackUrls;
         this.event=event;
     }
-    public CallbackHandler (Flux<String> callbackUrls, TransportEquipmentEvent event){
+    public CallbackHandler (Flux<String> callbackUrls, TransportEquipmentEvent event) {
         this.callbackUrls=callbackUrls;
         this.event=event;
     }

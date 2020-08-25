@@ -6,12 +6,18 @@ import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
 import org.dcsa.exception.GetException;
 import org.dcsa.model.Event;
+import org.dcsa.model.Shipment;
+import org.dcsa.model.ShipmentEvent;
 import org.springframework.data.relational.core.mapping.Table;
 
 import javax.el.MethodNotFoundException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+/**
+ * A class to handle the fact that an Event can have multiple subEvents (Transport, Equipment, Shipment). Used primarily
+ * when converting between JSON property names, POJO field names and DB column names.
+ */
 public class ExtendedEventRequest extends ExtendedRequest<Event> {
     private Class<Event>[] modelSubClasses;
 
@@ -20,6 +26,12 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
         this.modelSubClasses = modelSubClasses;
     }
 
+    /**
+     * A method to convert a JSON name to a field. It will look through all the modelClasses of this ExtendedEventRequest
+     * @param jsonName the JSON name to convert
+     * @return the field name corresponding to the JSON name provided
+     * @throws NoSuchFieldException if the JSON name is not found on any of the modelClasses defined
+     */
     @Override
     String transformFromJsonNameToFieldName(String jsonName) throws NoSuchFieldException {
         // Run through all possible subClasses and see if one of them can transform the JSON name to a field name
@@ -35,7 +47,7 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
     }
 
     @Override
-    Class<?> getFilterParameterReturnType(String fieldName) throws MethodNotFoundException {
+    Class<?> getReturnTypeFromGetterMethod(String fieldName) throws MethodNotFoundException {
         // Run through all possible subClasses
         for (Class<Event> clazz : modelSubClasses) {
             try {
@@ -46,6 +58,45 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
             }
         }
         throw new MethodNotFoundException("No getter method found for field: " + fieldName + " tested the following subclasses: " + getModelClassNames());
+    }
+
+    private final static String BILL_OF_LADING_PARAMETER = "billOfLading";
+
+    /**
+     * A method to handle parameters that cannot be handled automatically. These parameters do not exist in the event
+     * tables and therefore a JOIN is needed
+     * @param parameter the parameter to handle
+     * @param value the value of the parameter to handle
+     * @param fromCursor is this part of a cursorPagination link
+     * @return true if the parameter was handled, false if the parameter is not recognised
+     */
+    @Override
+    boolean doJoin(String parameter, String value, boolean fromCursor) {
+        try {
+            String billOfLadingParameter = ReflectUtility.transformFromFieldNameToJsonName(Shipment.class, BILL_OF_LADING_PARAMETER);
+            if (billOfLadingParameter.equals(parameter)) {
+                // Bill of Lading parameter
+                join = new Join();
+
+                Table shipmentTable = Shipment.class.getAnnotation(Table.class);
+                if (shipmentTable == null) {
+                    throw new GetException("@Table not defined on Shipment-class!");
+                }
+
+                String shipmentShipmentIdColumn = ReflectUtility.transformFromFieldNameToColumnName(Shipment.class, "id");
+                String shipmentEventShipmentIdColumn = ReflectUtility.transformFromFieldNameToColumnName(ShipmentEvent.class, "shipmentId");
+                join.add(shipmentTable.value() + " ON " + shipmentTable.value() + "." + shipmentShipmentIdColumn + " = " + getTableName() + "." + shipmentEventShipmentIdColumn);
+                if (filter == null) {
+                    filter = new Filter();
+                }
+                filter.addExactFilter(BILL_OF_LADING_PARAMETER, Shipment.class, value, true);
+
+                return true;
+            }
+            return false;
+        } catch (NoSuchFieldException noSuchFieldException) {
+            return false;
+        }
     }
 
     @Override
@@ -59,10 +110,17 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
 
     @Override
     public boolean ignoreUnknownProperties() {
-        // Always ignore unknown properties when using Event class (the properties are on the sub classes
+        // Always ignore unknown properties when using Event class (the properties are on the sub classes)
         return true;
     }
 
+    /**
+     * A method to look at the database row and via reflection determine the type of SubEvent to create. It will look
+     * at the Event class and extract the the discriminator value from the row and create a new instance of the SubClass
+     * @param row the Database row containing the object to create
+     * @param meta the Database metadata about the row
+     * @return a Subclassed event (TransportEvent, EquipmentEvent or ShipmentEvent) corresponding to the discriminator
+     */
     @Override
     public Event getModelClassInstance(Row row, RowMetadata meta) {
         try {
