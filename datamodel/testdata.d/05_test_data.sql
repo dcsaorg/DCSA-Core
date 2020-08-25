@@ -214,3 +214,29 @@ INSERT INTO dcsa_v1_1.shipment(
     DATE '2020-04-10',
     'SMDG-ZIM'
 );
+
+INSERT INTO dcsa_v1_1.shipment(
+    shipment_id,
+    booking_reference,
+    booking_datetime,
+    blnumber,
+    shipper_name,
+    consignee_name,
+    collection_origin,
+    collection_dateTime,
+    delivery_destination,
+    delivery_datetime,
+    carrier_code
+) VALUES (
+    uuid('5e51e72c-d872-11ea-811c-0f8f10a32ea2'),
+    'BR1239719872',
+    DATE '2021-03-07',
+    'AA32147122',
+    'Unicorn Inc.',
+    'Long horn',
+    '5, Lake View, By the lake',
+    DATE '2021-05-23',
+    '125, Wall St, Next door',
+    DATE '2020-08-01',
+    'SMDG-ZIM'
+);

@@ -25,6 +25,17 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A class to handle pagination, filtering, sorting and limiting of Collection results.
+ * It converts between JSON names, POJO field names and Database column names. It creates the SQL to extract the result
+ * corresponding to the requested filtering, sorting and size-limiting.
+ * It encodes pagination links to be used for Key-Set based pagination.
+ * Because if time limitations the current implementation
+ * simulates Key-Set based pagination but is in fact offset-based pagination (OFFSET is used in the SQL query)
+ * All parameters can be configured in Application.yaml, default values are stored in the ExtendedParameter class
+ * @param <T> the type of the class modeled by this {@code Class}
+ *  * object.
+ */
 public class ExtendedRequest<T> {
 
     private static final String PARAMETER_SPLIT = "&";
@@ -37,13 +48,14 @@ public class ExtendedRequest<T> {
     private static final String ENUM_SEPARATOR = ",";
 
     private Sort sort;
-    private Filter filter;
+    Join join;
+    Filter filter;
     private Integer limit;
     private Integer indexCursor;
 
     final ExtendedParameters extendedParameters;
     private final Class<T> modelClass;
-    private Boolean isCursor = null;
+    Boolean isCursor = null;
 
 
     public ExtendedRequest(ExtendedParameters extendedParameters, Class<T> modelClass) {
@@ -77,14 +89,14 @@ public class ExtendedRequest<T> {
             parseCursorParameter(value);
         } else if (extendedParameters.getIndexCursor().equals(key) && fromCursor) {
             // Parse internal pagination cursor
-            parseInternalPagniationCursor(value);
+            parseInternalPaginationCursor(value);
         } else {
             // Parse filtering
             parseFilterParameter(key, value, fromCursor);
         }
     }
 
-    private void parseInternalPagniationCursor(String cursorValue) {
+    private void parseInternalPaginationCursor(String cursorValue) {
         indexCursor = Integer.parseInt(cursorValue);
     }
 
@@ -111,6 +123,25 @@ public class ExtendedRequest<T> {
         }
     }
 
+    /** A method to convert a JSON name to a field name using a specified class.
+     * @param clazz the class to use. If not provided the modelClass for this ExtendedRequest will be used
+     * @param jsonName the JSON name to convert
+     * @return the field name corresponding to the JSON name provided specified on the class
+     * @throws NoSuchFieldException if the JSON name is not found
+     */
+    String transformFromJsonNameToFieldName(Class<?> clazz, String jsonName) throws NoSuchFieldException {
+        if (clazz != null) {
+            return ReflectUtility.transformFromJsonNameToFieldName(clazz, jsonName);
+        } else {
+            return transformFromJsonNameToFieldName(jsonName);
+        }
+    }
+
+    /** A method to convert a JSON name to a field. The modelClass of this ExtendedRequest will be used
+     * @param jsonName the JSON name to convert
+     * @return the field name corresponding to the JSON name provided
+     * @throws NoSuchFieldException if the JSON name is not found
+     */
     String transformFromJsonNameToFieldName(String jsonName) throws NoSuchFieldException {
         // Verify that the field exists on the model class and transform it from JSON-name to FieldName
         return ReflectUtility.transformFromJsonNameToFieldName(modelClass, jsonName);
@@ -172,7 +203,7 @@ public class ExtendedRequest<T> {
             if (filter == null) {
                 filter = new Filter();
             }
-            Class<?> returnType = getFilterParameterReturnType(fieldName);
+            Class<?> returnType = getReturnTypeFromGetterMethod(fieldName);
             // Test if the return type is an Enum
             if (returnType.getEnumConstants() != null) {
                 // Return type IS Enum - split a possible list on EnumSplitter defined in extendedParameters and force exact match in filtering
@@ -191,17 +222,23 @@ public class ExtendedRequest<T> {
             } else if ("Integer".equals(returnType.getSimpleName()) || "Long".equals(returnType.getSimpleName())) {
                 filter.addExactFilter(fieldName, value, true);
             }
-            if (!fromCursor) {
-                isCursor = false;
-            }
         } catch (NoSuchFieldException noSuchFieldException) {
-            throw new GetException("Filter parameter not recognized: " + parameter);
+            if (!doJoin(parameter, value, fromCursor)) {
+                throw new GetException("Filter parameter not recognized: " + parameter);
+            }
         } catch (MethodNotFoundException methodNotFoundException) {
             throw new GetException("Getter method corresponding to parameter: " + parameter + " not found!");
         }
+        if (!fromCursor) {
+            isCursor = false;
+        }
     }
 
-    Class<?> getFilterParameterReturnType(String fieldName) throws MethodNotFoundException {
+    boolean doJoin(String parameter, String value, boolean fromCursor) {
+        return false;
+    }
+
+    Class<?> getReturnTypeFromGetterMethod(String fieldName) throws MethodNotFoundException {
         return ReflectUtility.getReturnTypeFromGetterMethod(modelClass, fieldName);
     }
 
@@ -224,7 +261,7 @@ public class ExtendedRequest<T> {
     }
 
     public String getQuery() {
-        return "select * from " + getTableName() + getFilterString() + getSortString() + getOffsetString() + getLimitString();
+        return "select * from " + getTableName() + getJoinString() + getFilterString() + getSortString() + getOffsetString() + getLimitString();
     }
 
     public String getTableName() {
@@ -249,13 +286,25 @@ public class ExtendedRequest<T> {
         }
     }
 
+    private String getJoinString() {
+        if (join != null) {
+            StringBuilder sb = new StringBuilder(" JOIN ");
+            for (int i = 0; i < join.getSize(); i++) {
+                sb.append(join.getJoin(i));
+            }
+            return sb.toString();
+        } else {
+            return "";
+        }
+    }
+
     private String getFilterString() {
         if (filter != null) {
             StringBuilder sb = new StringBuilder(" WHERE ");
             boolean flag = false;
             for (int i = 0; i < filter.getFilterSize(); i++) {
                 try {
-                    String field = transformFromFieldNameToColumnName(filter.getFieldName(i));
+                    String field = transformFromFieldNameToColumnName(filter.getClazz(i), filter.getFieldName(i));
                     String value = filter.getFieldValue(i);
                     if (sb.length() != " WHERE ".length()) {
                         if (filter.getEnumMatch(i)) {
@@ -321,6 +370,14 @@ public class ExtendedRequest<T> {
         value = value.replaceAll("%", "&#37;");
 
         return value;
+    }
+
+    String transformFromFieldNameToColumnName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+        if (clazz != null) {
+            return ReflectUtility.transformFromFieldNameToColumnName(clazz, fieldName);
+        } else {
+            return transformFromFieldNameToColumnName(fieldName);
+        }
     }
 
     String transformFromFieldNameToColumnName(String fieldName) throws NoSuchFieldException {
@@ -472,6 +529,14 @@ public class ExtendedRequest<T> {
         }
     }
 
+    String transformFromFieldNameToJsonName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+        if (clazz != null) {
+            return ReflectUtility.transformFromFieldNameToJsonName(clazz, fieldName);
+        } else {
+            return transformFromFieldNameToJsonName(fieldName);
+        }
+    }
+
     String transformFromFieldNameToJsonName(String fieldName) throws NoSuchFieldException {
         return ReflectUtility.transformFromFieldNameToJsonName(modelClass, fieldName);
     }
@@ -483,7 +548,7 @@ public class ExtendedRequest<T> {
                     sb.append(PARAMETER_SPLIT);
                 }
                 try {
-                    String jsonName = transformFromFieldNameToJsonName(filter.getFieldName(i));
+                    String jsonName = transformFromFieldNameToJsonName(filter.getClazz(i), filter.getFieldName(i));
                     sb.append(jsonName);
                 } catch (NoSuchFieldException noSuchFieldException) {
                     throw new GetException("Cannot map fieldName: " + filter.getFieldName(i) + " to JSON property when creating internal filter-query parameter");

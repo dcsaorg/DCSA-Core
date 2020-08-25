@@ -63,34 +63,37 @@ public class EventServiceImpl extends ExtendedBaseServiceImpl<EventRepository, E
 
     @Override
     public Mono<Event> save(Event event) {
-        Mono<?> returnEvent;
-        Flux<String> callbackUrls;
-
         switch (event.getEventType()) {
             case SHIPMENT:
-                returnEvent = shipmentEventService.save((ShipmentEvent) event);
-                callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
-                returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (ShipmentEvent) it).start()).subscribe();
-                break;
+                return shipmentEventService.save((ShipmentEvent) event).doOnNext(
+                        e -> new CallbackHandler(
+                                eventSubscriptionRepository.findSubscriptionsByFilters(e.getEventType(),
+                                        null), e)
+                                .start()
+                ).map(e -> e);
             case TRANSPORT:
-                returnEvent = transportEventService.save((TransportEvent) event);
-                callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), null);
-                returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (TransportEvent) it).start()).subscribe();
-                break;
+                return transportEventService.save((TransportEvent) event).doOnNext(
+                        e -> new CallbackHandler(
+                                eventSubscriptionRepository.findSubscriptionsByFilters(e.getEventType(),
+                                        null), e)
+                                .start()
+                ).map(e -> e);
             case TRANSPORTEQUIPMENT:
-                returnEvent = transportEquipmentEventService.save((TransportEquipmentEvent) event);
-                callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), ((TransportEquipmentEvent) event).getEquipmentReference());
-                returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (TransportEquipmentEvent) it).start()).subscribe();
-                break;
+                return transportEquipmentEventService.save((TransportEquipmentEvent) event).doOnNext(
+                        e -> new CallbackHandler(
+                                eventSubscriptionRepository.findSubscriptionsByFilters(e.getEventType(),
+                                        e.getEquipmentReference()), e)
+                                .start()
+                ).map(e -> e);
             case EQUIPMENT:
-                returnEvent = equipmentEventService.save((EquipmentEvent) event);
-                callbackUrls = eventSubscriptionRepository.findSubscriptionsByFilters(event.getEventType(), ((EquipmentEvent) event).getEquipmentReference());
-                returnEvent.doOnNext(it->new CallbackHandler(callbackUrls, (EquipmentEvent) it).start()).subscribe();
-                break;
+                return equipmentEventService.save((EquipmentEvent) event).doOnNext(
+                        e -> new CallbackHandler(
+                                eventSubscriptionRepository.findSubscriptionsByFilters(e.getEventType(),
+                                e.getEquipmentReference()), e)
+                                .start()
+                ).map(e -> e);
             default:
-                throw new IllegalStateException("Unexpected value: " + event.getEventType());
+                return Mono.error(new IllegalStateException("Unexpected value: " + event.getEventType()));
         }
-        //Check all subscriptions
-        return (Mono<Event>) returnEvent;
     }
 }
