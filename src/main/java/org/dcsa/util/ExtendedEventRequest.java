@@ -16,10 +16,11 @@ import java.lang.reflect.InvocationTargetException;
 
 /**
  * A class to handle the fact that an Event can have multiple subEvents (Transport, Equipment, Shipment). Used primarily
- * when converting between JSON property names, POJO field names and DB column names.
+ * when converting between JSON property names, POJO field names and DB column names. Also handles BillOfLading filtering
+ * as this requires a Join with the Shipment table
  */
 public class ExtendedEventRequest extends ExtendedRequest<Event> {
-    private Class<Event>[] modelSubClasses;
+    private final Class<Event>[] modelSubClasses;
 
     public ExtendedEventRequest(ExtendedParameters extendedParameters, Class<Event>[] modelSubClasses) {
         super(extendedParameters, Event.class);
@@ -33,7 +34,7 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
      * @throws NoSuchFieldException if the JSON name is not found on any of the modelClasses defined
      */
     @Override
-    String transformFromJsonNameToFieldName(String jsonName) throws NoSuchFieldException {
+    protected String transformFromJsonNameToFieldName(String jsonName) throws NoSuchFieldException {
         // Run through all possible subClasses and see if one of them can transform the JSON name to a field name
         for (Class<Event> clazz : modelSubClasses) {
             try {
@@ -46,21 +47,7 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
         throw new NoSuchFieldException("Field: " + jsonName + " does not exist on any of: " + getModelClassNames());
     }
 
-    @Override
-    Class<?> getReturnTypeFromGetterMethod(String fieldName) throws MethodNotFoundException {
-        // Run through all possible subClasses
-        for (Class<Event> clazz : modelSubClasses) {
-            try {
-                // Investigate if the return type of the getter method corresponding to fieldName is an Enum
-                return ReflectUtility.getReturnTypeFromGetterMethod(clazz, fieldName);
-            } catch (MethodNotFoundException methodNotFoundException) {
-                // Do nothing - try the next sub class
-            }
-        }
-        throw new MethodNotFoundException("No getter method found for field: " + fieldName + " tested the following subclasses: " + getModelClassNames());
-    }
-
-    private final static String BILL_OF_LADING_PARAMETER = "billOfLading";
+    private static final String BILL_OF_LADING_PARAMETER = "billOfLading";
 
     /**
      * A method to handle parameters that cannot be handled automatically. These parameters do not exist in the event
@@ -86,11 +73,7 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
                 String shipmentShipmentIdColumn = ReflectUtility.transformFromFieldNameToColumnName(Shipment.class, "id");
                 String shipmentEventShipmentIdColumn = ReflectUtility.transformFromFieldNameToColumnName(ShipmentEvent.class, "shipmentId");
                 join.add(shipmentTable.value() + " ON " + shipmentTable.value() + "." + shipmentShipmentIdColumn + " = " + getTableName() + "." + shipmentEventShipmentIdColumn);
-                if (filter == null) {
-                    filter = new Filter();
-                }
-                filter.addExactFilter(BILL_OF_LADING_PARAMETER, Shipment.class, value, true);
-
+                filter.addFilter(BILL_OF_LADING_PARAMETER, Shipment.class, value, true, false, true);
                 return true;
             }
             return false;
@@ -99,13 +82,19 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
         }
     }
 
-    @Override
     public String getTableName() {
+        StringBuilder sb = new StringBuilder();
+        getTableName(sb);
+        return sb.toString();
+    }
+
+    @Override
+    public void getTableName(StringBuilder sb) {
         Table table = Event.class.getAnnotation(Table.class);
         if (table == null) {
             throw new GetException("@Table not defined on Event-class!");
         }
-        return table.value();
+        sb.append(table.value());
     }
 
     @Override
@@ -148,7 +137,7 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
     }
 
     @Override
-    String transformFromFieldNameToColumnName(String fieldName) throws NoSuchFieldException {
+    protected String transformFromFieldNameToColumnName(String fieldName) throws NoSuchFieldException {
         // Run through all possible subClasses and see if one of them can transform the fieldName name to a column name
         for (Class<Event> clazz : modelSubClasses) {
             try {
@@ -162,7 +151,7 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
     }
 
     @Override
-    String transformFromFieldNameToJsonName(String fieldName) throws NoSuchFieldException {
+    protected String transformFromFieldNameToJsonName(String fieldName) throws NoSuchFieldException {
         // Run through all possible subClasses and see if one of them can transform the fieldName name to a json name
         for (Class<Event> clazz : modelSubClasses) {
             try {
@@ -184,5 +173,19 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
             sb.append(clazz.getSimpleName());
         }
         return sb.toString();
+    }
+
+    @Override
+    protected Class<?> getFieldType(String fieldName) throws NoSuchFieldException {
+        // Run through all possible subClasses
+        for (Class<Event> clazz : modelSubClasses) {
+            try {
+                // Investigate if the return type of the getter method corresponding to fieldName is an Enum
+                return ReflectUtility.getFieldType(clazz, fieldName);
+            } catch (MethodNotFoundException methodNotFoundException) {
+                // Do nothing - try the next sub class
+            }
+        }
+        throw new MethodNotFoundException("No getter method found for field: " + fieldName + " tested the following subclasses: " + getModelClassNames());
     }
 }

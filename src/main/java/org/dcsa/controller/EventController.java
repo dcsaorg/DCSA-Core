@@ -65,7 +65,7 @@ public class EventController extends BaseController<EventService, Event, UUID> {
 
         Flux<Event> result = getService().findAllExtended(extendedEventRequest);
         // Add Link headers to the response
-        extendedEventRequest.insertPaginationHeaders(response, request);
+        extendedEventRequest.insertHeaders(response, request);
         return eventService.findAllWrapped(result);
     }
 
