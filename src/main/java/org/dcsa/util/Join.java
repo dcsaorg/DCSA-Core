@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A class used to store which joins to use when extracting Collection results.
+ * A class to help managing joins for the sql result.
  */
 public class Join {
     List<String> joins = new ArrayList<>();
@@ -13,11 +13,10 @@ public class Join {
         joins.add(join);
     }
 
-    public String getJoin(int index) {
-        return joins.get(index);
-    }
-
-    public int getSize() {
-        return joins.size();
+    protected void getJoinQueryString(StringBuilder sb) {
+        for (String join: joins) {
+            sb.append(" JOIN ");
+            sb.append(join);
+        }
     }
 }

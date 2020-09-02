@@ -14,6 +14,11 @@ public abstract class ExtendedBaseServiceImpl<S extends ExtendedRepository<T>, R
     }
 
     public Flux<T> findAllExtended(ExtendedRequest<T> extendedRequest) {
-        return ((S) getRepository()).findAllExtended(extendedRequest);
+        return ((S) getRepository()).countAllExtended(extendedRequest).map(
+                count -> {
+                    extendedRequest.setQueryCount(count.getCount()); return count;
+                }).thenMany(
+                        ((S) getRepository()).findAllExtended(extendedRequest)
+        );
     }
 }

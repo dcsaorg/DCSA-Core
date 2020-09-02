@@ -71,7 +71,7 @@ public class ExtendedParameters {
     @Value( "${pagination.config.currentPageName:Current-Page}" )
     private String paginationCurrentPageName;
 
-    // Default current-page header name set to "Next-Page"
+    // Default next-page header name set to "Next-Page"
     // This can be changed in Application.yaml fil to "next" by writing:
     // pagination:
     //   config:
@@ -79,7 +79,7 @@ public class ExtendedParameters {
     @Value( "${pagination.config.nextPageName:Next-Page}" )
     private String paginationNextPageName;
 
-    // Default current-page header name set to "Previous-Page"
+    // Default previous-page header name set to "Previous-Page"
     // This can be changed in Application.yaml fil to "previous" by writing:
     // pagination:
     //   config:
@@ -87,13 +87,21 @@ public class ExtendedParameters {
     @Value( "${pagination.config.previousPageName:Previous-Page}" )
     private String paginationPreviousPageName;
 
-    // Default current-page header name set to "First-Page"
+    // Default first-page header name set to "First-Page"
     // This can be changed in Application.yaml fil to "first" by writing:
     // pagination:
     //   config:
     //     currentPageName: first
     @Value( "${pagination.config.firstPageName:First-Page}" )
     private String paginationFirstPageName;
+
+    // Default current-page header name set to "Last-Page"
+    // This can be changed in Application.yaml fil to "last" by writing:
+    // pagination:
+    //   config:
+    //     currentPageName: last
+    @Value( "${pagination.config.firstPageName:Last-Page}" )
+    private String paginationLastPageName;
 
     // Set a list of reserved parameters that the extended base controller should ignore
     // This can be changed in Application.yaml fil to "expand,show" by writing:
@@ -117,7 +125,7 @@ public class ExtendedParameters {
     //   internal
     //     cursor: |index|
     @Value( "${pagination.internal.cursor:|Offset|}" )
-    private String indexCursor;
+    private String indexCursorName;
 
     // Set the splitter for Enum values. If multiple Enum values are specified - a list will be created by splitting
     // on the specified value.
@@ -171,6 +179,10 @@ public class ExtendedParameters {
         return paginationFirstPageName;
     }
 
+    public String getPaginationLastPageName() {
+        return paginationLastPageName;
+    }
+
     public List<String> getReservedParameters() {
         return reservedParameters != null ?
                 Arrays.asList(reservedParameters.split("\\\\s*,\\\\s*")) :
@@ -181,8 +193,8 @@ public class ExtendedParameters {
         return encryptionKey;
     }
 
-    public String getIndexCursor() {
-        return indexCursor;
+    public String getIndexCursorName() {
+        return indexCursorName;
     }
 
     public String getEnumSplit() {

@@ -35,9 +35,14 @@ public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>
             return Flux.error(getException);
         }
 
-        Flux<T> result = getService().findAllExtended(extendedRequest);
-        // Add Link headers to the response
-        extendedRequest.insertPaginationHeaders(response, request);
-        return result;
+        return getService().findAllExtended(extendedRequest).doOnComplete(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        // Add Link headers to the response
+                        extendedRequest.insertHeaders(response, request);
+                    }
+                }
+        );
     }
 }

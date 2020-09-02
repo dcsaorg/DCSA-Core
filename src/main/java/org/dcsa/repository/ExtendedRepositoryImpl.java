@@ -4,10 +4,12 @@ import io.r2dbc.spi.ColumnMetadata;
 import io.r2dbc.spi.ConnectionFactory;
 import lombok.RequiredArgsConstructor;
 import org.dcsa.exception.DatabaseException;
+import org.dcsa.model.Count;
 import org.dcsa.util.ExtendedRequest;
 import org.dcsa.util.ReflectUtility;
 import org.springframework.data.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -15,6 +17,11 @@ import java.lang.reflect.InvocationTargetException;
 public class ExtendedRepositoryImpl<T> implements ExtendedRepository<T> {
 
     private final ConnectionFactory connectionFactory;
+
+    public Mono<Count> countAllExtended(final ExtendedRequest<T> extendedRequest) {
+        return DatabaseClient.create(connectionFactory)
+                .execute(extendedRequest.getCountQuery()).as(Count.class).fetch().first();
+    }
 
     public Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest) {
         return DatabaseClient.create(connectionFactory)
