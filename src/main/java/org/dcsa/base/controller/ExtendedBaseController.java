@@ -1,11 +1,11 @@
-package org.dcsa.controller;
+package org.dcsa.base.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.dcsa.base.model.GetId;
+import org.dcsa.base.service.ExtendedBaseService;
+import org.dcsa.base.util.ExtendedParameters;
+import org.dcsa.base.util.ExtendedRequest;
 import org.dcsa.exception.GetException;
-import org.dcsa.model.GetId;
-import org.dcsa.service.ExtendedBaseService;
-import org.dcsa.util.ExtendedParameters;
-import org.dcsa.util.ExtendedRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -21,7 +21,7 @@ public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>
     private ExtendedParameters extendedParameters;
 
     @Override
-    String getType() {
+    public String getType() {
         return getService().getModelClass().getSimpleName();
     }
 
@@ -36,12 +36,9 @@ public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>
         }
 
         return getService().findAllExtended(extendedRequest).doOnComplete(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        // Add Link headers to the response
-                        extendedRequest.insertHeaders(response, request);
-                    }
+                () -> {
+                    // Add Link headers to the response
+                    extendedRequest.insertHeaders(response, request);
                 }
         );
     }

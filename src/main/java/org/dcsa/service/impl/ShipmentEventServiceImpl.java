@@ -1,6 +1,7 @@
 package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.dcsa.base.service.impl.ExtendedBaseServiceImpl;
 import org.dcsa.model.ShipmentEvent;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.ShipmentEventRepository;
@@ -15,11 +16,11 @@ import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
-public class ShipmentEventServiceImpl extends ExtendedBaseServiceImpl<ShipmentEventRepository, ShipmentEventRepository, ShipmentEvent, UUID> implements ShipmentEventService {
+public class ShipmentEventServiceImpl extends ExtendedBaseServiceImpl<ShipmentEventRepository, ShipmentEvent, UUID> implements ShipmentEventService {
     private final ShipmentEventRepository shipmentEventRepository;
 
     @Override
-    ShipmentEventRepository getRepository() {
+    public ShipmentEventRepository getRepository() {
         return shipmentEventRepository;
     }
 

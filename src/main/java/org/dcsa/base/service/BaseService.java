@@ -1,4 +1,4 @@
-package org.dcsa.service;
+package org.dcsa.base.service;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

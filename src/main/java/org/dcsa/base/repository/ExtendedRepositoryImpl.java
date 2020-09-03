@@ -1,30 +1,34 @@
-package org.dcsa.repository;
+package org.dcsa.base.repository;
 
 import io.r2dbc.spi.ColumnMetadata;
-import io.r2dbc.spi.ConnectionFactory;
-import lombok.RequiredArgsConstructor;
+import org.dcsa.base.model.Count;
+import org.dcsa.base.util.ExtendedRequest;
+import org.dcsa.base.util.ReflectUtility;
 import org.dcsa.exception.DatabaseException;
-import org.dcsa.model.Count;
-import org.dcsa.util.ExtendedRequest;
-import org.dcsa.util.ReflectUtility;
 import org.springframework.data.r2dbc.core.DatabaseClient;
+import org.springframework.data.r2dbc.repository.support.SimpleR2dbcRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.InvocationTargetException;
 
-@RequiredArgsConstructor
-public class ExtendedRepositoryImpl<T> implements ExtendedRepository<T> {
+public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> implements ExtendedRepository<T, I> {
 
-    private final ConnectionFactory connectionFactory;
+    private final DatabaseClient databaseClient;
+
+    public ExtendedRepositoryImpl(org.springframework.data.relational.repository.support.MappingRelationalEntityInformation mappingRelationalEntityInformation,
+                                  org.springframework.data.r2dbc.core.R2dbcEntityTemplate r2dbcEntityTemplate, org.springframework.data.r2dbc.convert.MappingR2dbcConverter mappingR2dbcConverter) {
+        super(mappingRelationalEntityInformation, r2dbcEntityTemplate.getDatabaseClient(), mappingR2dbcConverter, null);
+        databaseClient = r2dbcEntityTemplate.getDatabaseClient();
+    }
 
     public Mono<Count> countAllExtended(final ExtendedRequest<T> extendedRequest) {
-        return DatabaseClient.create(connectionFactory)
+        return databaseClient
                 .execute(extendedRequest.getCountQuery()).as(Count.class).fetch().first();
     }
 
     public Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest) {
-        return DatabaseClient.create(connectionFactory)
+        return databaseClient
                 .execute(extendedRequest.getQuery())
                 .map((row, meta) -> {
                     // Get a new instance of the Object to return

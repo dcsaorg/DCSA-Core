@@ -1,4 +1,4 @@
-package org.dcsa.util;
+package org.dcsa.base.util;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.r2dbc.spi.Row;
@@ -58,6 +58,10 @@ public class ExtendedRequest<T> {
         this.extendedParameters = extendedParameters;
     }
 
+    public Class<T> getModelClass() {
+        return modelClass;
+    }
+
     protected boolean isCursor() {
         return isCursor != null && isCursor;
     }
@@ -110,7 +114,7 @@ public class ExtendedRequest<T> {
         }
     }
 
-    boolean doJoin(String parameter, String value, boolean fromCursor) {
+    protected boolean doJoin(String parameter, String value, boolean fromCursor) {
         return false;
     }
 

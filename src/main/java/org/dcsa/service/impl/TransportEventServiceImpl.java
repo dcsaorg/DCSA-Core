@@ -1,6 +1,7 @@
 package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.dcsa.base.service.impl.ExtendedBaseServiceImpl;
 import org.dcsa.model.TransportEvent;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.TransportEventRepository;
@@ -14,11 +15,11 @@ import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
-public class TransportEventServiceImpl extends ExtendedBaseServiceImpl<TransportEventRepository, TransportEventRepository, TransportEvent, UUID> implements TransportEventService {
+public class TransportEventServiceImpl extends ExtendedBaseServiceImpl<TransportEventRepository, TransportEvent, UUID> implements TransportEventService {
     private final TransportEventRepository transportEventRepository;
 
     @Override
-    TransportEventRepository getRepository() {
+    public TransportEventRepository getRepository() {
         return transportEventRepository;
     }
 

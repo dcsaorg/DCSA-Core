@@ -1,4 +1,4 @@
-package org.dcsa.model;
+package org.dcsa.base.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.*;

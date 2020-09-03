@@ -1,8 +1,8 @@
-package org.dcsa.service.impl;
+package org.dcsa.base.service.impl;
 
 import org.dcsa.exception.NotFoundException;
-import org.dcsa.model.GetId;
-import org.dcsa.service.BaseService;
+import org.dcsa.base.model.GetId;
+import org.dcsa.base.service.BaseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
@@ -10,8 +10,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public abstract class BaseServiceImpl<R extends R2dbcRepository<T, I>, T extends GetId<I>, I> implements BaseService<T, I> {
-    abstract R getRepository();
-    abstract String getType();
+    public abstract R getRepository();
+    public abstract String getType();
 
     @Autowired
     ApplicationContext applicationContext;

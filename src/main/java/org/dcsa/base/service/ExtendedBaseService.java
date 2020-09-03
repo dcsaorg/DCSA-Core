@@ -1,6 +1,6 @@
-package org.dcsa.service;
+package org.dcsa.base.service;
 
-import org.dcsa.util.ExtendedRequest;
+import org.dcsa.base.util.ExtendedRequest;
 import reactor.core.publisher.Flux;
 
 public interface ExtendedBaseService<T, I> extends BaseService<T, I> {

@@ -1,4 +1,4 @@
-package org.dcsa.model;
+package org.dcsa.base.model;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
