@@ -3,6 +3,8 @@ package org.dcsa.model;
 import com.fasterxml.jackson.annotation.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.dcsa.base.model.AuditBase;
+import org.dcsa.base.model.GetId;
 import org.dcsa.model.enums.EventClassifierCode;
 import org.dcsa.model.enums.EventType;
 import org.springframework.data.annotation.Id;

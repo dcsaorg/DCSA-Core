@@ -1,9 +1,9 @@
-package org.dcsa.controller;
+package org.dcsa.base.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.dcsa.base.model.GetId;
+import org.dcsa.base.service.BaseService;
 import org.dcsa.exception.*;
-import org.dcsa.model.GetId;
-import org.dcsa.service.BaseService;
 import org.springframework.data.r2dbc.BadSqlGrammarException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -13,8 +13,8 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public abstract class BaseController<S extends BaseService<T, I>, T extends GetId<I>, I> {
 
-    abstract S getService();
-    abstract String getType();
+    public abstract S getService();
+    public abstract String getType();
 
     @GetMapping("{id}")
     public Mono<T> findById(@PathVariable I id) {

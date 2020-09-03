@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
+import org.dcsa.base.util.ExtendedParameters;
+import org.dcsa.base.util.ExtendedRequest;
+import org.dcsa.base.util.Join;
+import org.dcsa.base.util.ReflectUtility;
 import org.dcsa.exception.GetException;
 import org.dcsa.model.Event;
 import org.dcsa.model.Shipment;
@@ -58,7 +62,7 @@ public class ExtendedEventRequest extends ExtendedRequest<Event> {
      * @return true if the parameter was handled, false if the parameter is not recognised
      */
     @Override
-    boolean doJoin(String parameter, String value, boolean fromCursor) {
+    protected boolean doJoin(String parameter, String value, boolean fromCursor) {
         try {
             String billOfLadingParameter = ReflectUtility.transformFromFieldNameToJsonName(Shipment.class, BILL_OF_LADING_PARAMETER);
             if (billOfLadingParameter.equals(parameter)) {

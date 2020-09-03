@@ -1,6 +1,7 @@
 package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.dcsa.base.service.impl.ExtendedBaseServiceImpl;
 import org.dcsa.model.EquipmentEvent;
 import org.dcsa.model.enums.EventType;
 import org.dcsa.repository.EquipmentEventRepository;
@@ -14,12 +15,11 @@ import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
-public class EquipmentEventServiceImpl extends ExtendedBaseServiceImpl<EquipmentEventRepository, EquipmentEventRepository, EquipmentEvent, UUID> implements EquipmentEventService {
-
+public class EquipmentEventServiceImpl extends ExtendedBaseServiceImpl<EquipmentEventRepository, EquipmentEvent, UUID> implements EquipmentEventService {
     private final EquipmentEventRepository equipmentEventRepository;
 
     @Override
-    EquipmentEventRepository getRepository() {
+    public EquipmentEventRepository getRepository() {
         return equipmentEventRepository;
     }
 

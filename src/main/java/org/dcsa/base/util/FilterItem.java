@@ -1,4 +1,4 @@
-package org.dcsa.util;
+package org.dcsa.base.util;
 
 public class FilterItem {
     String fieldName;

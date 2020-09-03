@@ -1,4 +1,4 @@
-package org.dcsa.util;
+package org.dcsa.base.util;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;

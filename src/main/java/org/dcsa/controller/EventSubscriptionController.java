@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.dcsa.base.controller.ExtendedBaseController;
 import org.dcsa.model.EventSubscription;
 import org.dcsa.service.EventSubscriptionService;
 import org.springframework.http.MediaType;
@@ -28,7 +29,7 @@ public class EventSubscriptionController extends ExtendedBaseController<EventSub
     private final EventSubscriptionService eventSubscriptionService;
 
     @Override
-    EventSubscriptionService getService() {
+    public EventSubscriptionService getService() {
         return eventSubscriptionService;
     }
 

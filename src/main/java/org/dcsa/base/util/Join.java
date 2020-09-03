@@ -1,4 +1,4 @@
-package org.dcsa.util;
+package org.dcsa.base.util;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -10,11 +10,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.dcsa.base.controller.BaseController;
 import org.dcsa.exception.GetException;
 import org.dcsa.model.*;
 import org.dcsa.service.EventService;
 import org.dcsa.util.ExtendedEventRequest;
-import org.dcsa.util.ExtendedParameters;
+import org.dcsa.base.util.ExtendedParameters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -33,17 +34,17 @@ import java.util.UUID;
 public class EventController extends BaseController<EventService, Event, UUID> {
 
     private final EventService eventService;
+    //    @Autowired
+    private final ExtendedParameters extendedParameters;
 
-    @Autowired
-    private ExtendedParameters extendedParameters;
 
     @Override
-    String getType() {
+    public String getType() {
         return getService().getModelClass().getSimpleName();
     }
 
     @Override
-    EventService getService() {
+    public EventService getService() {
         return eventService;
     }
 

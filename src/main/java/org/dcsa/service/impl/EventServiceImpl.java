@@ -1,6 +1,7 @@
 package org.dcsa.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.dcsa.base.service.impl.ExtendedBaseServiceImpl;
 import org.dcsa.exception.NotFoundException;
 import org.dcsa.model.*;
 import org.dcsa.model.enums.EventType;
@@ -17,17 +18,17 @@ import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
-public class EventServiceImpl extends ExtendedBaseServiceImpl<EventRepository, EventRepository, Event, UUID> implements EventService {
-    private final EventRepository eventRepository;
+public class EventServiceImpl extends ExtendedBaseServiceImpl<EventRepository, Event, UUID> implements EventService {
     private final ShipmentEventServiceImpl shipmentEventService;
     private final TransportEventServiceImpl transportEventService;
     private final TransportEquipmentEventServiceImpl transportEquipmentEventService;
     private final EquipmentEventServiceImpl equipmentEventService;
     private final EventSubscriptionRepository eventSubscriptionRepository;
+    private final EventRepository eventRepository;
 
 
     @Override
-    EventRepository getRepository() {
+    public EventRepository getRepository() {
         return eventRepository;
     }
 
