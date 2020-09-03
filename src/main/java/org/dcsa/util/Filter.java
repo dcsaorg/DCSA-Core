@@ -68,6 +68,10 @@ public class Filter<T> {
                 addExactFilter(fieldName, value, !"NULL".equals(value));
             } else if (Integer.class.equals(fieldType) || Long.class.equals(fieldType)) {
                 addExactFilter(fieldName, value, true);
+            } else if (Boolean.class.equals(fieldType)) {
+                addExactFilter(fieldName, value, false);
+            } else {
+                throw new GetException("Type on filter (" + parameter + ") not recognized: " + fieldType.getSimpleName());
             }
         } catch (MethodNotFoundException methodNotFoundException) {
             throw new GetException("Getter method corresponding to parameter: " + parameter + " not found!");
@@ -137,8 +141,8 @@ public class Filter<T> {
         }
     }
 
-    // Transform <, >, </, (�, �), (�, �), �, etc. to html code
-    // # $ ? /� \�
+    // Transform <, >, </, (“, “), (‘, ‘), “, etc. to html code
+    // # $ ? /” \”
     protected String sanitizeValue(String value) {
         if (value != null) {
             // More SQL injection prevention could be done
