@@ -69,7 +69,11 @@ public class Filter<T> {
             } else if (Integer.class.equals(fieldType) || Long.class.equals(fieldType)) {
                 addExactFilter(fieldName, value, true);
             } else if (Boolean.class.equals(fieldType)) {
-                addExactFilter(fieldName, value, false);
+                if ("TRUE".equals(value.toUpperCase()) || "FALSE".equals(value.toUpperCase())) {
+                    addExactFilter(fieldName, value, false);
+                } else {
+                    throw new GetException("Boolean filter value must be either: (TRUE|FALSE) - value not recognized: " + value + " on filter: " + fieldType.getSimpleName());
+                }
             } else {
                 throw new GetException("Type on filter (" + parameter + ") not recognized: " + fieldType.getSimpleName());
             }
