@@ -1,14 +1,4 @@
-# DCSA Backend
+# DCSA Core
 
-Building and running manually
------------------------------
-
-Initialize your local postgresql database as described in datamodel/README.md, then
-```
-export db_hostname=localhost
-mvn spring-boot:run
-```
-
-Building and running using docker-compose
------------------------------------------
-See docker-compose/README.md
+This repo contains the core DCSA API functionality.
+The repo is packaged as a jar, and uploaded to GitHub packages, to be downloaded via Maven
