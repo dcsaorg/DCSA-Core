@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>org.dcsa</groupId>
 	<artifactId>dcsa_core</artifactId>
-	<version>0.1.0-SNAPSHOT</version>
+	<version>0.1.0</version>
 	<packaging>jar</packaging>
 	<name>DCSA-Backend</name>
 	<description>Demo project for Spring Boot</description>
