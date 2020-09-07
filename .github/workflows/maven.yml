@@ -17,7 +17,7 @@ jobs:
           server-username: ${{ secrets.READ_REPO_USER }}
           server-password: ${{ secrets.MANAGE_PACKAGES_PAT }}
       - name: Publish package
-        run: mvn -B deploy
+        run: mvn -B deploy -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.READ_REPO_USER }}
           MAVEN_PASSWORD: ${{ secrets.MANAGE_PACKAGES_PAT }}
