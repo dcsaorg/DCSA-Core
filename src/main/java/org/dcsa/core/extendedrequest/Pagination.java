@@ -1,4 +1,4 @@
-package org.dcsa.core.util;
+package org.dcsa.core.extendedrequest;
 
 import org.dcsa.core.exception.GetException;
 
@@ -30,7 +30,7 @@ public class Pagination<T> {
     private int indexCursor;
     private int total;
 
-    protected Pagination(ExtendedRequest<T> extendedRequest, ExtendedParameters extendedParameters) {
+    public Pagination(ExtendedRequest<T> extendedRequest, ExtendedParameters extendedParameters) {
         this.extendedRequest = extendedRequest;
         this.extendedParameters = extendedParameters;
 
@@ -134,19 +134,19 @@ public class Pagination<T> {
         }
     }
 
-    protected Integer getIndexCursor() {
+    public Integer getIndexCursor() {
         return indexCursor;
     }
 
-    protected Integer getLimit() {
+    public Integer getLimit() {
         return limit;
     }
 
-    protected void setTotal(int total) {
+    public void setTotal(int total) {
         this.total = total;
     }
 
-    protected int getTotal() {
+    public int getTotal() {
         return total;
     }
 }

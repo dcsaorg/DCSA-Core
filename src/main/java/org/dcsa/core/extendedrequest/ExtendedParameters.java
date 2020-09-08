@@ -1,4 +1,4 @@
-package org.dcsa.core.util;
+package org.dcsa.core.extendedrequest;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +9,7 @@ import java.util.List;
 
 @Configuration
 public class ExtendedParameters {
+
     // ":" used as default separator between column to sort by and the direction (ASC or DESC)
     // This can be changed in the Application.yaml file to | by writing:
     // sort:
