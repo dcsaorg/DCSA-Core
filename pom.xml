@@ -8,18 +8,24 @@
 		<version>2.3.0.M4</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
+
 	<groupId>org.dcsa</groupId>
-	<artifactId>dcsa_backend</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<packaging>war</packaging>
-	<name>DCSA-Backend</name>
-	<description>Demo project for Spring Boot</description>
+	<artifactId>dcsa_core</artifactId>
+	<version>${revision}${sha1}${changelist}</version>
+	<packaging>jar</packaging>
+
+
+	<name>DCSA-Core</name>
+	<description>DCSA Reactive API Core</description>
 
 	<properties>
 		<java.version>11</java.version>
 		<springdoc.version>1.4.2</springdoc.version>
 		<rest-assured.version>4.3.1</rest-assured.version>
         <groovy.version>3.0.2</groovy.version>
+		<revision>0.2.0</revision>
+		<sha1/>
+		<changelist/>
 	</properties>
 
 	<dependencies>
@@ -100,14 +106,6 @@
 		</dependency>
 	</dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-		</plugins>
-	</build>
 
 	<repositories>
 		<repository>
@@ -128,4 +126,13 @@
 			<url>https://repo.spring.io/milestone</url>
 		</pluginRepository>
 	</pluginRepositories>
+
+	<distributionManagement>
+		<repository>
+			<id>github</id>
+			<name>GitHub OWNER Apache Maven Packages</name>
+			<url>https://maven.pkg.github.com/dcsaorg/DCSA-Core</url>
+		</repository>
+	</distributionManagement>
+
 </project>
