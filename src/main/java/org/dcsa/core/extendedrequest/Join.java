@@ -1,4 +1,4 @@
-package org.dcsa.core.util;
+package org.dcsa.core.extendedrequest;
 
 import java.util.ArrayList;
 import java.util.List;

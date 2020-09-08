@@ -1,10 +1,9 @@
 package org.dcsa.core.controller;
 
-import lombok.extern.slf4j.Slf4j;
 import org.dcsa.core.model.GetId;
 import org.dcsa.core.service.ExtendedBaseService;
-import org.dcsa.core.util.ExtendedParameters;
-import org.dcsa.core.util.ExtendedRequest;
+import org.dcsa.core.extendedrequest.ExtendedParameters;
+import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.exception.GetException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -14,7 +13,6 @@ import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
-@Slf4j
 public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>, T extends GetId<I>, I> extends BaseController<S, T, I> {
 
     @Autowired

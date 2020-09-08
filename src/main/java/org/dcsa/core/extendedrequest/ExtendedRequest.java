@@ -1,9 +1,10 @@
-package org.dcsa.core.util;
+package org.dcsa.core.extendedrequest;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
 import org.dcsa.core.exception.GetException;
+import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -41,8 +42,8 @@ import java.util.Map;
  */
 public class ExtendedRequest<T> {
 
-    protected static final String PARAMETER_SPLIT = "&";
-    private static final String CURSOR_SPLIT = "=";
+    public static final String PARAMETER_SPLIT = "&";
+    public static final String CURSOR_SPLIT = "=";
 
     protected Sort<T> sort;
     protected Pagination<T> pagination;
@@ -62,11 +63,15 @@ public class ExtendedRequest<T> {
         return modelClass;
     }
 
-    protected boolean isCursor() {
+    public ExtendedParameters getExtendedParameters() {
+        return extendedParameters;
+    }
+
+    public boolean isCursor() {
         return isCursor != null && isCursor;
     }
 
-    protected void setNoCursor() {
+    public void setNoCursor() {
         isCursor = false;
     }
 
@@ -76,36 +81,56 @@ public class ExtendedRequest<T> {
 
     public void parseParameter(Map<String, String> params, boolean fromCursor) {
         // Reset parameters
-        sort = new Sort<>(this, extendedParameters);
-        pagination = new Pagination<>(this, extendedParameters);
-        join = new Join();
-        filter = new Filter<>(this, extendedParameters);
+        resetParameters();
 
         for (Map.Entry<String, String> entry : params.entrySet()) {
             String key = entry.getKey();
-            if (!extendedParameters.getReservedParameters().contains(key)) {
+            if (!getExtendedParameters().getReservedParameters().contains(key)) {
                 parseParameter(key, entry.getValue(), fromCursor);
             }
         }
     }
 
+    public void resetParameters() {
+        sort = new Sort<>(this, getExtendedParameters());
+        pagination = new Pagination<>(this, getExtendedParameters());
+        join = new Join();
+        filter = new Filter<T>(this, getExtendedParameters());
+    }
+
+    public Filter getFilter() {
+        return filter;
+    }
+
+    public Sort getSort() {
+        return sort;
+    }
+
+    public Pagination getPagination() {
+        return pagination;
+    }
+
+    public Join getJoin() {
+        return join;
+    }
+
     private void parseParameter(String key, String value, boolean fromCursor) {
-        if (extendedParameters.getSortParameterName().equals(key)) {
+        if (getExtendedParameters().getSortParameterName().equals(key)) {
             // Parse sorting
-            sort.parseSortParameter(value, fromCursor);
-        } else if (extendedParameters.getPaginationPageSizeName().equals(key)) {
+            getSort().parseSortParameter(value, fromCursor);
+        } else if (getExtendedParameters().getPaginationPageSizeName().equals(key)) {
             // Parse limit
-            pagination.parseLimitParameter(value, fromCursor);
-        } else if (extendedParameters.getPaginationCursorName().equals(key)) {
+            getPagination().parseLimitParameter(value, fromCursor);
+        } else if (getExtendedParameters().getPaginationCursorName().equals(key)) {
             // Parse cursor
             parseCursorParameter(value);
-        } else if (extendedParameters.getIndexCursorName().equals(key) && fromCursor) {
+        } else if (getExtendedParameters().getIndexCursorName().equals(key) && fromCursor) {
             // Parse internal pagination cursor
-            pagination.parseInternalPaginationCursor(value);
+            getPagination().parseInternalPaginationCursor(value);
         } else {
             try {
                 // Parse filtering
-                filter.parseFilterParameter(key, value, fromCursor);
+                getFilter().parseFilterParameter(key, value, fromCursor);
             } catch (NoSuchFieldException noSuchFieldException) {
                 if (!doJoin(key, value, fromCursor)) {
                     throw new GetException("Filter parameter not recognized: " + key);
@@ -120,13 +145,13 @@ public class ExtendedRequest<T> {
 
     private void parseCursorParameter(String cursorValue) {
         if (isCursor != null && !isCursor) {
-            throw new GetException("Cannot use " + extendedParameters.getPaginationCursorName() + " parameter in combination with Sorting, Filtering or Limiting of the result!");
+            throw new GetException("Cannot use " + getExtendedParameters().getPaginationCursorName() + " parameter in combination with Sorting, Filtering or Limiting of the result!");
         }
 
         byte[] decodedCursor = Base64.getUrlDecoder().decode(cursorValue);
 
         // If encryption is used - decrypt the parameter
-        String encryptionKey = extendedParameters.getEncryptionKey();
+        String encryptionKey = getExtendedParameters().getEncryptionKey();
         if (encryptionKey != null) {
             decodedCursor = decrypt(encryptionKey, decodedCursor);
         }
@@ -153,25 +178,25 @@ public class ExtendedRequest<T> {
     }
 
     public void setQueryCount(Integer count) {
-        pagination.setTotal(count);
+        getPagination().setTotal(count);
     }
 
     public String getCountQuery() {
         StringBuilder sb = new StringBuilder("select count(*) from ");
         getTableName(sb);
-        join.getJoinQueryString(sb);
-        filter.getFilterQueryString(sb);
+        getJoin().getJoinQueryString(sb);
+        getFilter().getFilterQueryString(sb);
         return sb.toString();
     }
 
     public String getQuery() {
         StringBuilder sb = new StringBuilder("select * from ");
         getTableName(sb);
-        join.getJoinQueryString(sb);
-        filter.getFilterQueryString(sb);
-        sort.getSortQueryString(sb);
-        pagination.getOffsetQueryString(sb);
-        pagination.getLimitQueryString(sb);
+        getJoin().getJoinQueryString(sb);
+        getFilter().getFilterQueryString(sb);
+        getSort().getSortQueryString(sb);
+        getPagination().getOffsetQueryString(sb);
+        getPagination().getLimitQueryString(sb);
         return sb.toString();
     }
 
@@ -235,14 +260,14 @@ public class ExtendedRequest<T> {
     }
 
     protected void addPaginationHeaders(StringBuilder exposeHeaders, HttpHeaders headers, String uri) {
-        if (pagination.getLimit() != null) {
-            addPaginationHeader(uri, headers, extendedParameters.getPaginationCurrentPageName(), Pagination.PageRequest.CURRENT, exposeHeaders);
-            addPaginationHeader(uri, headers, extendedParameters.getPaginationFirstPageName(), Pagination.PageRequest.FIRST, exposeHeaders);
-            addPaginationHeader(uri, headers, extendedParameters.getPaginationPreviousPageName(), Pagination.PageRequest.PREVIOUS, exposeHeaders);
-            addPaginationHeader(uri, headers, extendedParameters.getPaginationNextPageName(), Pagination.PageRequest.NEXT, exposeHeaders);
-            addPaginationHeader(uri, headers, extendedParameters.getPaginationLastPageName(), Pagination.PageRequest.LAST, exposeHeaders);
+        if (getPagination().getLimit() != null) {
+            addPaginationHeader(uri, headers, getExtendedParameters().getPaginationCurrentPageName(), Pagination.PageRequest.CURRENT, exposeHeaders);
+            addPaginationHeader(uri, headers, getExtendedParameters().getPaginationFirstPageName(), Pagination.PageRequest.FIRST, exposeHeaders);
+            addPaginationHeader(uri, headers, getExtendedParameters().getPaginationPreviousPageName(), Pagination.PageRequest.PREVIOUS, exposeHeaders);
+            addPaginationHeader(uri, headers, getExtendedParameters().getPaginationNextPageName(), Pagination.PageRequest.NEXT, exposeHeaders);
+            addPaginationHeader(uri, headers, getExtendedParameters().getPaginationLastPageName(), Pagination.PageRequest.LAST, exposeHeaders);
         } else {
-            addPaginationHeader(uri, headers, extendedParameters.getPaginationCurrentPageName(), null, exposeHeaders);
+            addPaginationHeader(uri, headers, getExtendedParameters().getPaginationCurrentPageName(), null, exposeHeaders);
         }
     }
 
@@ -254,29 +279,29 @@ public class ExtendedRequest<T> {
         }
     }
 
-    private String getURI(ServerHttpRequest request) {
+    protected String getURI(ServerHttpRequest request) {
         return request.getURI().getScheme() + "://" + request.getURI().getRawAuthority() + request.getURI().getRawPath();
     }
 
     private String getHeaderPageCursor(Pagination.PageRequest page) {
         StringBuilder sb = new StringBuilder();
-        if (page != null && !pagination.encodePagination(sb, page)) {
+        if (page != null && !getPagination().encodePagination(sb, page)) {
             return null;
         }
-        sort.encodeSort(sb);
-        filter.encodeFilter(sb);
-        pagination.encodeLimit(sb);
+        getSort().encodeSort(sb);
+        getFilter().encodeFilter(sb);
+        getPagination().encodeLimit(sb);
         if (page == null) {
             return sb.toString();
         }
         byte[] parameters = sb.toString().getBytes(StandardCharsets.UTF_8);
 
         // If encryption is used - encrypt the parameter string
-        String encryptionKey = extendedParameters.getEncryptionKey();
+        String encryptionKey = getExtendedParameters().getEncryptionKey();
         if (encryptionKey != null) {
             parameters = encrypt(encryptionKey, parameters);
         }
-        return extendedParameters.getPaginationCursorName() + CURSOR_SPLIT + Base64.getUrlEncoder().encodeToString(parameters);
+        return getExtendedParameters().getPaginationCursorName() + CURSOR_SPLIT + Base64.getUrlEncoder().encodeToString(parameters);
     }
 
 
@@ -299,7 +324,7 @@ public class ExtendedRequest<T> {
      * @return the field name corresponding to the JSON name provided
      * @throws NoSuchFieldException if the JSON name is not found
      */
-    protected String transformFromJsonNameToFieldName(String jsonName) throws NoSuchFieldException {
+    public String transformFromJsonNameToFieldName(String jsonName) throws NoSuchFieldException {
         // Verify that the field exists on the model class and transform it from JSON-name to FieldName
         return ReflectUtility.transformFromJsonNameToFieldName(modelClass, jsonName);
     }
@@ -310,7 +335,7 @@ public class ExtendedRequest<T> {
      * @return the column name corresponding to the field name provided, specified on the class
      * @throws NoSuchFieldException if the field name is not found
      */
-    protected String transformFromFieldNameToColumnName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+    public String transformFromFieldNameToColumnName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
         if (clazz != null) {
             return ReflectUtility.transformFromFieldNameToColumnName(clazz, fieldName);
         } else {
@@ -333,7 +358,7 @@ public class ExtendedRequest<T> {
      * @return the JSON name corresponding to the field name provided, specified on the class
      * @throws NoSuchFieldException if the field name is not found
      */
-    protected String transformFromFieldNameToJsonName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+    public String transformFromFieldNameToJsonName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
         if (clazz != null) {
             return ReflectUtility.transformFromFieldNameToJsonName(clazz, fieldName);
         } else {
@@ -367,7 +392,7 @@ public class ExtendedRequest<T> {
      * @param type the type of which to find fieldNames
      * @return a list of fieldNames of type *type* on modelClass
      */
-    protected String[] getFieldNamesOfType(Class<?> type) {
+    public String[] getFieldNamesOfType(Class<?> type) {
         return ReflectUtility.getFieldNamesOfType(modelClass, type);
     }
 

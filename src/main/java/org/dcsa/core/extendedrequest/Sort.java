@@ -1,4 +1,4 @@
-package org.dcsa.core.util;
+package org.dcsa.core.extendedrequest;
 
 import org.dcsa.core.exception.GetException;
 
@@ -17,7 +17,7 @@ public class Sort<T> {
     private final ExtendedParameters extendedParameters;
     private org.springframework.data.domain.Sort sorting;
 
-    protected Sort(ExtendedRequest<T> extendedRequest, ExtendedParameters extendedParameters) {
+    public Sort(ExtendedRequest<T> extendedRequest, ExtendedParameters extendedParameters) {
         this.extendedRequest = extendedRequest;
         this.extendedParameters = extendedParameters;
     }
