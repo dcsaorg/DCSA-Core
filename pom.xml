@@ -15,8 +15,8 @@
 	<packaging>jar</packaging>
 
 
-	<name>DCSA-Backend</name>
-	<description>Demo project for Spring Boot</description>
+	<name>DCSA-Core</name>
+	<description>DCSA Reactive API Core</description>
 
 	<properties>
 		<java.version>11</java.version>
