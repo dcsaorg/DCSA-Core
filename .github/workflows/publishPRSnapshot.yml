@@ -32,10 +32,10 @@ jobs:
       - name: Set Maven version variable
         run: echo '::set-env name=MAVEN_PROJECT_VERSION::mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[''
 
-      - name: Checkout dcsaorg/DCSA-API-TNT
+      - name: Checkout dcsaorg/DCSA-TNT
         uses: actions/checkout@v2.3.1
         with:
-          repository: dcsaorg/DCSA-API-TNT
+          repository: dcsaorg/DCSA-TNT
           ref: master
           token: ${{ secrets.REPO_ACCESS_PAT }}
       - name: Build Track & Trace API
