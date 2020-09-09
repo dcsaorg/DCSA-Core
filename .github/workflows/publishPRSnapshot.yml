@@ -29,8 +29,9 @@ jobs:
       - name: Publish package
         run: mvn -B deploy -DskipTests -Dsha1=-${{ github.head_ref }} -Dchangelist=-SNAPSHOT
 
-      - name: Set Maven version variable
-        run: echo '::set-env name=MAVEN_PROJECT_VERSION::mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[''
+      - run: mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[''
+      - name: Set env
+        run: echo ::set-env name=MAVEN_PROJECT_VERSION::$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['')
 
       - name: Checkout dcsaorg/DCSA-TNT
         uses: actions/checkout@v2.3.1
@@ -38,6 +39,7 @@ jobs:
           repository: dcsaorg/DCSA-TNT
           ref: master
           token: ${{ secrets.REPO_ACCESS_PAT }}
+
       - name: Build Track & Trace API
         run: mvn package -DskipTests -Ddcsa.version=$MAVEN_PROJECT_VERSION #Get maven package that was just published
     
