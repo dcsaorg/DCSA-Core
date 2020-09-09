@@ -41,7 +41,7 @@ jobs:
           token: ${{ secrets.REPO_ACCESS_PAT }}
 
       - name: Build Track & Trace API
-        run: mvn package -DskipTests -Ddcsa.version=$MAVEN_PROJECT_VERSION -Dsha1=${{ github.head_ref }} -Dchangelist=-SNAPSHOT #Get maven package that was just published
+        run: mvn package -DskipTests -Ddcsa.version=$MAVEN_PROJECT_VERSION -Ddcsa.tag=${{ github.head_ref }} -Ddcsa.artifacttype=-SNAPSHOT #Get maven package that was just published
     
 
       - name: Build and run the microservices
