@@ -27,7 +27,7 @@ public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>
     public Flux<T> findAll(ServerHttpResponse response, ServerHttpRequest request) {
         ExtendedRequest<T> extendedRequest = new ExtendedRequest<>(extendedParameters, getService().getModelClass());
         try {
-            Map<String,String> params = request.getQueryParams().toSingleValueMap();;
+            Map<String,String> params = request.getQueryParams().toSingleValueMap();
             extendedRequest.parseParameter(params);
         } catch (GetException getException) {
             return Flux.error(getException);
