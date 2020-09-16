@@ -1,7 +1,10 @@
 # DCSA Core
 
-This repo contains the core DCSA API functionality.
-The repo is packaged as a jar, and uploaded to GitHub packages, to be downloaded via Maven
+This repository is part of DCSA's reference implementation of the API with the purpose of validating the API in practice.
+The repository contains functionality shared among different applications, i.e. the core DCSA API functionality.
+It is packaged as a jar, and uploaded to GitHub packages, to be downloaded via Maven
+
+
 
 To build manually, run:
 -----------------------------------------
