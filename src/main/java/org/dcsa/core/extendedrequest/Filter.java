@@ -126,6 +126,10 @@ public class Filter<T> {
     public void insertFilterValue(StringBuilder sb, String columnName, String value, FilterItem filter) {
         value = sanitizeValue(value);
         if (filter.isExactMatch()) {
+            if (filter.getClazz() != null && filter.getClazz() != extendedRequest.getModelClass()) {
+                extendedRequest.getTableName(filter.getClazz(), sb);
+                sb.append(".");
+            }
             sb.append(columnName).append("=");
             if (filter.isStringValue()) {
                 sb.append("'").append(value).append("'");

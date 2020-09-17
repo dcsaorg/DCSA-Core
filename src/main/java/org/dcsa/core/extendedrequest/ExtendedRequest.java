@@ -201,9 +201,13 @@ public class ExtendedRequest<T> {
     }
 
     public void getTableName(StringBuilder sb) {
-        Table table = modelClass.getAnnotation(Table.class);
+        getTableName(modelClass, sb);
+    }
+
+    public void getTableName(Class<?> clazz, StringBuilder sb) {
+        Table table = clazz.getAnnotation(Table.class);
         if (table == null) {
-            throw new GetException("@Table not defined on class:" + modelClass.getSimpleName());
+            throw new GetException("@Table not defined on class:" + clazz.getSimpleName());
         }
         sb.append(table.value());
     }
