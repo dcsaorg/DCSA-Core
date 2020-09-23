@@ -189,14 +189,26 @@ public class ExtendedRequest<T> {
         return sb.toString();
     }
 
+    public void getTableFields(StringBuilder sb) {
+        sb.append("*");
+    }
+
     public String getQuery() {
-        StringBuilder sb = new StringBuilder("select * from ");
+        StringBuilder sb = new StringBuilder("select ");
+        getTableFields(sb);
+        sb.append(" from ");
         getTableName(sb);
         getJoin().getJoinQueryString(sb);
         getFilter().getFilterQueryString(sb);
         getSort().getSortQueryString(sb);
         getPagination().getOffsetQueryString(sb);
         getPagination().getLimitQueryString(sb);
+        return sb.toString();
+    }
+
+    public String getTableName() {
+        StringBuilder sb = new StringBuilder();
+        getTableName(sb);
         return sb.toString();
     }
 
@@ -352,7 +364,7 @@ public class ExtendedRequest<T> {
      * @return the column name corresponding to the field name
      * @throws NoSuchFieldException if the field name is not found
      */
-    protected String transformFromFieldNameToColumnName(String fieldName) throws NoSuchFieldException {
+    public String transformFromFieldNameToColumnName(String fieldName) throws NoSuchFieldException {
         return ReflectUtility.transformFromFieldNameToColumnName(modelClass, fieldName);
     }
 

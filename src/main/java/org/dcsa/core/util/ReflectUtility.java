@@ -295,4 +295,14 @@ public class ReflectUtility {
             throw noSuchFieldException;
         }
     }
+
+    public static Class<?> getFieldModelClass(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+        Field field = clazz.getDeclaredField(fieldName);
+        ModelClass modelClass = field.getAnnotation(ModelClass.class);
+        if (modelClass != null) {
+            return modelClass.value();
+        } else {
+            return null;
+        }
+    }
 }

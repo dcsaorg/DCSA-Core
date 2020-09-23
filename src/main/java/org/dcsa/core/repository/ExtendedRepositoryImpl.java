@@ -16,9 +16,10 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
 
     private final DatabaseClient databaseClient;
 
-    public ExtendedRepositoryImpl(org.springframework.data.relational.repository.support.MappingRelationalEntityInformation mappingRelationalEntityInformation,
-                                  org.springframework.data.r2dbc.core.R2dbcEntityTemplate r2dbcEntityTemplate, org.springframework.data.r2dbc.convert.MappingR2dbcConverter mappingR2dbcConverter) {
-        super(mappingRelationalEntityInformation, r2dbcEntityTemplate.getDatabaseClient(), mappingR2dbcConverter, null);
+    public ExtendedRepositoryImpl(MappingRelationalEntityInformation<T, I> mappingRelationalEntityInformation,
+                                  R2dbcEntityTemplate r2dbcEntityTemplate,
+                                  MappingR2dbcConverter mappingR2dbcConverter) {
+        super(mappingRelationalEntityInformation, r2dbcEntityTemplate, mappingR2dbcConverter);
         databaseClient = r2dbcEntityTemplate.getDatabaseClient();
     }
 

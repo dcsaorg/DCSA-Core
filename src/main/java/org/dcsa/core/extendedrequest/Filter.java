@@ -41,28 +41,42 @@ public class Filter<T> {
         }
 
         try {
-            String fieldName = extendedRequest.transformFromJsonNameToFieldName(parameter);
-            Class<?> fieldType = extendedRequest.getFieldType(fieldName);
+            Class<?> modelClassToUse = null;
+            int pos = parameter.indexOf('.');
+            if (pos != -1) {
+                String className = parameter.substring(0, pos);
+                parameter = parameter.substring(pos + 1);
+                try {
+                    modelClassToUse = ReflectUtility.getFieldModelClass(extendedRequest.getModelClass(), parameter);
+                    if (modelClassToUse == null) {
+                        throw new GetException("Specified modelClass not found:" + className + " bound to fieldName:" + parameter);
+                    }
+                } catch (NoSuchFieldException noSuchFieldException) {
+                    throw new GetException("Specified field not found:" + parameter);
+                }
+            }
+            String fieldName = extendedRequest.transformFromJsonNameToFieldName(modelClassToUse, parameter);
+            Class<?> fieldType = extendedRequest.getFieldType(modelClassToUse, fieldName);
             // Test if the return type is an Enum
             if (fieldType.getEnumConstants() != null) {
                 // Return type IS Enum - split a possible list on EnumSplitter defined in extendedParameters and force exact match in filtering
                 String[] enumList = value.split(extendedParameters.getEnumSplit());
                 for (String enumItem : enumList) {
-                    addFilterItem(FilterItem.addOrGroupFilter(fieldName, enumItem, true));
+                    addFilterItem(FilterItem.addOrGroupFilter(fieldName, modelClassToUse, enumItem, true));
                 }
             } else if (String.class.equals(fieldType)) {
                 if ("NULL".equals(value)) {
-                    addFilterItem(FilterItem.addExactFilter(fieldName, value, false));
+                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, false));
                 } else {
-                    addFilterItem(FilterItem.addStringFilter(fieldName, value));
+                    addFilterItem(FilterItem.addStringFilter(fieldName, modelClassToUse, value));
                 }
             } else if (UUID.class.equals(fieldType)) {
-                addFilterItem(FilterItem.addExactFilter(fieldName, value, !"NULL".equals(value)));
+                addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, !"NULL".equals(value)));
             } else if (Integer.class.equals(fieldType) || Long.class.equals(fieldType)) {
-                addFilterItem(FilterItem.addExactFilter(fieldName, value, true));
+                addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true));
             } else if (Boolean.class.equals(fieldType)) {
                 if ("TRUE".equals(value.toUpperCase()) || "FALSE".equals(value.toUpperCase())) {
-                    addFilterItem(FilterItem.addExactFilter(fieldName, value, false));
+                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, false));
                 } else {
                     throw new GetException("Boolean filter value must be either: (TRUE|FALSE) - value not recognized: " + value + " on filter: " + fieldType.getSimpleName());
                 }
@@ -125,19 +139,20 @@ public class Filter<T> {
 
     public void insertFilterValue(StringBuilder sb, String columnName, String value, FilterItem filter) {
         value = sanitizeValue(value);
+        if (filter.getClazz() != null && filter.getClazz() != extendedRequest.getModelClass()) {
+            extendedRequest.getTableName(filter.getClazz(), sb);
+            sb.append(".");
+        }
+        sb.append(columnName);
         if (filter.isExactMatch()) {
-            if (filter.getClazz() != null && filter.getClazz() != extendedRequest.getModelClass()) {
-                extendedRequest.getTableName(filter.getClazz(), sb);
-                sb.append(".");
-            }
-            sb.append(columnName).append("=");
+            sb.append("=");
             if (filter.isStringValue()) {
                 sb.append("'").append(value).append("'");
             } else {
                 sb.append(value);
             }
         } else {
-            sb.append(columnName).append(" like '%").append(value).append("%'");
+            sb.append(" like '%").append(value).append("%'");
         }
     }
 
