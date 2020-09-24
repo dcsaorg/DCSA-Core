@@ -5,8 +5,11 @@ import org.dcsa.core.exception.DatabaseException;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.model.Count;
 import org.dcsa.core.util.ReflectUtility;
+import org.springframework.data.r2dbc.convert.MappingR2dbcConverter;
 import org.springframework.data.r2dbc.core.DatabaseClient;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.r2dbc.repository.support.SimpleR2dbcRepository;
+import org.springframework.data.relational.repository.support.MappingRelationalEntityInformation;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

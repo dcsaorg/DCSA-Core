@@ -2,6 +2,7 @@ package org.dcsa.core.util;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.dcsa.core.model.AuditBase;
+import org.dcsa.core.model.ModelClass;
 import org.springframework.data.relational.core.mapping.Column;
 
 import javax.el.MethodNotFoundException;

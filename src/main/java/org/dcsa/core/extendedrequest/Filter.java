@@ -1,6 +1,7 @@
 package org.dcsa.core.extendedrequest;
 
 import org.dcsa.core.exception.GetException;
+import org.dcsa.core.util.ReflectUtility;
 
 import javax.el.MethodNotFoundException;
 import java.util.ArrayList;
