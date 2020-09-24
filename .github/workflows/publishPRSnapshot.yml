@@ -34,7 +34,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{ secrets.REPO_ACCESS_PAT }}
-          repository: $GITHUB_REPOSITORY
+          repository: ${{ github.repository }}
           event-type: trigger-workflow-2
           client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
       
