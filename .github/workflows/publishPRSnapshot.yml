@@ -29,13 +29,35 @@ jobs:
       - name: Publish package
         run: mvn -B deploy -DskipTests -Dsha1=-${{ github.head_ref }} -Dchangelist=-SNAPSHOT
 
-      - name: Trigger next workflow
-        if: success()
-        uses: peter-evans/repository-dispatch@v1
+      - run: mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['
+      - name: Set Maven version environment variable
+        run: echo ::set-env name=MAVEN_PROJECT_VERSION::$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[')-
+
+      - name: Checkout dcsaorg/DCSA-TNT
+        uses: actions/checkout@v2.3.1
         with:
-          token: ${{ github.DCSA_PACKAGES_PAT }}
-          repository: ${{ github.repository }}
-          event-type: tnt-event
-          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
-      
+          repository: dcsaorg/DCSA-TNT
+          ref: master
+          token: ${{ secrets.REPO_ACCESS_PAT }}
+
+      - name: Build Track & Trace API
+        run: mvn package -DskipTests -Ddcsa.version=$MAVEN_PROJECT_VERSION -Ddcsa.tag=${{ github.head_ref }} -Ddcsa.artifacttype=-SNAPSHOT #Get maven package that was just published
+    
+
+      - name: Build and run the microservices
+        run: docker-compose -f docker-compose.yml up -d -V
+      - name: Checkout dcsaorg/DCSA-API-Validator
+        uses: actions/checkout@v2.3.1
+        with:
+          repository: dcsaorg/DCSA-API-Validator
+          ref: master
+          token: ${{ secrets.REPO_ACCESS_PAT }}
+      - name: Run API validator
+        run: mvn test
+        env: 
+          client_secret: ${{ secrets.AUTH0_DCSA_CLIENT_SECRET }}
+          client_id: 1qEYXCbxWvjeYS8VVm1BfnfZrP3TY9n8
+          audience: localhost
+          OAuthTokenUri: https://dcsa.eu.auth0.com/oauth/token
+          API_ROOT_URI: http://localhost:9090
     
