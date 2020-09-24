@@ -189,8 +189,14 @@ public class ExtendedRequest<T> {
         return sb.toString();
     }
 
+    public void getTableFields(StringBuilder sb) {
+        sb.append("*");
+    }
+
     public String getQuery() {
-        StringBuilder sb = new StringBuilder("select * from ");
+        StringBuilder sb = new StringBuilder("select ");
+        getTableFields(sb);
+        sb.append(" from ");
         getTableName(sb);
         getJoin().getJoinQueryString(sb);
         getFilter().getFilterQueryString(sb);
@@ -200,10 +206,20 @@ public class ExtendedRequest<T> {
         return sb.toString();
     }
 
+    public String getTableName() {
+        StringBuilder sb = new StringBuilder();
+        getTableName(sb);
+        return sb.toString();
+    }
+
     public void getTableName(StringBuilder sb) {
-        Table table = modelClass.getAnnotation(Table.class);
+        getTableName(modelClass, sb);
+    }
+
+    public void getTableName(Class<?> clazz, StringBuilder sb) {
+        Table table = clazz.getAnnotation(Table.class);
         if (table == null) {
-            throw new GetException("@Table not defined on class:" + modelClass.getSimpleName());
+            throw new GetException("@Table not defined on class:" + clazz.getSimpleName());
         }
         sb.append(table.value());
     }
@@ -348,7 +364,7 @@ public class ExtendedRequest<T> {
      * @return the column name corresponding to the field name
      * @throws NoSuchFieldException if the field name is not found
      */
-    protected String transformFromFieldNameToColumnName(String fieldName) throws NoSuchFieldException {
+    public String transformFromFieldNameToColumnName(String fieldName) throws NoSuchFieldException {
         return ReflectUtility.transformFromFieldNameToColumnName(modelClass, fieldName);
     }
 

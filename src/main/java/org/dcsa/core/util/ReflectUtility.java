@@ -2,6 +2,7 @@ package org.dcsa.core.util;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.dcsa.core.model.AuditBase;
+import org.dcsa.core.model.ModelClass;
 import org.springframework.data.relational.core.mapping.Column;
 
 import javax.el.MethodNotFoundException;
@@ -293,6 +294,16 @@ public class ReflectUtility {
                 return getFieldType(clazz, fieldName);
             }
             throw noSuchFieldException;
+        }
+    }
+
+    public static Class<?> getFieldModelClass(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+        Field field = clazz.getDeclaredField(fieldName);
+        ModelClass modelClass = field.getAnnotation(ModelClass.class);
+        if (modelClass != null) {
+            return modelClass.value();
+        } else {
+            return null;
         }
     }
 }

@@ -55,13 +55,13 @@ public abstract class BaseController<S extends BaseService<T, I>, T extends GetI
 
     // Error handling
 
-    Mono<Void> deleteMonoError() {
+    public Mono<Void> deleteMonoError() {
         return Mono.error(new DeleteException("No Id provided in " + getType() + " object"));
     }
-    Mono<T> updateMonoError() {
+    public Mono<T> updateMonoError() {
         return Mono.error(new UpdateException("Id in url does not match id in body"));
     }
-    Mono<T> createMonoError() {
+    public Mono<T> createMonoError() {
         return Mono.error(new CreateException("Id not allowed when creating a new " + getType()));
     }
 
@@ -97,7 +97,7 @@ public abstract class BaseController<S extends BaseService<T, I>, T extends GetI
     }
     @ExceptionHandler(ServerWebInputException.class)
     public void handle(ServerWebInputException ex) {
-        if (ex.getMessage().contains("Invalid UUID string:")) {
+        if (ex.getMessage() != null && ex.getMessage().contains("Invalid UUID string:")) {
                 log.warn("Invalid UUID string");
                 throw new InvalidParameterException("Input was not a valid UUID format");
         } else {

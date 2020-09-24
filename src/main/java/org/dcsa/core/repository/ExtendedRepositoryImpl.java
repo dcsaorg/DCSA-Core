@@ -1,12 +1,15 @@
 package org.dcsa.core.repository;
 
 import io.r2dbc.spi.ColumnMetadata;
-import org.dcsa.core.model.Count;
-import org.dcsa.core.extendedrequest.ExtendedRequest;
-import org.dcsa.core.util.ReflectUtility;
 import org.dcsa.core.exception.DatabaseException;
+import org.dcsa.core.extendedrequest.ExtendedRequest;
+import org.dcsa.core.model.Count;
+import org.dcsa.core.util.ReflectUtility;
+import org.springframework.data.r2dbc.convert.MappingR2dbcConverter;
 import org.springframework.data.r2dbc.core.DatabaseClient;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.r2dbc.repository.support.SimpleR2dbcRepository;
+import org.springframework.data.relational.repository.support.MappingRelationalEntityInformation;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -16,9 +19,10 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
 
     private final DatabaseClient databaseClient;
 
-    public ExtendedRepositoryImpl(org.springframework.data.relational.repository.support.MappingRelationalEntityInformation mappingRelationalEntityInformation,
-                                  org.springframework.data.r2dbc.core.R2dbcEntityTemplate r2dbcEntityTemplate, org.springframework.data.r2dbc.convert.MappingR2dbcConverter mappingR2dbcConverter) {
-        super(mappingRelationalEntityInformation, r2dbcEntityTemplate.getDatabaseClient(), mappingR2dbcConverter, null);
+    public ExtendedRepositoryImpl(MappingRelationalEntityInformation<T, I> mappingRelationalEntityInformation,
+                                  R2dbcEntityTemplate r2dbcEntityTemplate,
+                                  MappingR2dbcConverter mappingR2dbcConverter) {
+        super(mappingRelationalEntityInformation, r2dbcEntityTemplate, mappingR2dbcConverter);
         databaseClient = r2dbcEntityTemplate.getDatabaseClient();
     }
 

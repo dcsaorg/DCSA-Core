@@ -20,15 +20,15 @@ public class FilterItem {
         this.stringValue = stringValue;
     }
 
-    public static FilterItem addStringFilter(String fieldName, String value) {
-        return new FilterItem(fieldName, null, value, false, false, true);
+    public static FilterItem addStringFilter(String fieldName, Class<?> clazz, String value) {
+        return new FilterItem(fieldName, clazz, value, false, false, true);
     }
 
-    public static FilterItem addExactFilter(String fieldName, String value, boolean stringValue) {
-        return new FilterItem(fieldName, null, value, true, false, stringValue);
+    public static FilterItem addExactFilter(String fieldName, Class<?> clazz, String value, boolean stringValue) {
+        return new FilterItem(fieldName, clazz, value, true, false, stringValue);
     }
 
-    public static FilterItem addOrGroupFilter(String fieldName, String value, boolean exactMatch) {
-        return new FilterItem(fieldName, null, value, exactMatch, true, true);
+    public static FilterItem addOrGroupFilter(String fieldName, Class<?> clazz, String value, boolean exactMatch) {
+        return new FilterItem(fieldName, clazz, value, exactMatch, true, true);
     }
 }
