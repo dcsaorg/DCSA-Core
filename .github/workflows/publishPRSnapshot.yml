@@ -33,9 +33,9 @@ jobs:
         if: success()
         uses: peter-evans/repository-dispatch@v1
         with:
-          token: ${{ github.TOKEN }}
+          token: ${{ github.DCSA_PACKAGES_PAT }}
           repository: ${{ github.repository }}
-          event-type: trigger-workflow-2
+          event-type: tnt-event
           client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
       
     

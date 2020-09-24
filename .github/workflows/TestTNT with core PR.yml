@@ -2,7 +2,7 @@ name: Run TNT tests with Core from PR
 
 on:
   repository_dispatch:
-    types: [trigger-workflow-2]
+    types: [tnt-event]
 
 jobs:
   publish:
