@@ -1,0 +1,63 @@
+name: Run TNT tests on core PR
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Java JDK
+        uses: actions/setup-java@v1.3.0
+        with:
+          java-version: 11
+      - name: Set up Maven Central Repository
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+          server-id: github
+          server-username: ${{ secrets.DCSA_USER }}
+          server-password: ${{ secrets.DCSA_PACKAGES_PAT }}
+      - name: maven-settings-xml-action
+        uses: whelk-io/maven-settings-xml-action@v12
+        with:
+          repositories: '[{ "id": "github", "name": "DCSA Backend repo", "url": "https://maven.pkg.github.com/dcsaorg/DCSA-Core", "releases": { "enabled": "false" }, "snapshots": { "enabled": "true" } }]'
+          servers: '[{ "id": "github", "username": "${{ secrets.DCSA_USER }}", "password": "${{ secrets.DCSA_PACKAGES_PAT }}" }]'    
+      
+      - name: Publish package
+        run: mvn -B deploy -DskipTests -Dsha1=-${{ github.head_ref }} -Dchangelist=-SNAPSHOT
+
+      - run: mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['
+      - name: Set Maven version environment variable
+        run: echo ::set-env name=MAVEN_PROJECT_VERSION::$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[')-
+
+      - name: Checkout dcsaorg/DCSA-TNT
+        uses: actions/checkout@v2.3.1
+        with:
+          repository: dcsaorg/DCSA-TNT
+          ref: master
+          token: ${{ secrets.REPO_ACCESS_PAT }}
+
+      - name: Build Track & Trace API
+        run: mvn package -DskipTests -Ddcsa.version=$MAVEN_PROJECT_VERSION -Ddcsa.tag=${{ github.head_ref }} -Ddcsa.artifacttype=-SNAPSHOT #Get maven package that was just published
+    
+
+      - name: Build and run the microservices
+        run: docker-compose -f docker-compose.yml up -d -V
+      - name: Checkout dcsaorg/DCSA-API-Validator
+        uses: actions/checkout@v2.3.1
+        with:
+          repository: dcsaorg/DCSA-API-Validator
+          ref: master
+          token: ${{ secrets.REPO_ACCESS_PAT }}
+      - name: Run API validator
+        run: mvn test
+        env: 
+          client_secret: ${{ secrets.AUTH0_DCSA_CLIENT_SECRET }}
+          client_id: 1qEYXCbxWvjeYS8VVm1BfnfZrP3TY9n8
+          audience: localhost
+          OAuthTokenUri: https://dcsa.eu.auth0.com/oauth/token
+          API_ROOT_URI: http://localhost:9090
+    
