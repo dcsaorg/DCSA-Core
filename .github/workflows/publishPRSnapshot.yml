@@ -29,10 +29,6 @@ jobs:
       - name: Publish package
         run: mvn -B deploy -DskipTests -Dsha1=-${{ github.head_ref }} -Dchangelist=-SNAPSHOT
 
-      - run: mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['
-      - name: Set Maven version environment variable
-        run: echo ::set-env name=MAVEN_PROJECT_VERSION::$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[')-
-
       - name: Trigger next workflow
         if: success()
         uses: peter-evans/repository-dispatch@v1
