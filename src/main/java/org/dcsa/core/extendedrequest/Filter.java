@@ -85,7 +85,7 @@ public class Filter<T> {
                 String columnName = extendedRequest.transformFromFieldNameToColumnName(filter.getClazz(), filter.getFieldName());
                 String value = filter.getFieldValue();
                 if (!first) {
-                    flag = manageSortGroup(sb, filter.isOrGroup(), flag);
+                    flag = manageFilterGroup(sb, filter.isOrGroup(), flag);
                 } else {
                     first = false;
                     sb.append(" WHERE ");
@@ -94,7 +94,7 @@ public class Filter<T> {
                         flag = true;
                     }
                 }
-                insertSortValue(sb, columnName, value, filter);
+                insertFilterValue(sb, columnName, value, filter);
             } catch (NoSuchFieldException noSuchFieldException) {
                 throw new GetException("Cannot map fieldName: " + filter.getFieldName() + " to a database column name when creating internal sql filter");
             }
@@ -104,7 +104,7 @@ public class Filter<T> {
         }
     }
 
-    public boolean manageSortGroup(StringBuilder sb, boolean orGroup, boolean flag) {
+    public boolean manageFilterGroup(StringBuilder sb, boolean orGroup, boolean flag) {
         if (orGroup) {
             if (flag) {
                 sb.append(" OR ");
@@ -123,7 +123,7 @@ public class Filter<T> {
         return flag;
     }
 
-    public void insertSortValue(StringBuilder sb, String columnName, String value, FilterItem filter) {
+    public void insertFilterValue(StringBuilder sb, String columnName, String value, FilterItem filter) {
         value = sanitizeValue(value);
         if (filter.isExactMatch()) {
             sb.append(columnName).append("=");
@@ -141,14 +141,18 @@ public class Filter<T> {
     // # $ ? /” \”
     protected String sanitizeValue(String value) {
         if (value != null) {
+            // UUID's don't need to be sanitized
+            if (value.matches("[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}")) {
+                return value;
+            }
             // More SQL injection prevention could be done
+            value = value.replaceAll("#", "&#35;");
             value = value.replaceAll("-", "&#45;");
             value = value.replaceAll("<", "&#lt;");
             value = value.replaceAll(">", "&#gt;");
             value = value.replaceAll("\\)", "&#40;");
             value = value.replaceAll("\\(", "&#41;");
             value = value.replaceAll("'", "&#apos;");
-            value = value.replaceAll("#", "&#35;");
             value = value.replaceAll("\\$", "&#44;");
             value = value.replaceAll("\\?", "&#63;");
             value = value.replaceAll("\\\\", "&#92;");
