@@ -4,6 +4,9 @@ import org.dcsa.core.exception.GetException;
 import org.dcsa.core.util.ReflectUtility;
 
 import javax.el.MethodNotFoundException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -73,6 +76,10 @@ public class Filter<T> {
                 }
             } else if (UUID.class.equals(fieldType)) {
                 addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, !"NULL".equals(value)));
+            } else if (LocalDate.class.equals(fieldType)) {
+                addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true));
+            } else if (LocalDateTime.class.equals(fieldType) || OffsetDateTime.class.equals(fieldType)) {
+                addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true));
             } else if (Integer.class.equals(fieldType) || Long.class.equals(fieldType)) {
                 addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true));
             } else if (Boolean.class.equals(fieldType)) {
@@ -161,8 +168,11 @@ public class Filter<T> {
     // # $ ? /” \”
     protected String sanitizeValue(String value) {
         if (value != null) {
-            // UUID's don't need to be sanitized
             if (value.matches("[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}")) {
+                // value matches a UUID - no need to be sanitized
+                return value;
+            } else if (value.matches("\\d{4}-\\d\\d-\\d\\d(T\\d\\d:\\d\\d:\\d\\d[\\+\\- ]\\d\\d:\\d\\d)?")) {
+                // value matches a date - no need to be sanitized
                 return value;
             }
             // More SQL injection prevention could be done
