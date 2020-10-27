@@ -26,13 +26,12 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
     }
 
     public Mono<Integer> countAllExtended(final ExtendedRequest<T> extendedRequest) {
-        return databaseClient
-                .execute(extendedRequest.getCountQuery()).as(Integer.class).fetch().first();
+        return extendedRequest.getCount(databaseClient)
+                .as(Integer.class).fetch().first();
     }
 
     public Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest) {
-        return databaseClient
-                .execute(extendedRequest.getQuery())
+        return extendedRequest.getFindAll(databaseClient)
                 .map((row, meta) -> {
                     // Get a new instance of the Object to return
                     T object = extendedRequest.getModelClassInstance(row, meta);
