@@ -64,7 +64,7 @@ public class Filter<T> {
                 }
             }
             String fieldName = extendedRequest.transformFromJsonNameToFieldName(modelClassToUse, parameter);
-            if (!ReflectUtility.isFieldIgnored(modelClassToUse != null ? modelClassToUse : extendedRequest.getModelClass(), fieldName)) {
+            if (!extendedRequest.isFieldIgnored(modelClassToUse, fieldName)) {
             Class<?> fieldType = extendedRequest.getFieldType(modelClassToUse, fieldName);
             // Test if the return type is an Enum
             if (fieldType.getEnumConstants() != null) {

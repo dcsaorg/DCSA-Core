@@ -311,8 +311,8 @@ public class ReflectUtility {
      * Tests if a given field should be ignored. Returns true if JsonIgnore annotation is present on the field.
      * If there is no match in clazz it will continue with the super class until the Object.class is reached
      * @param clazz the class to investigate
-     * @param fieldName the name of the field to retrieve the type
-     * @return Class of the return type if the method is found
+     * @param fieldName the name of the field to test
+     * @return true if the Ignore annotation is on the field
      * @throws NoSuchMethodException if no method corresponding to fieldName is found
      */
     public static boolean isFieldIgnored(Class<?> clazz, String fieldName) throws NoSuchFieldException {
