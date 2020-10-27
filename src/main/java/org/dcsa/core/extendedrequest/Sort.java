@@ -84,6 +84,11 @@ public class Sort<T> {
                 String fieldName = order.getProperty();
                 try {
                     String columnName = extendedRequest.transformFromFieldNameToColumnName(fieldName);
+                    Class<?> clazz = ReflectUtility.getFieldModelClass(extendedRequest.getModelClass(), fieldName);
+                    if (clazz != null) {
+                        extendedRequest.getTableName(clazz, sb);
+                        sb.append(".");
+                    }
                     sb.append(columnName);
                 } catch (NoSuchFieldException noSuchFieldException) {
                     throw new GetException("Cannot map fieldName: " + fieldName + " to a database column name when creating internal sql sorting");
