@@ -25,6 +25,7 @@ public class Filter<T> {
     final ExtendedParameters extendedParameters;
 
     private final List<FilterItem> filters = new ArrayList<>();
+    int bindCounter = 0;
 
     protected Filter(ExtendedRequest<T> extendedRequest, ExtendedParameters extendedParameters) {
         this.extendedRequest = extendedRequest;
@@ -37,6 +38,9 @@ public class Filter<T> {
 
     public List<FilterItem> getFilters() {
         return filters;
+    }
+    public int getNewBindCounter() {
+        return ++bindCounter;
     }
 
     protected void parseFilterParameter(String parameter, String value, boolean fromCursor) throws NoSuchFieldException {
@@ -60,36 +64,42 @@ public class Filter<T> {
                 }
             }
             String fieldName = extendedRequest.transformFromJsonNameToFieldName(modelClassToUse, parameter);
+            if (!ReflectUtility.isFieldIgnored(modelClassToUse != null ? modelClassToUse : extendedRequest.getModelClass(), fieldName)) {
             Class<?> fieldType = extendedRequest.getFieldType(modelClassToUse, fieldName);
             // Test if the return type is an Enum
             if (fieldType.getEnumConstants() != null) {
                 // Return type IS Enum - split a possible list on EnumSplitter defined in extendedParameters and force exact match in filtering
                 String[] enumList = value.split(extendedParameters.getEnumSplit());
                 for (String enumItem : enumList) {
-                    addFilterItem(FilterItem.addOrGroupFilter(fieldName, modelClassToUse, enumItem, true));
+                        addFilterItem(FilterItem.addOrGroupFilter(fieldName, modelClassToUse, enumItem, true, getNewBindCounter()));
                 }
             } else if (String.class.equals(fieldType)) {
                 if ("NULL".equals(value)) {
-                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, false));
+                        addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, false, getNewBindCounter()));
                 } else {
-                    addFilterItem(FilterItem.addStringFilter(fieldName, modelClassToUse, value));
+                        addFilterItem(FilterItem.addStringFilter(fieldName, modelClassToUse, value, true, getNewBindCounter()));
                 }
             } else if (UUID.class.equals(fieldType)) {
-                addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, !"NULL".equals(value)));
+                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, !"NULL".equals(value), getNewBindCounter()));
             } else if (LocalDate.class.equals(fieldType)) {
-                addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true));
+                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true, getNewBindCounter()));
             } else if (LocalDateTime.class.equals(fieldType) || OffsetDateTime.class.equals(fieldType)) {
-                addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true));
+                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true, getNewBindCounter()));
             } else if (Integer.class.equals(fieldType) || Long.class.equals(fieldType)) {
-                addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true));
+                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true, getNewBindCounter()));
             } else if (Boolean.class.equals(fieldType)) {
-                if ("TRUE".equals(value.toUpperCase()) || "FALSE".equals(value.toUpperCase())) {
-                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, false));
+                    if ("TRUE".equalsIgnoreCase(value)) {
+                        addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, Boolean.TRUE, false, getNewBindCounter()));
+                    } else if ("FALSE".equalsIgnoreCase(value)) {
+                        addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, Boolean.FALSE, false, getNewBindCounter()));
                 } else {
                     throw new GetException("Boolean filter value must be either: (TRUE|FALSE) - value not recognized: " + value + " on filter: " + fieldType.getSimpleName());
                 }
             } else {
                 throw new GetException("Type on filter (" + parameter + ") not recognized: " + fieldType.getSimpleName());
+                }
+            } else {
+                throw new GetException("Cannot filter on an Ignored field: " + parameter);
             }
         } catch (MethodNotFoundException methodNotFoundException) {
             throw new GetException("Getter method corresponding to parameter: " + parameter + " not found!");
@@ -102,10 +112,9 @@ public class Filter<T> {
     protected void getFilterQueryString(StringBuilder sb) {
         boolean first = true;
         boolean flag = false;
-        for (FilterItem filter : filters) {
+        for (FilterItem filter : getFilters()) {
             try {
                 String columnName = extendedRequest.transformFromFieldNameToColumnName(filter.getClazz(), filter.getFieldName());
-                String value = filter.getFieldValue();
                 if (!first) {
                     flag = manageFilterGroup(sb, filter.isOrGroup(), flag);
                 } else {
@@ -116,7 +125,7 @@ public class Filter<T> {
                         flag = true;
                     }
                 }
-                insertFilterValue(sb, columnName, value, filter);
+                insertFilterValue(sb, columnName, filter);
             } catch (NoSuchFieldException noSuchFieldException) {
                 throw new GetException("Cannot map fieldName: " + filter.getFieldName() + " to a database column name when creating internal sql filter");
             }
@@ -145,8 +154,7 @@ public class Filter<T> {
         return flag;
     }
 
-    public void insertFilterValue(StringBuilder sb, String columnName, String value, FilterItem filter) {
-        value = sanitizeValue(value);
+    public void insertFilterValue(StringBuilder sb, String columnName, FilterItem filter) {
         if (filter.getClazz() != null && filter.getClazz() != extendedRequest.getModelClass()) {
             extendedRequest.getTableName(filter.getClazz(), sb);
             sb.append(".");
@@ -154,42 +162,14 @@ public class Filter<T> {
         sb.append(columnName);
         if (filter.isExactMatch()) {
             sb.append("=");
-            if (filter.isStringValue()) {
-                sb.append("'").append(value).append("'");
             } else {
-                sb.append(value);
-            }
+            if (filter.isIgnoreCase()) {
+                sb.append(" ilike ");
         } else {
-            sb.append(" like '%").append(value).append("%'");
-        }
-    }
-
-    // Transform <, >, </, (“, “), (‘, ‘), “, etc. to html code
-    // # $ ? /” \”
-    protected String sanitizeValue(String value) {
-        if (value != null) {
-            if (value.matches("[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}")) {
-                // value matches a UUID - no need to be sanitized
-                return value;
-            } else if (value.matches("\\d{4}-\\d\\d-\\d\\d(T\\d\\d:\\d\\d:\\d\\d[\\+\\- ]\\d\\d:\\d\\d)?")) {
-                // value matches a date - no need to be sanitized
-                return value;
+                sb.append(" like ");
             }
-            // More SQL injection prevention could be done
-            value = value.replaceAll("#", "&#35;");
-            value = value.replaceAll("-", "&#45;");
-            value = value.replaceAll("<", "&#lt;");
-            value = value.replaceAll(">", "&#gt;");
-            value = value.replaceAll("\\)", "&#40;");
-            value = value.replaceAll("\\(", "&#41;");
-            value = value.replaceAll("'", "&#apos;");
-            value = value.replaceAll("\\$", "&#44;");
-            value = value.replaceAll("\\?", "&#63;");
-            value = value.replaceAll("\\\\", "&#92;");
-            value = value.replaceAll("/", "&#47;");
-            value = value.replaceAll("%", "&#37;");
         }
-        return value;
+        sb.append(":").append(filter.getBindName());
     }
 
     protected void encodeFilter(StringBuilder sb) {
@@ -205,7 +185,7 @@ public class Filter<T> {
                 } catch (NoSuchFieldException noSuchFieldException) {
                     throw new GetException("Cannot map fieldName: " + filter.getFieldName() + " to JSON property when creating internal filter-query parameter");
                 }
-                String fieldValue = filter.getFieldValue();
+                String fieldValue = filter.getFieldValue().toString();
                 sb.append(FILTER_SPLIT).append(fieldValue);
                 insideOrGroup = filter.isOrGroup();
             }

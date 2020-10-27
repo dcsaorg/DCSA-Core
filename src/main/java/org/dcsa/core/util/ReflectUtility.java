@@ -1,7 +1,7 @@
 package org.dcsa.core.util;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.dcsa.core.model.AuditBase;
 import org.dcsa.core.model.ModelClass;
 import org.springframework.data.relational.core.mapping.Column;
 
@@ -75,7 +75,7 @@ public class ReflectUtility {
 
         // Try the super class
         clazz = clazz.getSuperclass();
-        if (clazz != AuditBase.class) {
+        if (clazz != Object.class) {
             if (setValue(obj, clazz, columnName, valueClass, value)) {
                 return true;
             }
@@ -149,8 +149,9 @@ public class ReflectUtility {
     }
 
     /**
-     * Transforms a field name to a column name that can be used by a database query. If no @Column annotation exists
-     * then fieldName is used. If no match on clazz it will try the super class until AuditBase.class is reached
+     * Transforms a field name to a column name that can be used by a database query. If a ModelClass annotation is used
+     * then the field will be checked on the ModelClass instead of the clazz provided as parameter. If no @Column annotation exists
+     * then fieldName is used. If no match on clazz it will try the super class until Object.class is reached
      *
      * @param clazz the Class
      * @param fieldName the name to convert
@@ -160,16 +161,24 @@ public class ReflectUtility {
     public static String transformFromFieldNameToColumnName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
         try {
             Field field = clazz.getDeclaredField(fieldName);
-            Column column = field.getDeclaredAnnotation(Column.class);
-            if (column != null) {
-                return column.value();
+            ModelClass modelClass = field.getDeclaredAnnotation(ModelClass.class);
+            if (modelClass != null) {
+                if (modelClass.fieldName().length() > 0) {
+                    fieldName = modelClass.fieldName();
+                }
+                return transformFromFieldNameToColumnName(modelClass.value(), fieldName);
             } else {
-                return fieldName;
+                Column column = field.getDeclaredAnnotation(Column.class);
+                if (column != null) {
+                    return column.value();
+                } else {
+                    return fieldName;
+                }
             }
         } catch (NoSuchFieldException noSuchFieldException) {
             // Try the super class
             clazz = clazz.getSuperclass();
-            if (clazz != AuditBase.class) {
+            if (clazz != Object.class) {
                 return transformFromFieldNameToColumnName(clazz, fieldName);
             }
             throw noSuchFieldException;
@@ -178,7 +187,7 @@ public class ReflectUtility {
 
     /**
      * Transforms a field name to a JSON name that can be used as a query parameter. If no @JsonProperty annotation exists
-     * then fieldName is used. If no match on clazz it will try the super class until AuditBase.class is reached
+     * then fieldName is used. If no match on clazz it will try the super class until Object.class is reached
      *
      * @param clazz the Class
      * @param fieldName the name to convert
@@ -197,7 +206,7 @@ public class ReflectUtility {
         } catch (NoSuchFieldException noSuchFieldException) {
             // Try the super class
             clazz = clazz.getSuperclass();
-            if (clazz != AuditBase.class) {
+            if (clazz != Object.class) {
                 return transformFromFieldNameToJsonName(clazz, fieldName);
             }
             throw noSuchFieldException;
@@ -210,7 +219,7 @@ public class ReflectUtility {
      * it checks if the name corresponds to jsonName - if it does it will return the corresponding property name.
      * If all field names have been checked for a JsonProperty corresponding to the name and no matches have been found
      * it checks if there is an exact match with a property name. If so - the property name is returned.
-     * If there is no match in clazz it will continue with the super class until the AuditBase.class is reached
+     * If there is no match in clazz it will continue with the super class until the Object.class is reached
      * This method throws a NoSuchFieldException if the field does not exist
      * @param clazz the class to investigate
      * @param jsonName the json name to transform into a property name
@@ -234,7 +243,7 @@ public class ReflectUtility {
         } else {
             // Try the super class
             clazz = clazz.getSuperclass();
-            if (clazz != AuditBase.class) {
+            if (clazz != Object.class) {
                 return transformFromJsonNameToFieldName(clazz, jsonName);
             }
             // No matching fieldName - throw an exception
@@ -256,7 +265,7 @@ public class ReflectUtility {
 
     /**
      * A helper method to concatenate all field names corresponding to the type *type* on class clazz.
-     * If there is no match in clazz it will continue with the super class until the AuditBase.class is reached
+     * If there is no match in clazz it will continue with the super class until the Object.class is reached
      * @param clazz the class to investigate
      * @param type the type to look for
      * @param fieldNames the list of fieldNames with type *type* on class clazz
@@ -270,13 +279,14 @@ public class ReflectUtility {
 
         // Try the super class
         clazz = clazz.getSuperclass();
-        if (clazz != AuditBase.class) {
+        if (clazz != Object.class) {
             getFieldNamesOfType(clazz, type, fieldNames);
         }
     }
 
     /**
      * Gets the return type of the field by the name of fieldName on the class clazz
+     * If there is no match in clazz it will continue with the super class until the Object.class is reached
      * @param clazz the class to investigate
      * @param fieldName the name of the field to retrieve the type
      * @return Class of the return type if the method is found
@@ -290,20 +300,58 @@ public class ReflectUtility {
 
             // Try the super class
             clazz = clazz.getSuperclass();
-            if (clazz != AuditBase.class) {
+            if (clazz != Object.class) {
                 return getFieldType(clazz, fieldName);
             }
             throw noSuchFieldException;
         }
     }
 
+    /**
+     * Tests if a given field should be ignored. Returns true if JsonIgnore annotation is present on the field.
+     * If there is no match in clazz it will continue with the super class until the Object.class is reached
+     * @param clazz the class to investigate
+     * @param fieldName the name of the field to retrieve the type
+     * @return Class of the return type if the method is found
+     * @throws NoSuchMethodException if no method corresponding to fieldName is found
+     */
+    public static boolean isFieldIgnored(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            return field.isAnnotationPresent(JsonIgnore.class);
+        } catch (NoSuchFieldException noSuchFieldException) {
+            clazz = clazz.getSuperclass();
+            if (clazz != Object.class) {
+                return isFieldIgnored(clazz, fieldName);
+            }
+            throw noSuchFieldException;
+        }
+    }
+
+    /**
+     * Gets the return type of the field by the name of fieldName on the class specified by the ModalClass annotation
+     * If there is no match in clazz it will continue with the super class until the Object.class is reached
+     * @param clazz the class to investigate
+     * @param fieldName the name of the field to retrieve the type
+     * @return Class of the return type if the method is found
+     * @throws NoSuchMethodException if no method corresponding to fieldName is found
+     */
     public static Class<?> getFieldModelClass(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        Field field = clazz.getDeclaredField(fieldName);
-        ModelClass modelClass = field.getAnnotation(ModelClass.class);
-        if (modelClass != null) {
-            return modelClass.value();
-        } else {
-            return null;
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            ModelClass modelClass = field.getAnnotation(ModelClass.class);
+            if (modelClass != null) {
+                return modelClass.value();
+            } else {
+                return clazz;
+            }
+        } catch (NoSuchFieldException noSuchFieldException) {
+            // Try the super class
+            clazz = clazz.getSuperclass();
+            if (clazz != Object.class) {
+                return getFieldModelClass(clazz, fieldName);
+            }
+            throw noSuchFieldException;
         }
     }
 }
