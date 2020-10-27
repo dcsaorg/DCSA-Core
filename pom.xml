@@ -21,7 +21,7 @@
 		<java.version>11</java.version>
 		<rest-assured.version>4.3.1</rest-assured.version>
         <groovy.version>3.0.2</groovy.version>
-		<revision>0.3.4</revision>
+		<revision>0.5.0</revision>
 		<sha1/>
 		<changelist/>
 	</properties>
