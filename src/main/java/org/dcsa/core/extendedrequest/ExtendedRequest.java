@@ -362,6 +362,31 @@ public class ExtendedRequest<T> {
         return ReflectUtility.transformFromJsonNameToFieldName(modelClass, jsonName);
     }
 
+    /** Tests if a given field should be ignored. Returns true if JsonIgnore annotation is present on the field.
+     * @param clazz the class to use. If not provided the modelClass for this ExtendedRequest will be used
+     * @param jsonName the JSON name to test
+     * @return true if the Ignore annotation is on the field, specified on the class
+     * @throws NoSuchFieldException if the JSON name is not found
+     */
+    protected boolean isFieldIgnored(Class<?> clazz, String jsonName) throws NoSuchFieldException {
+        if (clazz != null) {
+            return ReflectUtility.isFieldIgnored(clazz, jsonName);
+        } else {
+            return isFieldIgnored(jsonName);
+        }
+    }
+
+    /** Tests if a given field should be ignored. Returns true if JsonIgnore annotation is present on the field.
+     * The modelClass of this ExtendedRequest will be used
+     * @param jsonName the JSON name to test
+     * @return true if the Ignore annotation is on the field
+     * @throws NoSuchFieldException if the JSON name is not found
+     */
+    public boolean isFieldIgnored(String jsonName) throws NoSuchFieldException {
+        // Verify that the field exists on the model class and transform it from JSON-name to FieldName
+        return ReflectUtility.isFieldIgnored(modelClass, jsonName);
+    }
+
     /** A method to convert a field name to a database column name using a specified class.
      * @param clazz the class to use. If not provided the modelClass for this ExtendedRequest will be used
      * @param fieldName the field name to convert
