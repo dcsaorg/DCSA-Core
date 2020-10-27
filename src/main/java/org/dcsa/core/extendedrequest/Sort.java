@@ -1,6 +1,7 @@
 package org.dcsa.core.extendedrequest;
 
 import org.dcsa.core.exception.GetException;
+import org.dcsa.core.util.ReflectUtility;
 
 /**
  * A class to help managing sorting parameters and ordering of the sql result.
