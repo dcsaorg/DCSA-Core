@@ -3,7 +3,6 @@ package org.dcsa.core.repository;
 import io.r2dbc.spi.ColumnMetadata;
 import org.dcsa.core.exception.DatabaseException;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
-import org.dcsa.core.model.Count;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.r2dbc.convert.MappingR2dbcConverter;
 import org.springframework.data.r2dbc.core.DatabaseClient;
@@ -26,9 +25,9 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
         databaseClient = r2dbcEntityTemplate.getDatabaseClient();
     }
 
-    public Mono<Count> countAllExtended(final ExtendedRequest<T> extendedRequest) {
+    public Mono<Integer> countAllExtended(final ExtendedRequest<T> extendedRequest) {
         return databaseClient
-                .execute(extendedRequest.getCountQuery()).as(Count.class).fetch().first();
+                .execute(extendedRequest.getCountQuery()).as(Integer.class).fetch().first();
     }
 
     public Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest) {
