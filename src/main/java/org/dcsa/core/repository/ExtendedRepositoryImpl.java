@@ -1,6 +1,7 @@
 package org.dcsa.core.repository;
 
 import io.r2dbc.spi.ColumnMetadata;
+import io.r2dbc.spi.Row;
 import org.dcsa.core.exception.DatabaseException;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.util.ReflectUtility;
@@ -41,16 +42,10 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                         ColumnMetadata columnMetadata = meta.getColumnMetadata(columnName);
                         Class<?> c = columnMetadata.getJavaType();
                         if (c != null) {
-                            // Get the value for the column
-                            Object value = row.get(columnName, c);
-                            // Set the value on the Object to return
-                            try {
-                                ReflectUtility.setValue(object, columnName, c, value);
-                            } catch (IllegalAccessException | InvocationTargetException exception) {
-                                if (!extendedRequest.ignoreUnknownProperties()) {
-                                    throw new DatabaseException("Not possible to map value to columnName:" + columnName + " on object " + object.getClass().getSimpleName(), exception);
-                                }
-                            }
+                            handleColumn(row, c, object, extendedRequest, columnName);
+                        } else if (c == null && Integer.valueOf(1186).equals(columnMetadata.getNativeTypeMetadata())) {
+                            // Handle database intervals as String
+                            handleColumn(row, String.class, object, extendedRequest, columnName);
                         } else {
                             throw new DatabaseException("Type for columnName: " + columnName + " is null");
                         }
@@ -60,5 +55,18 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                     return object;
                 })
                 .all();
+    }
+
+    private void handleColumn(Row row, Class<?> c, T object, ExtendedRequest<T> extendedRequest, String columnName) {
+        // Get the value for the column
+        Object value = row.get(columnName, c);
+        try {
+            // Set the value on the Object to return
+            ReflectUtility.setValue(object, columnName, c, value);
+        } catch (IllegalAccessException | InvocationTargetException exception) {
+            if (!extendedRequest.ignoreUnknownProperties()) {
+                throw new DatabaseException("Not possible to map value to columnName:" + columnName + " on object " + object.getClass().getSimpleName(), exception);
+            }
+        }
     }
 }
