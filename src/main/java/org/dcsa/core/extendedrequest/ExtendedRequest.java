@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
 import org.dcsa.core.exception.GetException;
+import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.http.HttpHeaders;
@@ -98,15 +99,15 @@ public class ExtendedRequest<T> {
         filter = new Filter<T>(this, getExtendedParameters());
     }
 
-    public Filter getFilter() {
+    public Filter<T> getFilter() {
         return filter;
     }
 
-    public Sort getSort() {
+    public Sort<T> getSort() {
         return sort;
     }
 
-    public Pagination getPagination() {
+    public Pagination<T> getPagination() {
         return pagination;
     }
 
@@ -175,6 +176,22 @@ public class ExtendedRequest<T> {
             }
         }
         return data;
+    }
+    public DatabaseClient.GenericExecuteSpec getCount(DatabaseClient databaseClient) {
+        DatabaseClient.GenericExecuteSpec genericExecuteSpec = databaseClient.execute(this::getCountQuery);
+        return setBinds(genericExecuteSpec);
+    }
+    public DatabaseClient.GenericExecuteSpec getFindAll(DatabaseClient databaseClient) {
+        DatabaseClient.GenericExecuteSpec genericExecuteSpec = databaseClient.execute(this::getQuery);
+        return setBinds(genericExecuteSpec);
+    }
+    private DatabaseClient.GenericExecuteSpec setBinds(DatabaseClient.GenericExecuteSpec genericExecuteSpec) {
+        for (FilterItem filterItem : getFilter().getFilters()) {
+            if (filterItem.doBind()) {
+            genericExecuteSpec = genericExecuteSpec.bind(filterItem.getBindName(), filterItem.getQueryFieldValue());
+            }
+        }
+        return genericExecuteSpec;
     }
 
     public void setQueryCount(Integer count) {
@@ -343,6 +360,31 @@ public class ExtendedRequest<T> {
     public String transformFromJsonNameToFieldName(String jsonName) throws NoSuchFieldException {
         // Verify that the field exists on the model class and transform it from JSON-name to FieldName
         return ReflectUtility.transformFromJsonNameToFieldName(modelClass, jsonName);
+    }
+
+    /** Tests if a given field should be ignored. Returns true if JsonIgnore annotation is present on the field.
+     * @param clazz the class to use. If not provided the modelClass for this ExtendedRequest will be used
+     * @param jsonName the JSON name to test
+     * @return true if the Ignore annotation is on the field, specified on the class
+     * @throws NoSuchFieldException if the JSON name is not found
+     */
+    protected boolean isFieldIgnored(Class<?> clazz, String jsonName) throws NoSuchFieldException {
+        if (clazz != null) {
+            return ReflectUtility.isFieldIgnored(clazz, jsonName);
+        } else {
+            return isFieldIgnored(jsonName);
+        }
+    }
+
+    /** Tests if a given field should be ignored. Returns true if JsonIgnore annotation is present on the field.
+     * The modelClass of this ExtendedRequest will be used
+     * @param jsonName the JSON name to test
+     * @return true if the Ignore annotation is on the field
+     * @throws NoSuchFieldException if the JSON name is not found
+     */
+    public boolean isFieldIgnored(String jsonName) throws NoSuchFieldException {
+        // Verify that the field exists on the model class and transform it from JSON-name to FieldName
+        return ReflectUtility.isFieldIgnored(modelClass, jsonName);
     }
 
     /** A method to convert a field name to a database column name using a specified class.
