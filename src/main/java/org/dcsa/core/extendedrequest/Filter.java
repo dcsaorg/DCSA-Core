@@ -4,6 +4,7 @@ import org.dcsa.core.exception.GetException;
 import org.dcsa.core.util.ReflectUtility;
 
 import javax.el.MethodNotFoundException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -65,38 +66,38 @@ public class Filter<T> {
             }
             String fieldName = extendedRequest.transformFromJsonNameToFieldName(modelClassToUse, parameter);
             if (!extendedRequest.isFieldIgnored(modelClassToUse, fieldName)) {
-            Class<?> fieldType = extendedRequest.getFieldType(modelClassToUse, fieldName);
-            // Test if the return type is an Enum
-            if (fieldType.getEnumConstants() != null) {
-                // Return type IS Enum - split a possible list on EnumSplitter defined in extendedParameters and force exact match in filtering
-                String[] enumList = value.split(extendedParameters.getEnumSplit());
-                for (String enumItem : enumList) {
-                        addFilterItem(FilterItem.addOrGroupFilter(fieldName, modelClassToUse, enumItem, true, getNewBindCounter()));
-                }
-            } else if (String.class.equals(fieldType)) {
-                if ("NULL".equals(value)) {
-                        addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, false, getNewBindCounter()));
-                } else {
-                        addFilterItem(FilterItem.addStringFilter(fieldName, modelClassToUse, value, true, getNewBindCounter()));
-                }
-            } else if (UUID.class.equals(fieldType)) {
-                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, !"NULL".equals(value), getNewBindCounter()));
-            } else if (LocalDate.class.equals(fieldType)) {
-                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true, getNewBindCounter()));
-            } else if (LocalDateTime.class.equals(fieldType) || OffsetDateTime.class.equals(fieldType)) {
-                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true, getNewBindCounter()));
-            } else if (Integer.class.equals(fieldType) || Long.class.equals(fieldType)) {
-                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, true, getNewBindCounter()));
-            } else if (Boolean.class.equals(fieldType)) {
+                Class<?> fieldType = extendedRequest.getFieldType(modelClassToUse, fieldName);
+                // Test if the return type is an Enum
+                if (fieldType.getEnumConstants() != null) {
+                    // Return type IS Enum - split a possible list on EnumSplitter defined in extendedParameters and force exact match in filtering
+                    String[] enumList = value.split(extendedParameters.getEnumSplit());
+                    for (String enumItem : enumList) {
+                            addFilterItem(FilterItem.addOrGroupFilter(fieldName, modelClassToUse, enumItem, true, getNewBindCounter()));
+                    }
+                } else if (String.class.equals(fieldType)) {
+                    if ("NULL".equals(value)) {
+                            addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, false, getNewBindCounter()));
+                    } else {
+                            addFilterItem(FilterItem.addStringFilter(fieldName, modelClassToUse, value, true, getNewBindCounter()));
+                    }
+                } else if (UUID.class.equals(fieldType)) {
+                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, !"NULL".equals(value) ? UUID.fromString(value) : value, !"NULL".equals(value), getNewBindCounter()));
+                } else if (LocalDate.class.equals(fieldType)) {
+                    addFilterItem(FilterItem.addDateFilter(fieldName, extendedRequest.getDateFormat(modelClassToUse, fieldName, false), modelClassToUse, value, true, getNewBindCounter()));
+                } else if (LocalDateTime.class.equals(fieldType) || OffsetDateTime.class.equals(fieldType)) {
+                    addFilterItem(FilterItem.addDateFilter(fieldName, extendedRequest.getDateFormat(modelClassToUse, fieldName, true), modelClassToUse, value, true, getNewBindCounter()));
+                } else if (Integer.class.equals(fieldType) || Long.class.equals(fieldType) || BigDecimal.class.equals(fieldType)) {
+                    addFilterItem(FilterItem.addNumberFilter(fieldName, modelClassToUse, value, getNewBindCounter()));
+                } else if (Boolean.class.equals(fieldType)) {
                     if ("TRUE".equalsIgnoreCase(value)) {
                         addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, Boolean.TRUE, false, getNewBindCounter()));
                     } else if ("FALSE".equalsIgnoreCase(value)) {
                         addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, Boolean.FALSE, false, getNewBindCounter()));
+                    } else {
+                        throw new GetException("Boolean filter value must be either: (TRUE|FALSE) - value not recognized: " + value + " on filter: " + fieldType.getSimpleName());
+                    }
                 } else {
-                    throw new GetException("Boolean filter value must be either: (TRUE|FALSE) - value not recognized: " + value + " on filter: " + fieldType.getSimpleName());
-                }
-            } else {
-                throw new GetException("Type on filter (" + parameter + ") not recognized: " + fieldType.getSimpleName());
+                    throw new GetException("Type on filter (" + parameter + ") not recognized: " + fieldType.getSimpleName());
                 }
             } else {
                 throw new GetException("Cannot filter on an Ignored field: " + parameter);
@@ -155,14 +156,24 @@ public class Filter<T> {
     }
 
     public void insertFilterValue(StringBuilder sb, String columnName, FilterItem filter) {
-        if (filter.getClazz() != null && filter.getClazz() != extendedRequest.getModelClass()) {
+        if (filter.getDateFormat() != null) {
+            sb.append("TO_CHAR(");
+        } else if (!filter.isStringValue() && !filter.isExactMatch()) {
+            sb.append("CAST(");
+        }
+        if (filter.getClazz() != null) {
             extendedRequest.getTableName(filter.getClazz(), sb);
             sb.append(".");
         }
         sb.append(columnName);
+        if (filter.getDateFormat() != null) {
+            sb.append(" , '").append(filter.getDateFormat()).append("')");
+        } else if (!filter.isStringValue() && !filter.isExactMatch()) {
+            sb.append(" AS VARCHAR)");
+        }
         if (filter.isExactMatch()) {
             sb.append("=");
-            } else {
+        } else {
             if (filter.isIgnoreCase()) {
                 sb.append(" ilike ");
         } else {

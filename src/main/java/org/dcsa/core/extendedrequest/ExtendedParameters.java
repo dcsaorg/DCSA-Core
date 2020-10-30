@@ -136,6 +136,22 @@ public class ExtendedParameters {
     @Value( "${enum.split:,}" )
     private String enumSplit;
 
+    // Set the format for dates when searching/filtering. This is the format that needs to match the filter expressed
+    // by the user.
+    // This can be changed in application.yaml file to "dd-mm-YYYY" by writing:
+    // search:
+    //   date: dd-mm-YYYY
+    @Value( "${search.date:YYYY-mm-dd}" )
+    private String searchableDateFormat;
+
+    // Set the format for dateTimes when searching/filtering. This is the format that needs to match the filter expressed
+    // by the user.
+    // This can be changed in application.yaml file to "dd-mm-YYYYTHH:MM:ssZ" by writing:
+    // search:
+    //   dateTime: dd-mm-YYYYTHH:MM:ssZ
+  @Value( "${search.dateTime:YYYY-mm-ddTHH:MM:ssZ}" )
+    private String searchableDateTimeFormat;
+
     public String getSortDirectionSeparator() {
         return sortDirectionSeparator;
     }
@@ -200,5 +216,13 @@ public class ExtendedParameters {
 
     public String getEnumSplit() {
         return enumSplit;
+    }
+
+    public String getSearchableDateFormat() {
+        return searchableDateFormat;
+    }
+
+    public String getSearchableDateTimeFormat() {
+        return searchableDateTimeFormat;
     }
 }
