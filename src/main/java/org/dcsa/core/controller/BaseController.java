@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
+import javax.validation.Valid;
+
 @Slf4j
 public abstract class BaseController<S extends BaseService<T, I>, T extends GetId<I>, I> {
 
@@ -17,21 +19,23 @@ public abstract class BaseController<S extends BaseService<T, I>, T extends GetI
     public abstract String getType();
 
     @GetMapping("{id}")
+    @ResponseStatus(HttpStatus.OK)
     public Mono<T> findById(@PathVariable I id) {
         return getService().findById(id);
     }
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<T> save(@RequestBody T t) {
+    public Mono<T> create(@Valid @RequestBody T t) {
         if (t.getId() != null) {
             return createMonoError();
         }
-        return getService().save(t);
+        return getService().create(t);
     }
 
     @PutMapping("{id}")
-    public Mono<T> update(@PathVariable I id, @RequestBody T t) {
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<T> update(@PathVariable I id, @Valid @RequestBody T t) {
         if (!id.equals(t.getId())) {
             return updateMonoError();
         }
@@ -53,14 +57,17 @@ public abstract class BaseController<S extends BaseService<T, I>, T extends GetI
         return getService().deleteById(id);
     }
 
+
     // Error handling
 
     public Mono<Void> deleteMonoError() {
         return Mono.error(new DeleteException("No Id provided in " + getType() + " object"));
     }
+
     public Mono<T> updateMonoError() {
         return Mono.error(new UpdateException("Id in url does not match id in body"));
     }
+
     public Mono<T> createMonoError() {
         return Mono.error(new CreateException("Id not allowed when creating a new " + getType()));
     }
@@ -98,8 +105,8 @@ public abstract class BaseController<S extends BaseService<T, I>, T extends GetI
     @ExceptionHandler(ServerWebInputException.class)
     public void handle(ServerWebInputException ex) {
         if (ex.getMessage() != null && ex.getMessage().contains("Invalid UUID string:")) {
-                log.warn("Invalid UUID string");
-                throw new InvalidParameterException("Input was not a valid UUID format");
+            log.warn("Invalid UUID string");
+            throw new InvalidParameterException("Input was not a valid UUID format");
         } else {
             log.error(this.getClass().getSimpleName());
             throw ex;

@@ -1,5 +1,6 @@
 package org.dcsa.core.util;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.dcsa.core.model.ModelClass;
@@ -350,6 +351,34 @@ public class ReflectUtility {
             clazz = clazz.getSuperclass();
             if (clazz != Object.class) {
                 return getFieldModelClass(clazz, fieldName);
+            }
+            throw noSuchFieldException;
+        }
+    }
+
+    /**
+     * Gets the date (and time) format for a date value. Looks at the JSonFormat - if that cannot be found it uses the
+     * default value provided
+     * @param clazz the class to investigate
+     * @param fieldName the name of the field to retrieve the dateFormat from
+     * @param defaultValue the default value to use if no value is set on the field
+     * @return the date format to use
+     * @throws NoSuchMethodException if no method corresponding to fieldName is found
+     */
+    public static String getDateFormat(Class<?> clazz, String fieldName, String defaultValue) throws NoSuchFieldException {
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            JsonFormat jsonFormat = field.getAnnotation(JsonFormat.class);
+            if (jsonFormat != null) {
+                return jsonFormat.pattern();
+            } else {
+                return defaultValue;
+            }
+        } catch (NoSuchFieldException noSuchFieldException) {
+            // Try the super class
+            clazz = clazz.getSuperclass();
+            if (clazz != Object.class) {
+                return getDateFormat(clazz, fieldName, defaultValue);
             }
             throw noSuchFieldException;
         }

@@ -188,7 +188,7 @@ public class ExtendedRequest<T> {
     private DatabaseClient.GenericExecuteSpec setBinds(DatabaseClient.GenericExecuteSpec genericExecuteSpec) {
         for (FilterItem filterItem : getFilter().getFilters()) {
             if (filterItem.doBind()) {
-            genericExecuteSpec = genericExecuteSpec.bind(filterItem.getBindName(), filterItem.getQueryFieldValue());
+                genericExecuteSpec = genericExecuteSpec.bind(filterItem.getBindName(), filterItem.getQueryFieldValue());
             }
         }
         return genericExecuteSpec;
@@ -475,5 +475,17 @@ public class ExtendedRequest<T> {
      */
     protected Class<?> getFieldType(String fieldName) throws NoSuchFieldException {
         return ReflectUtility.getFieldType(modelClass, fieldName);
+    }
+
+    protected String getDateFormat(Class<?> clazz, String fieldName, boolean includeTime) throws NoSuchFieldException {
+        if (clazz != null) {
+            return ReflectUtility.getDateFormat(clazz, fieldName, includeTime ? extendedParameters.getSearchableDateTimeFormat() : extendedParameters.getSearchableDateFormat());
+        } else {
+            return getDateFormat(fieldName, includeTime);
+        }
+    }
+
+    protected String getDateFormat(String fieldName, boolean includeTime) throws NoSuchFieldException {
+        return ReflectUtility.getDateFormat(modelClass, fieldName, includeTime ? extendedParameters.getSearchableDateTimeFormat() : extendedParameters.getSearchableDateFormat());
     }
 }

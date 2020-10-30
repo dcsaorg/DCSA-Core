@@ -28,6 +28,11 @@ public abstract class BaseServiceImpl<R extends R2dbcRepository<T, I>, T extends
     }
 
     @Override
+    public Mono<T> create(T t) {
+        return getRepository().save(t);
+    }
+
+    @Override
     public Mono<T> save(T t) {
         return getRepository().save(t);
     }

@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="dcsa_tnt" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
-    <module name="dcsa_tnt" />
+    <module name="DCSA TnT" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.dcsa.api.*" />
