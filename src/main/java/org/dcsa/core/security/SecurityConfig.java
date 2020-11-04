@@ -45,19 +45,16 @@ public class SecurityConfig {
         an OAuth2 Resource Server, using JWT validation.
         */
 
-        ServerHttpSecurity.AuthorizeExchangeSpec securitySpec =http.authorizeExchange();
+        ServerHttpSecurity.AuthorizeExchangeSpec securitySpec = http.authorizeExchange();
 
-        if (securityEnabled)
-        {
+        if (securityEnabled) {
             securitySpec.anyExchange().authenticated()
-                .and()
-                .oauth2ResourceServer()
-                .jwt()
-                .jwtAuthenticationConverter(new JwtAuthenticationConverter())
-               .and();
-        }
-        else
-        {
+                    .and()
+                    .oauth2ResourceServer()
+                    .jwt()
+                    .jwtAuthenticationConverter(new JwtAuthenticationConverter())
+                    .and();
+        } else {
             securitySpec.anyExchange().permitAll();
         }
         return securitySpec
