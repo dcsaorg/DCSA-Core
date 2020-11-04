@@ -1,4 +1,4 @@
-package security;
+package org.dcsa.core.security;
 
 
 import org.springframework.security.oauth2.core.OAuth2Error;
