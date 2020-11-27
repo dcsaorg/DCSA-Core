@@ -53,13 +53,15 @@ public class SecurityConfig {
                     .oauth2ResourceServer()
                     .jwt()
                     .jwtAuthenticationConverter(new JwtAuthenticationConverter())
-                    .and();
+                    .and()
+                    .and()
+                    .cors();
         } else {
-            securitySpec.anyExchange().permitAll();
+            securitySpec.anyExchange().permitAll()
+            .and()
+                    .csrf().disable();
         }
         return securitySpec
-                .and()
-                .cors()
                 .and()
                 .build();
     }
