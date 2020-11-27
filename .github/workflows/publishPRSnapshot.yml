@@ -29,4 +29,3 @@ jobs:
       - name: Publish package
         run: mvn -B deploy -DskipTests -Dsha1=-${{ github.head_ref }} -Dchangelist=-SNAPSHOT
 
-    
