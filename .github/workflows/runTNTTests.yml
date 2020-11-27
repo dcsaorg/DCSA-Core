@@ -31,7 +31,7 @@ jobs:
 
       - run: mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['
       - name: Set Maven version environment variable
-        run: echo ::set-env name=MAVEN_PROJECT_VERSION::$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[')-
+        run: export MAVEN_PROJECT_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[')-
 
       - name: Checkout dcsaorg/DCSA-TNT
         uses: actions/checkout@v2.3.1
