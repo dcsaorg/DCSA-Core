@@ -38,8 +38,10 @@ jobs:
           ref: master
           token: ${{ secrets.REPO_ACCESS_PAT }}
 
+      - name: set mvn version variable
+        run: echo "MAVEN_PROJECT_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[')-" >> $GITHUB_ENV
       - name: Build Track & Trace API
-        run: mvn package -DskipTests -Ddcsa.version=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[')- -Ddcsa.tag=${{ github.head_ref }} -Ddcsa.artifacttype=-SNAPSHOT #Get maven package that was just published
+        run: mvn package -DskipTests -Ddcsa.version=$MAVEN_PROJECT_VERSION -Ddcsa.tag=${{ github.head_ref }} -Ddcsa.artifacttype=-SNAPSHOT #Get maven package that was just published
     
 
       - name: Build and run the microservices
