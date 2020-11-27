@@ -35,7 +35,10 @@ jobs:
           repository: dcsaorg/DCSA-TNT
           ref: master
           token: ${{ secrets.REPO_ACCESS_PAT }}
-
+          
+          
+      - run: mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['
+      
       - name: set mvn version variable
         run: echo "MAVEN_PROJECT_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[')-" >> $GITHUB_ENV
       - run: echo $MAVEN_PROJECT_VERSION
