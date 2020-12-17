@@ -1,5 +1,6 @@
 package org.dcsa.core.security;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -15,6 +16,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 /**
  * Configures our application with Spring Security to restrict access to our API endpoints.
  */
+@Slf4j
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
@@ -48,6 +50,7 @@ public class SecurityConfig {
         ServerHttpSecurity.AuthorizeExchangeSpec securitySpec = http.authorizeExchange();
 
         if (securityEnabled) {
+            log.info("Security: auth0 enabled");
             securitySpec.anyExchange().authenticated()
                     .and()
                     .oauth2ResourceServer()
@@ -57,6 +60,7 @@ public class SecurityConfig {
                     .and()
                     .cors();
         } else {
+            log.info("Security: disabled - no authentication nor CRSF tokens needed");
             securitySpec.anyExchange().permitAll()
             .and()
                     .csrf().disable();
