@@ -6,10 +6,10 @@ import org.dcsa.core.exception.DatabaseException;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.r2dbc.convert.MappingR2dbcConverter;
-import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.r2dbc.repository.support.SimpleR2dbcRepository;
 import org.springframework.data.relational.repository.support.MappingRelationalEntityInformation;
+import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -28,7 +28,9 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
 
     public Mono<Integer> countAllExtended(final ExtendedRequest<T> extendedRequest) {
         return extendedRequest.getCount(databaseClient)
-                .as(Integer.class).fetch().first();
+                .map((row, metadata) -> row.get(0, Integer.class))
+                .first()
+                .defaultIfEmpty(0);
     }
 
     public Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest) {
@@ -43,7 +45,7 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                         Class<?> c = columnMetadata.getJavaType();
                         if (c != null) {
                             handleColumn(row, c, object, extendedRequest, columnName);
-                        } else if (c == null && Integer.valueOf(1186).equals(columnMetadata.getNativeTypeMetadata())) {
+                        } else if (Integer.valueOf(1186).equals(columnMetadata.getNativeTypeMetadata())) {
                             // Handle database intervals as String
                             handleColumn(row, String.class, object, extendedRequest, columnName);
                         } else {

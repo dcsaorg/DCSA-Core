@@ -4,12 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
 import org.dcsa.core.exception.GetException;
-import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.r2dbc.core.DatabaseClient;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -178,11 +178,11 @@ public class ExtendedRequest<T> {
         return data;
     }
     public DatabaseClient.GenericExecuteSpec getCount(DatabaseClient databaseClient) {
-        DatabaseClient.GenericExecuteSpec genericExecuteSpec = databaseClient.execute(this::getCountQuery);
+        DatabaseClient.GenericExecuteSpec genericExecuteSpec = databaseClient.sql(this::getCountQuery);
         return setBinds(genericExecuteSpec);
     }
     public DatabaseClient.GenericExecuteSpec getFindAll(DatabaseClient databaseClient) {
-        DatabaseClient.GenericExecuteSpec genericExecuteSpec = databaseClient.execute(this::getQuery);
+        DatabaseClient.GenericExecuteSpec genericExecuteSpec = databaseClient.sql(this::getQuery);
         return setBinds(genericExecuteSpec);
     }
     private DatabaseClient.GenericExecuteSpec setBinds(DatabaseClient.GenericExecuteSpec genericExecuteSpec) {
