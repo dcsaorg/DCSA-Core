@@ -21,7 +21,7 @@ public class ValidationUtils {
             if (vesselIMONumber.charAt(vesselIMONumber.length() - 1) == s.charAt(s.length() - 1)) {
                 return true;
             } else {
-                throw new InvalidParameterException("Invalid Vessel IMO Number. IMO number does not pass checksum - expected value: " + vesselIMONumber.charAt(vesselIMONumber.length() - 1) + " but found: " + s.charAt(s.length() - 1));
+                throw new InvalidParameterException("Invalid Vessel IMO Number. IMO number does not pass checksum - expected value: " +  s.charAt(s.length() - 1) + " but found: " + vesselIMONumber.charAt(vesselIMONumber.length() - 1));
             }
         } else {
             throw new InvalidParameterException("Invalid Vessel IMO Number. Must match 7-digits");
