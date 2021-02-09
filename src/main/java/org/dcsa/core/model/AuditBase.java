@@ -1,6 +1,7 @@
 package org.dcsa.core.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.relational.core.mapping.Column;
@@ -8,6 +9,7 @@ import reactor.util.annotation.NonNull;
 
 import java.util.Optional;
 
+@EqualsAndHashCode
 public abstract class AuditBase implements AuditorAware<String> {
 
     @NonNull
