@@ -136,20 +136,28 @@ public class ExtendedParameters {
     @Value( "${enum.split:,}" )
     private String enumSplit;
 
-    // Set the format for dates when searching/filtering. This is the format that needs to match the filter expressed
-    // by the user.
-    // This can be changed in application.yaml file to "dd-mm-YYYY" by writing:
+    // Force matching on enum types to be exact - if set to true the entire value must match the enum in order for it to
+    // match. If set to false enums will be treated like strings.
+    // This can be changed in Application.yaml fil to "TRUE" by writing:
+    // enum:
+    //   split: TRUE
+    @Value( "${enum.forceExactMatch:FALSE}" )
+    private String forceExactEnumMatch;
+
+    // Set the database format for matching dates when searching/filtering. The database value will be formatted using
+    // the specified format when matching against the user specified value.
+    // This can be changed in application.yaml file to "DD-MM-YYYY" by writing:
     // search:
-    //   date: dd-mm-YYYY
-    @Value( "${search.date:YYYY-mm-dd}" )
+    //   date: DD-MM-YYYY
+    @Value( "${search.date:YYYY-MM-DD}" )
     private String searchableDateFormat;
 
-    // Set the format for dateTimes when searching/filtering. This is the format that needs to match the filter expressed
-    // by the user.
-    // This can be changed in application.yaml file to "dd-mm-YYYYTHH:MM:ssZ" by writing:
+    // Set the database format for matching dateTimes when searching/filtering. The database value will be formatted
+    // using the specified format when matching against the user specified value.
+    // This can be changed in application.yaml file to "DD-MM-YYYY HH:MI:SS" by writing:
     // search:
-    //   dateTime: dd-mm-YYYYTHH:MM:ssZ
-  @Value( "${search.dateTime:YYYY-mm-ddTHH:MM:ssZ}" )
+    //   dateTime: dd-mm-YYYY HH:MI:SS
+    @Value( "${search.dateTime:YYYY-MM-DD HH:MI:SS}" )
     private String searchableDateTimeFormat;
 
     public String getSortDirectionSeparator() {
@@ -216,6 +224,10 @@ public class ExtendedParameters {
 
     public String getEnumSplit() {
         return enumSplit;
+    }
+
+    public boolean getForceExactEnumMatch() {
+        return "TRUE".equalsIgnoreCase(forceExactEnumMatch);
     }
 
     public String getSearchableDateFormat() {

@@ -1,17 +1,19 @@
 package org.dcsa.core.util;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.dcsa.core.model.ModelClass;
 import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import javax.el.MethodNotFoundException;
+import javax.validation.constraints.NotNull;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * A helper class with a lot of Reflection utilities
@@ -25,14 +27,14 @@ public class ReflectUtility {
      * matches, then it tries to use the field name directly. If the field is not public it tries to find a setter
      * method to use instead.
      * @param obj the object to set the value on
-     * @param columnName the name of the database column containing the value
+     * @param javaFieldName the name of the java field for the value
      * @param objClass the type of the value to set
      * @param objectValue the value
      * @throws IllegalAccessException if the setter method is not public
      * @throws InvocationTargetException if the underlying method throws an exception
      */
-    public static void setValue(Object obj, String columnName, Class<?> objClass, Object objectValue) throws IllegalAccessException, InvocationTargetException {
-        setValue(obj, obj.getClass(), columnName, objClass, objectValue);
+    public static void setValue(Object obj, String javaFieldName, Class<?> objClass, Object objectValue) throws IllegalAccessException, InvocationTargetException, NoSuchFieldException {
+        setValue(obj, obj.getClass(), javaFieldName, objClass, objectValue);
     }
 
     /**
@@ -41,49 +43,19 @@ public class ReflectUtility {
      * method to use instead.
      * @param obj the object to set the value on
      * @param clazz the class of the object to set the value on
-     * @param columnName the name of the database column containing the value
+     * @param javaFieldName the name of the field for the value
      * @param valueClass the type of the value to set
      * @param value the value
      * @throws IllegalAccessException if the setter method is not public
      * @throws InvocationTargetException if the underlying method throws an exception
      */
-    private static boolean setValue(Object obj, Class<?> clazz, String columnName, Class<?> valueClass, Object value) throws IllegalAccessException, InvocationTargetException {
-        Field[] fields = clazz.getDeclaredFields();
-        // Test for @Column annotation to match columnName of Row
-        for (Field field: fields) {
-            Column column = field.getAnnotation(Column.class);
-            if (column != null && columnName.equals(column.value())) {
-                try {
-                    field.set(obj, value);
-                } catch (IllegalAccessException illegalAccessException) {
-                    setValueUsingMethod(obj, clazz, field.getName(), valueClass, value);
-                }
-                return true;
-            }
+    private static void setValue(Object obj, Class<?> clazz, String javaFieldName, Class<?> valueClass, Object value) throws IllegalAccessException, InvocationTargetException, NoSuchFieldException {
+        Field field = getDeclaredField(clazz, javaFieldName);
+        try {
+            field.set(obj, value);
+        } catch (IllegalAccessException illegalAccessException) {
+            setValueUsingMethod(obj, clazz, field.getName(), valueClass, value);
         }
-
-        // Test for @Column annotation to match field name
-        for (Field field: fields) {
-            if (columnName.equals(field.getName())) {
-                try {
-                    field.set(obj, value);
-                } catch (IllegalAccessException illegalAccessException) {
-                    setValueUsingMethod(obj, clazz, field.getName(), valueClass, value);
-                }
-                return true;
-            }
-        }
-
-        // Try the super class
-        clazz = clazz.getSuperclass();
-        if (clazz != Object.class) {
-            if (setValue(obj, clazz, columnName, valueClass, value)) {
-                return true;
-            }
-        }
-
-        // Error if here
-        throw new IllegalAccessException("Neither the field or a @Column annotation has been found matching the name: " + columnName + " on " + obj.getClass().getSimpleName());
     }
 
     /**
@@ -150,8 +122,7 @@ public class ReflectUtility {
     }
 
     /**
-     * Transforms a field name to a column name that can be used by a database query. If a ModelClass annotation is used
-     * then the field will be checked on the ModelClass instead of the clazz provided as parameter. If no @Column annotation exists
+     * Transforms a field name to a column name that can be used by a database query. If no @Column annotation exists
      * then fieldName is used. If no match on clazz it will try the super class until Object.class is reached
      *
      * @param clazz the Class
@@ -160,29 +131,52 @@ public class ReflectUtility {
      * @throws NoSuchFieldException if fieldName does not exist on clazz
      */
     public static String transformFromFieldNameToColumnName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        try {
-            Field field = clazz.getDeclaredField(fieldName);
-            ModelClass modelClass = field.getDeclaredAnnotation(ModelClass.class);
-            if (modelClass != null) {
-                if (modelClass.fieldName().length() > 0) {
-                    fieldName = modelClass.fieldName();
-                }
-                return transformFromFieldNameToColumnName(modelClass.value(), fieldName);
+        return transformFromFieldNameToColumnName(clazz, fieldName, true);
+    }
+
+    /**
+     * Transforms a field name to a column name that can be used by a database query. If no @Column annotation exists
+     * then fieldName is used. If no match on clazz it will try the super class until Object.class is reached
+     *
+     * @param clazz the Class
+     * @param fieldName the name to convert
+     * @param preferModelClassName If true and a {@link ModelClass} annotation exists on the field, then resolve the
+     *                             column name by looking at the {@link ModelClass}.
+     * @return the database column name corresponding to fieldName
+     * @throws NoSuchFieldException if fieldName does not exist on clazz
+     */
+    public static String transformFromFieldNameToColumnName(Class<?> clazz, String fieldName, boolean preferModelClassName) throws NoSuchFieldException {
+        Field field = getDeclaredField(clazz, fieldName);
+        // Check if this field is declared on another class
+        ModelClass modelClass = field.getDeclaredAnnotation(ModelClass.class);
+        if (preferModelClassName && modelClass != null) {
+            if (modelClass.fieldName().length() > 0) {
+                fieldName = modelClass.fieldName();
+            }
+            return transformFromFieldNameToColumnName(modelClass.value(), fieldName, true);
+        } else {
+            Column column = field.getDeclaredAnnotation(Column.class);
+            if (column != null) {
+                return column.value();
             } else {
-                Column column = field.getDeclaredAnnotation(Column.class);
-                if (column != null) {
-                    return column.value();
-                } else {
-                    return fieldName;
-                }
+                return fieldName;
             }
-        } catch (NoSuchFieldException noSuchFieldException) {
-            // Try the super class
-            clazz = clazz.getSuperclass();
-            if (clazz != Object.class) {
-                return transformFromFieldNameToColumnName(clazz, fieldName);
-            }
-            throw noSuchFieldException;
+        }
+    }
+
+    /**
+     * Transforms a field to a JSON name that can be used as a query parameter. If no @JsonProperty annotation exists
+     * then field name is used.
+     *
+     * @param field the Field
+     * @return the JSON property name corresponding to fieldName
+     */
+    public static String transformFromFieldNameToJsonName(Field field) {
+        JsonProperty jsonName = field.getDeclaredAnnotation(JsonProperty.class);
+        if (jsonName != null) {
+            return jsonName.value();
+        } else {
+            return field.getName();
         }
     }
 
@@ -196,22 +190,8 @@ public class ReflectUtility {
      * @throws NoSuchFieldException if fieldName does not exist on clazz
      */
     public static String transformFromFieldNameToJsonName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        try {
-            Field field = clazz.getDeclaredField(fieldName);
-            JsonProperty jsonName = field.getDeclaredAnnotation(JsonProperty.class);
-            if (jsonName != null) {
-                return jsonName.value();
-            } else {
-                return fieldName;
-            }
-        } catch (NoSuchFieldException noSuchFieldException) {
-            // Try the super class
-            clazz = clazz.getSuperclass();
-            if (clazz != Object.class) {
-                return transformFromFieldNameToJsonName(clazz, fieldName);
-            }
-            throw noSuchFieldException;
-        }
+        Field field = getDeclaredField(clazz, fieldName);
+        return transformFromFieldNameToJsonName(field);
     }
 
     /**
@@ -285,102 +265,91 @@ public class ReflectUtility {
         }
     }
 
-    /**
-     * Gets the return type of the field by the name of fieldName on the class clazz
-     * If there is no match in clazz it will continue with the super class until the Object.class is reached
-     * @param clazz the class to investigate
-     * @param fieldName the name of the field to retrieve the type
-     * @return Class of the return type if the method is found
-     * @throws NoSuchMethodException if no method corresponding to fieldName is found
-     */
-    public static Class<?> getFieldType(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        try {
-            Field field = clazz.getDeclaredField(fieldName);
-            return field.getType();
-        } catch (NoSuchFieldException noSuchFieldException) {
-
-            // Try the super class
-            clazz = clazz.getSuperclass();
-            if (clazz != Object.class) {
-                return getFieldType(clazz, fieldName);
-            }
-            throw noSuchFieldException;
-        }
-    }
 
     /**
-     * Tests if a given field should be ignored. Returns true if JsonIgnore annotation is present on the field.
-     * If there is no match in clazz it will continue with the super class until the Object.class is reached
+     * Gets the original class corresponding to a field provided on a ModelClass annotation. This
+     * is used when combined modelClasses are in use.
+     *
      * @param clazz the class to investigate
-     * @param fieldName the name of the field to test
-     * @return true if the Ignore annotation is on the field
-     * @throws NoSuchMethodException if no method corresponding to fieldName is found
+     * @param field the field from the class clazz
+     * @return the original class of the fieldName
      */
-    public static boolean isFieldIgnored(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        try {
-            Field field = clazz.getDeclaredField(fieldName);
-            return field.isAnnotationPresent(JsonIgnore.class);
-        } catch (NoSuchFieldException noSuchFieldException) {
-            clazz = clazz.getSuperclass();
-            if (clazz != Object.class) {
-                return isFieldIgnored(clazz, fieldName);
-            }
-            throw noSuchFieldException;
-        }
-    }
-
-    /**
-     * Gets the return type of the field by the name of fieldName on the class specified by the ModalClass annotation
-     * If there is no match in clazz it will continue with the super class until the Object.class is reached
-     * @param clazz the class to investigate
-     * @param fieldName the name of the field to retrieve the type
-     * @return Class of the return type if the method is found
-     * @throws NoSuchMethodException if no method corresponding to fieldName is found
-     */
-    public static Class<?> getFieldModelClass(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        try {
-            Field field = clazz.getDeclaredField(fieldName);
-            ModelClass modelClass = field.getAnnotation(ModelClass.class);
-            if (modelClass != null) {
-                return modelClass.value();
-            } else {
-                return clazz;
-            }
-        } catch (NoSuchFieldException noSuchFieldException) {
-            // Try the super class
-            clazz = clazz.getSuperclass();
-            if (clazz != Object.class) {
-                return getFieldModelClass(clazz, fieldName);
-            }
-            throw noSuchFieldException;
+    public static Class<?> getFieldModelClass(Class<?> clazz, Field field) {
+        ModelClass modelClass = field.getAnnotation(ModelClass.class);
+        if (modelClass != null) {
+            return modelClass.value();
+        } else {
+            return clazz;
         }
     }
 
     /**
      * Gets the date (and time) format for a date value. Looks at the JSonFormat - if that cannot be found it uses the
      * default value provided
-     * @param clazz the class to investigate
-     * @param fieldName the name of the field to retrieve the dateFormat from
+     *
+     * @param field the field to retrieve the dateFormat from
      * @param defaultValue the default value to use if no value is set on the field
      * @return the date format to use
-     * @throws NoSuchMethodException if no method corresponding to fieldName is found
      */
-    public static String getDateFormat(Class<?> clazz, String fieldName, String defaultValue) throws NoSuchFieldException {
+    public static String getDateFormat(Field field, String defaultValue) {
+        JsonFormat jsonFormat = field.getAnnotation(JsonFormat.class);
+        if (jsonFormat != null) {
+            return jsonFormat.pattern();
+        } else {
+            return defaultValue;
+        }
+    }
+
+    public static @NotNull Table getTable(@NotNull Class<?> clazz) {
+        Table table = clazz.getAnnotation(Table.class);
+        if (table == null) {
+            throw new IllegalStateException("@Table not defined on " + clazz.getSimpleName() + "-class!");
+        } else {
+            return table;
+        }
+    }
+
+    /**
+     * A helper method to get a field by the name of fieldName on the class provided by clazz
+     *
+     * @param clazz the class to investigate
+     * @param fieldName the name of the field to find
+     * @return the field with the name fieldName on the class clazz
+     * @throws NoSuchFieldException if no field of the name fieldName exists on the class clazz
+     */
+    public static Field getDeclaredField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+        Objects.requireNonNull(clazz);
+        Objects.requireNonNull(fieldName);
         try {
-            Field field = clazz.getDeclaredField(fieldName);
-            JsonFormat jsonFormat = field.getAnnotation(JsonFormat.class);
-            if (jsonFormat != null) {
-                return jsonFormat.pattern();
-            } else {
-                return defaultValue;
-            }
+            return clazz.getDeclaredField(fieldName);
         } catch (NoSuchFieldException noSuchFieldException) {
             // Try the super class
             clazz = clazz.getSuperclass();
             if (clazz != Object.class) {
-                return getDateFormat(clazz, fieldName, defaultValue);
+                return getDeclaredField(clazz, fieldName);
             }
             throw noSuchFieldException;
         }
     }
+
+    public static void visitAllFields(Class<?> clazz, Predicate<Field> matching, Consumer<Field> fieldConsumer) {
+        visitAllFields(clazz, matching, fieldConsumer, new HashSet<>());
+    }
+
+    private static void visitAllFields(Class<?> clazz, Predicate<Field> matching, Consumer<Field> fieldConsumer, Set<String> seenFields) {
+        Class<?> currentClass = clazz;
+        if (matching == null) {
+            matching = (f) -> true;
+        }
+        while (currentClass != Object.class) {
+            for (Field f : currentClass.getDeclaredFields()) {
+                if (!seenFields.contains(f.getName()) && matching.test(f)) {
+                    seenFields.add(f.getName());
+                    fieldConsumer.accept(f);
+                }
+            }
+            currentClass = currentClass.getSuperclass();
+        }
+    }
+
 }
