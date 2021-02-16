@@ -1,9 +1,12 @@
 package org.dcsa.core.extendedrequest;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.dcsa.core.exception.GetException;
 import org.dcsa.core.util.ReflectUtility;
+import org.springframework.data.annotation.Transient;
 
 import javax.el.MethodNotFoundException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,6 +30,7 @@ public class Filter<T> {
 
     private final List<FilterItem> filters = new ArrayList<>();
     int bindCounter = 0;
+    int orGroupCounter = 0;
 
     protected Filter(ExtendedRequest<T> extendedRequest, ExtendedParameters extendedParameters) {
         this.extendedRequest = extendedRequest;
@@ -40,71 +44,83 @@ public class Filter<T> {
     public List<FilterItem> getFilters() {
         return filters;
     }
+
     public int getNewBindCounter() {
         return ++bindCounter;
     }
 
-    protected void parseFilterParameter(String parameter, String value, boolean fromCursor) throws NoSuchFieldException {
+    public int getOrGroupCounter() {
+        return ++orGroupCounter;
+    }
+
+    protected void parseFilterParameter(String parameter, String value, boolean fromCursor) {
+        QueryField queryField;
+        Field javaField;
+        Class<?> fieldType;
         if (extendedRequest.isCursor()) {
             throw new GetException("Cannot use Filtering while accessing a paginated result using the " + extendedParameters.getPaginationCursorName() + " parameter!");
         }
 
         try {
-            Class<?> modelClassToUse = null;
-            int pos = parameter.indexOf('.');
-            if (pos != -1) {
-                String className = parameter.substring(0, pos);
-                parameter = parameter.substring(pos + 1);
-                try {
-                    modelClassToUse = ReflectUtility.getFieldModelClass(extendedRequest.getModelClass(), parameter);
-                    if (modelClassToUse == null) {
-                        throw new GetException("Specified modelClass not found:" + className + " bound to fieldName:" + parameter);
-                    }
-                } catch (NoSuchFieldException noSuchFieldException) {
-                    throw new GetException("Specified field not found:" + parameter);
-                }
-            }
-            String fieldName = extendedRequest.transformFromJsonNameToFieldName(modelClassToUse, parameter);
-            if (!extendedRequest.isFieldIgnored(modelClassToUse, fieldName)) {
-                Class<?> fieldType = extendedRequest.getFieldType(modelClassToUse, fieldName);
-                // Test if the return type is an Enum
-                if (fieldType.getEnumConstants() != null) {
-                    // Return type IS Enum - split a possible list on EnumSplitter defined in extendedParameters and force exact match in filtering
-                    String[] enumList = value.split(extendedParameters.getEnumSplit());
-                    for (String enumItem : enumList) {
-                            addFilterItem(FilterItem.addOrGroupFilter(fieldName, modelClassToUse, enumItem, true, getNewBindCounter()));
-                    }
-                } else if (String.class.equals(fieldType)) {
-                    if ("NULL".equals(value)) {
-                            addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, value, false, getNewBindCounter()));
-                    } else {
-                            addFilterItem(FilterItem.addStringFilter(fieldName, modelClassToUse, value, true, getNewBindCounter()));
-                    }
-                } else if (UUID.class.equals(fieldType)) {
-                    addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, !"NULL".equals(value) ? UUID.fromString(value) : value, !"NULL".equals(value), getNewBindCounter()));
-                } else if (LocalDate.class.equals(fieldType)) {
-                    addFilterItem(FilterItem.addDateFilter(fieldName, extendedRequest.getDateFormat(modelClassToUse, fieldName, false), modelClassToUse, value, true, getNewBindCounter()));
-                } else if (LocalDateTime.class.equals(fieldType) || OffsetDateTime.class.equals(fieldType)) {
-                    addFilterItem(FilterItem.addDateFilter(fieldName, extendedRequest.getDateFormat(modelClassToUse, fieldName, true), modelClassToUse, value, true, getNewBindCounter()));
-                } else if (Integer.class.equals(fieldType) || Long.class.equals(fieldType) || BigDecimal.class.equals(fieldType)) {
-                    addFilterItem(FilterItem.addNumberFilter(fieldName, modelClassToUse, value, getNewBindCounter()));
-                } else if (Boolean.class.equals(fieldType)) {
-                    if ("TRUE".equalsIgnoreCase(value)) {
-                        addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, Boolean.TRUE, false, getNewBindCounter()));
-                    } else if ("FALSE".equalsIgnoreCase(value)) {
-                        addFilterItem(FilterItem.addExactFilter(fieldName, modelClassToUse, Boolean.FALSE, false, getNewBindCounter()));
-                    } else {
-                        throw new GetException("Boolean filter value must be either: (TRUE|FALSE) - value not recognized: " + value + " on filter: " + fieldType.getSimpleName());
-                    }
-                } else {
-                    throw new GetException("Type on filter (" + parameter + ") not recognized: " + fieldType.getSimpleName());
-                }
-            } else {
-                throw new GetException("Cannot filter on an Ignored field: " + parameter);
-            }
-        } catch (MethodNotFoundException methodNotFoundException) {
+            queryField = this.extendedRequest.getQueryFieldFromJsonName(parameter);
+        } catch (NoSuchFieldException e) {
             throw new GetException("Getter method corresponding to parameter: " + parameter + " not found!");
         }
+
+        javaField = queryField.getCombinedModelField();
+
+        if (javaField != null) {
+            if (javaField.isAnnotationPresent(JsonIgnore.class)) {
+                throw new GetException("Cannot filter on an Ignored field: " + parameter);
+            }
+            if (javaField.isAnnotationPresent(Transient.class)) {
+                throw new GetException("Cannot filter on a Transient field: " + parameter);
+            }
+        }
+        fieldType = queryField.getType();
+
+        if (fieldType.isEnum()) {
+            // Return type IS Enum - split a possible list on EnumSplitter (since this is an Enum - no special characters are allowed). If
+            // enumSplit value is a "," or a "|" this will work fine
+            String[] enumList = value.split(extendedParameters.getEnumSplit());
+            int orGroup = getOrGroupCounter();
+            for (String enumItem : enumList) {
+                addFilterItem(FilterItem.addOrGroupFilter(queryField, enumItem, extendedParameters.getForceExactEnumMatch(), getNewBindCounter(), orGroup));
+            }
+        } else if (String.class.equals(fieldType)) {
+            if ("NULL".equals(value)) {
+                addFilterItem(FilterItem.addExactFilter(queryField, value, false, getNewBindCounter()));
+            } else {
+                addFilterItem(FilterItem.addStringFilter(queryField, value, true, getNewBindCounter()));
+            }
+        } else if (UUID.class.equals(fieldType)) {
+            addFilterItem(FilterItem.addExactFilter(queryField, !"NULL".equals(value) ? UUID.fromString(value) : value, !"NULL".equals(value), getNewBindCounter()));
+        } else if (LocalDate.class.equals(fieldType)) {
+            String dateFormat = queryField.getDatePattern();
+            if (dateFormat == null) {
+                dateFormat = extendedParameters.getSearchableDateFormat();
+            }
+            addFilterItem(FilterItem.addDateFilter(queryField, dateFormat, value, true, getNewBindCounter()));
+        } else if (LocalDateTime.class.equals(fieldType) || OffsetDateTime.class.equals(fieldType)) {
+            String dateFormat = queryField.getDatePattern();
+            if (dateFormat == null) {
+                dateFormat = extendedParameters.getSearchableDateTimeFormat();
+            }
+            addFilterItem(FilterItem.addDateFilter(queryField, dateFormat, value, true, getNewBindCounter()));
+        } else if (Integer.class.equals(fieldType) || Long.class.equals(fieldType) || BigDecimal.class.equals(fieldType)) {
+            addFilterItem(FilterItem.addNumberFilter(queryField, value, getNewBindCounter()));
+        } else if (Boolean.class.equals(fieldType)) {
+            if ("TRUE".equalsIgnoreCase(value)) {
+                addFilterItem(FilterItem.addExactFilter(queryField, Boolean.TRUE, false, getNewBindCounter()));
+            } else if ("FALSE".equalsIgnoreCase(value)) {
+                addFilterItem(FilterItem.addExactFilter(queryField, Boolean.FALSE, false, getNewBindCounter()));
+            } else {
+                throw new GetException("Boolean filter value must be either: (TRUE|FALSE) - value not recognized: " + value + " on filter: " + fieldType.getSimpleName());
+            }
+        } else {
+            throw new GetException("Type on filter (" + parameter + ") not recognized: " + fieldType.getSimpleName());
+        }
+
         if (!fromCursor) {
             extendedRequest.setNoCursor();
         }
@@ -112,60 +128,58 @@ public class Filter<T> {
 
     protected void getFilterQueryString(StringBuilder sb) {
         boolean first = true;
-        boolean flag = false;
+        int orGroupNumber = 0;
         for (FilterItem filter : getFilters()) {
-            try {
-                String columnName = extendedRequest.transformFromFieldNameToColumnName(filter.getClazz(), filter.getFieldName());
-                if (!first) {
-                    flag = manageFilterGroup(sb, filter.isOrGroup(), flag);
-                } else {
-                    first = false;
-                    sb.append(" WHERE ");
-                    if (filter.isOrGroup()) {
-                        sb.append("(");
-                        flag = true;
-                    }
+            if (!first) {
+                orGroupNumber = manageFilterGroup(sb, filter.getOrGroup(), orGroupNumber);
+            } else {
+                first = false;
+                sb.append(" WHERE ");
+                if (filter.getOrGroup() > 0) {
+                    sb.append("(");
+                    orGroupNumber = filter.getOrGroup();
                 }
-                insertFilterValue(sb, columnName, filter);
-            } catch (NoSuchFieldException noSuchFieldException) {
-                throw new GetException("Cannot map fieldName: " + filter.getFieldName() + " to a database column name when creating internal sql filter");
             }
+            insertFilterValue(sb, filter);
         }
-        if (flag) {
+        if (orGroupNumber != 0) {
             sb.append(")");
         }
     }
 
-    public boolean manageFilterGroup(StringBuilder sb, boolean orGroup, boolean flag) {
-        if (orGroup) {
-            if (flag) {
+    public int manageFilterGroup(StringBuilder sb, int orGroup, int currentOrGroup) {
+        if (currentOrGroup > 0) {
+            // Scenario where we are inside an or-group
+            if (orGroup == currentOrGroup) {
+                // We are inside an or-group
                 sb.append(" OR ");
+            } else if (orGroup > 0){
+                // We are inside an or-group and want to start a new or-group
+                sb.append(") AND (");
             } else {
-                sb.append(" AND (");
-                return true;
+                // We are inside an or-group and no new group is starting
+                sb.append(") AND ");
             }
         } else {
-            if (flag) {
-                sb.append(") AND ");
-                return false;
+            // We are NOT inside an or group
+            if (orGroup > 0) {
+                // Scenario where we are NOT inside an or-group and want to start a new or-group
+                sb.append(" AND (");
             } else {
+                // Normal scenario without or-group
                 sb.append(" AND ");
             }
         }
-        return flag;
+        return orGroup;
     }
 
-    public void insertFilterValue(StringBuilder sb, String columnName, FilterItem filter) {
+    public void insertFilterValue(StringBuilder sb, FilterItem filter) {
         if (filter.getDateFormat() != null) {
             sb.append("TO_CHAR(");
         } else if (!filter.isStringValue() && !filter.isExactMatch()) {
             sb.append("CAST(");
         }
-        if (filter.getClazz() != null) {
-            extendedRequest.getTableName(filter.getClazz(), sb);
-            sb.append(".");
-        }
-        sb.append(columnName);
+        sb.append(filter.getQueryField().getQueryInternalName());
         if (filter.getDateFormat() != null) {
             sb.append(" , '").append(filter.getDateFormat()).append("')");
         } else if (!filter.isStringValue() && !filter.isExactMatch()) {
@@ -175,31 +189,31 @@ public class Filter<T> {
             sb.append("=");
         } else {
             if (filter.isIgnoreCase()) {
-                sb.append(" ilike ");
-        } else {
-                sb.append(" like ");
+                sb.append(" ILIKE ");
+            } else {
+                sb.append(" LIKE ");
             }
         }
         sb.append(":").append(filter.getBindName());
     }
 
     protected void encodeFilter(StringBuilder sb) {
-        boolean insideOrGroup = false;
+        int insideOrGroup = 0;
         for (FilterItem filter : filters) {
-            if (!filter.isOrGroup() || !insideOrGroup) {
+            String jsonName = filter.getQueryField().getJsonName();
+            String fieldValue = filter.getFieldValue().toString();
+            if (insideOrGroup == 0 || insideOrGroup != filter.getOrGroup()) {
                 if (sb.length() != 0) {
                     sb.append(ExtendedRequest.PARAMETER_SPLIT);
                 }
-                try {
-                    String jsonName = extendedRequest.transformFromFieldNameToJsonName(filter.getClazz(), filter.getFieldName());
-                    sb.append(jsonName);
-                } catch (NoSuchFieldException noSuchFieldException) {
-                    throw new GetException("Cannot map fieldName: " + filter.getFieldName() + " to JSON property when creating internal filter-query parameter");
-                }
-                String fieldValue = filter.getFieldValue().toString();
+                sb.append(jsonName);
                 sb.append(FILTER_SPLIT).append(fieldValue);
-                insideOrGroup = filter.isOrGroup();
+            } else {
+                // Used for multiple enum values on an enumerated fieldValue
+                sb.append(extendedParameters.getEnumSplit());
+                sb.append(fieldValue);
             }
+            insideOrGroup = filter.getOrGroup();
         }
     }
 }

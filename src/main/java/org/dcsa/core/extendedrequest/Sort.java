@@ -1,7 +1,7 @@
 package org.dcsa.core.extendedrequest;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.dcsa.core.exception.GetException;
-import org.dcsa.core.util.ReflectUtility;
 
 /**
  * A class to help managing sorting parameters and ordering of the sql result.
@@ -33,14 +33,21 @@ public class Sort<T> {
             for (String sortableValue: sortableValues) {
                 String[] fieldAndDirection = sortableValue.split(extendedParameters.getSortDirectionSeparator());
                 try {
+                    String jsonName = fieldAndDirection[0];
                     // Verify that the field exists on the model class and transform it from JSON-name to FieldName
-                    String fieldName = extendedRequest.transformFromJsonNameToFieldName(fieldAndDirection[0]);
+                    QueryField queryField = extendedRequest.getQueryFieldFromJsonName(jsonName);
+                    String internalQueryName = queryField.getQueryInternalName();
+                    extendedRequest.markQueryFieldInUse(queryField);
+
+                    if (queryField.getCombinedModelField().isAnnotationPresent(JsonIgnore.class)) {
+                        throw new GetException("Cannot sort on an Ignored field: " + jsonName);
+                    }
                     switch (fieldAndDirection.length) {
                         case 1:
                             // Direction is not specified - use ASC as default
-                            updateSort(org.springframework.data.domain.Sort.Direction.ASC, fieldName); break;
+                            updateSort(org.springframework.data.domain.Sort.Direction.ASC, internalQueryName); break;
                         case 2:
-                            updateSort(parseDirection(fieldAndDirection[1]), fieldName); break;
+                            updateSort(parseDirection(fieldAndDirection[1]), internalQueryName); break;
                         default:
                             throw new GetException("Sort parameter not correctly specified. Use - {fieldName} " + extendedParameters.getSortDirectionSeparator() + "[ASC|DESC]");
                     }
@@ -54,11 +61,11 @@ public class Sort<T> {
         }
     }
 
-    private void updateSort(org.springframework.data.domain.Sort.Direction direction, String fieldName) {
+    private void updateSort(org.springframework.data.domain.Sort.Direction direction, String internalQueryName) {
         if (sorting == null) {
-            sorting = org.springframework.data.domain.Sort.by(direction, fieldName);
+            sorting = org.springframework.data.domain.Sort.by(direction, internalQueryName);
         } else {
-            org.springframework.data.domain.Sort newSort = org.springframework.data.domain.Sort.by(direction, fieldName);
+            org.springframework.data.domain.Sort newSort = org.springframework.data.domain.Sort.by(direction, internalQueryName);
             sorting = sorting.and(newSort);
         }
     }
@@ -82,18 +89,8 @@ public class Sort<T> {
                     sb.append(", ");
                 }
                 // Verify that the field exists
-                String fieldName = order.getProperty();
-                try {
-                    String columnName = extendedRequest.transformFromFieldNameToColumnName(fieldName);
-                    Class<?> clazz = ReflectUtility.getFieldModelClass(extendedRequest.getModelClass(), fieldName);
-                    if (clazz != null) {
-                        extendedRequest.getTableName(clazz, sb);
-                        sb.append(".");
-                    }
-                    sb.append(columnName);
-                } catch (NoSuchFieldException noSuchFieldException) {
-                    throw new GetException("Cannot map fieldName: " + fieldName + " to a database column name when creating internal sql sorting");
-                }
+                String internalQueryName = order.getProperty();
+                sb.append(internalQueryName);
                 if (order.isAscending()) {
                     sb.append(" ASC");
                 } else {
@@ -116,7 +113,7 @@ public class Sort<T> {
                     sb.append(SORT_SEPARATOR);
                 }
                 try {
-                    String jsonName = extendedRequest.transformFromFieldNameToJsonName(order.getProperty());
+                    String jsonName = extendedRequest.getQueryFieldFromInternalQueryName(order.getProperty()).getJsonName();
                     sb.append(jsonName);
                 } catch (NoSuchFieldException noSuchFieldException) {
                     throw new GetException("Cannot map fieldName: " + order.getProperty() + " to JSON property when creating internal sort-query parameter");
