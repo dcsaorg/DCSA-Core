@@ -572,7 +572,6 @@ public class ExtendedRequest<T> {
                             + lhsClassFromAlias.getSimpleName() + " (via alias " + lhsJoinAlias + " ) != " + lhsModel);
                 }
 
-                lhsJoinAlias = getTableName(lhsModel);
             } else if (lhsModel == Object.class) {
                 lhsModel = primaryModelClass;
                 lhsJoinAlias = tableName;
