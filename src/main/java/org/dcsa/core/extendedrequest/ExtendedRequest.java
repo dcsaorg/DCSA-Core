@@ -122,6 +122,12 @@ public class ExtendedRequest<T> {
         for (FilterItem item : filter.getFilters()) {
             this.markQueryFieldInUse(item.getQueryField());
         }
+        finishedParsingParameters();
+    }
+
+    // For sub-classes to hook into this
+    protected void finishedParsingParameters() {
+        // Do nothing by default
     }
 
     public void resetParameters() {
