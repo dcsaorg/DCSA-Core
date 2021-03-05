@@ -1,7 +1,6 @@
 package org.dcsa.core.repository;
 
 import io.r2dbc.spi.ColumnMetadata;
-import io.r2dbc.spi.Row;
 import org.dcsa.core.exception.DatabaseException;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.extendedrequest.QueryField;
@@ -37,6 +36,11 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                 .defaultIfEmpty(0);
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Enum<?> parseEnum(Class<?> enumClass, String value) {
+        return Enum.valueOf((Class)enumClass, value);
+    }
+
     public Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest) {
         return extendedRequest.getFindAll(databaseClient)
                 .map((row, metadata) -> {
@@ -47,15 +51,19 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                     for (String columnName : metadata.getColumnNames()) {
                         ColumnMetadata columnMetadata = metadata.getColumnMetadata(columnName);
                         Class<?> c = columnMetadata.getJavaType();
-                        if (c != null) {
-                            // Get the value for the column
-                            handleColumn(row, c, object, extendedRequest, columnName);
-                        } else if (DATABASE_INTERVAL_NATIVE_TYPE.equals(columnMetadata.getNativeTypeMetadata())) {
-                            // Handle Database Intervals as Java String type
-                            handleColumn(row, String.class, object, extendedRequest, columnName);
-                        } else {
-                            throw new DatabaseException("Type for columnName: " + columnName + " is null");
+                        // Get the value for the column
+                        Object value;
+
+                        if (c == null) {
+                            if (DATABASE_INTERVAL_NATIVE_TYPE.equals(columnMetadata.getNativeTypeMetadata())) {
+                                // Handle Database Intervals as Java String type
+                                c = String.class;
+                            } else {
+                                throw new DatabaseException("Type for columnName " + columnName + " is null");
+                            }
                         }
+                        value = row.get(columnName, c);
+                        handleColumn(c, object, extendedRequest, columnName, value);
                     }
 
                     // All columns have been processed - the Object is ready to be returned
@@ -64,14 +72,19 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                 .all();
     }
 
-    private void handleColumn(Row row, Class<?> c, T object, ExtendedRequest<T> extendedRequest, String columnName) {
-        // Get the value for the column
-        Object value = row.get(columnName, c);
+    private void handleColumn(Class<?> c, T object, ExtendedRequest<T> extendedRequest, String columnName, Object value) {
         try {
             QueryField dbField = extendedRequest.getQueryFieldFromSelectName(columnName);
             Field combinedModelField = dbField.getCombinedModelField();
+            Class<?> fieldType;
             if (combinedModelField == null) {
                 throw new IllegalStateException("Internal error: Attempting to set a value without a backing field!?");
+            }
+            fieldType = combinedModelField.getType();
+            if (fieldType.isEnum() && value instanceof String) {
+                // Convert to an enum
+                value = parseEnum(fieldType, (String)value);
+                c = fieldType;
             }
             ReflectUtility.setValue(object, combinedModelField.getName(), c, value);
         } catch (IllegalAccessException | InvocationTargetException | NoSuchFieldException exception) {
