@@ -23,7 +23,6 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -89,7 +88,14 @@ public class ExtendedRequest<T> {
     }
 
     public Class<?> getPrimaryModelClass() {
-        return getRequiredAnnotation(modelClass, PrimaryModel.class).value();
+        PrimaryModel annotation = modelClass.getAnnotation(PrimaryModel.class);
+        if (annotation == null) {
+            if (modelClass.isAnnotationPresent(Table.class)) {
+                return modelClass;
+            }
+            throw new IllegalArgumentException("Missing @PrimaryModel or @Table on class " + modelClass.getSimpleName());
+        }
+        return annotation.value();
     }
 
     public ExtendedParameters getExtendedParameters() {
@@ -516,14 +522,6 @@ public class ExtendedRequest<T> {
             }
         }
         this.model2Aliases.computeIfAbsent(clazz, c -> new ArrayList<>()).add(joinAlias);
-    }
-
-    private static <A extends Annotation> A getRequiredAnnotation(Class<?> clazz, Class<A> annotationClass) {
-        A annotation = clazz.getAnnotation(annotationClass);
-        if (annotation == null) {
-            throw new IllegalArgumentException("Missing @" + annotationClass.getSimpleName() + " on class " + clazz.getSimpleName());
-        }
-        return annotation;
     }
 
     private String getColumnName(Class<?> clazz, String fieldName, String annotationVariablePrefix) {
