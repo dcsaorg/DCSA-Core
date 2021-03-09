@@ -22,4 +22,4 @@ jobs:
           repositories: '[{ "id": "github", "name": "DCSA Backend repo", "url": "https://maven.pkg.github.com/dcsaorg/DCSA-Core", "releases": { "enabled": "false" }, "snapshots": { "enabled": "true" } }]'
           servers: '[{ "id": "github", "username": "${{ secrets.DCSA_USER }}", "password": "${{ secrets.DCSA_PACKAGES_PAT }}" }]'    
       - name: Publish package
-        run: mvn -B deploy -DskipTests -Dchangelist=-SNAPSHOT
+        run: mvn -B deploy -Dchangelist=-SNAPSHOT
