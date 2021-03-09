@@ -77,7 +77,7 @@ public class ExtendedRequestTest {
                 + " JOIN customer_table AS customer_table ON order_table.customer_id=customer_table.address_id"
                 + " JOIN address_table AS customer_address ON customer_table.address_id=customer_address.address_id"
                 + " JOIN address_table AS warehouse_address ON order_table.address_id=warehouse_address.address_id";
-        String extraJoins = " JOIN city_table AS city_table ON address_table.city_id=city_table.id"
+        String extraJoins = " JOIN city_table AS city_table ON customer_address.city_id=city_table.id"
                 +  " JOIN country_table AS country_table ON city_table.country_id=country_table.id";
         request(OrderInCountry.class, extendedParameters).verify(baseQueryNoExtraJoins);
 
@@ -94,7 +94,7 @@ public class ExtendedRequestTest {
                         + " JOIN customer_table AS customer_table ON order_table.customer_id=customer_table.address_id"
                         + " JOIN address_table AS customer_address ON customer_table.address_id=customer_address.address_id"
                         + " JOIN address_table AS warehouse_address ON order_table.address_id=warehouse_address.address_id";
-        String extraJoins = " JOIN city_table AS city_table ON address_table.city_id=city_table.id"
+        String extraJoins = " JOIN city_table AS city_table ON customer_address.city_id=city_table.id"
                 +  " JOIN country_table AS country_table ON city_table.country_id=country_table.id";
         request(OrderWithEverything.class, extendedParameters).verify(baseQueryNoExtraJoins);
 
