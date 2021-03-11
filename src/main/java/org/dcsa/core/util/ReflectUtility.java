@@ -173,7 +173,7 @@ public class ReflectUtility {
      */
     public static String transformFromFieldNameToJsonName(Field field) {
         JsonProperty jsonName = field.getDeclaredAnnotation(JsonProperty.class);
-        if (jsonName != null) {
+        if (jsonName != null && !jsonName.value().equals(JsonProperty.USE_DEFAULT_NAME)) {
             return jsonName.value();
         } else {
             return field.getName();

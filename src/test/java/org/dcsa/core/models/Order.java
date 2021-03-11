@@ -1,5 +1,6 @@
 package org.dcsa.core.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -15,9 +16,13 @@ public class Order {
     @Column("orderline")
     private String orderline;
 
+    // USE_DEFAULT_NAME seems redundant here but we use it to test that
+    // we do not get an invalid "duplicate field name".
+    @JsonProperty(JsonProperty.USE_DEFAULT_NAME)
     @Column("customer_id")
     private Long receiverId;
 
+    @JsonProperty(JsonProperty.USE_DEFAULT_NAME)
     @Column("address_id")
     private Long warehouseAddressId;
 }
