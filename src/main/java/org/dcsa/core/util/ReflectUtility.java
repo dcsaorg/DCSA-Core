@@ -8,9 +8,7 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import javax.el.MethodNotFoundException;
 import javax.validation.constraints.NotNull;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -352,4 +350,26 @@ public class ReflectUtility {
         }
     }
 
+    public static <T> Class<T> getConcreteTypeVarOfSubclass(Class<?> implClass, int typeVarIndex, int expectedTypeNumber) {
+        Type genericSuperclass = implClass.getGenericSuperclass();
+        if (!(genericSuperclass instanceof ParameterizedType)) {
+            throw new IllegalStateException("Cannot automatically determine model class in " + implClass.getSimpleName());
+        }
+        ParameterizedType parameterizedType = (ParameterizedType)genericSuperclass;
+        Type[] types = parameterizedType.getActualTypeArguments();
+        if (types.length != expectedTypeNumber) {
+            throw new IllegalStateException("Cannot automatically determine model class in " + implClass.getSimpleName());
+        }
+        Type modelType = types[typeVarIndex];
+        if (!(modelType instanceof Class)) {
+            throw new IllegalStateException("Cannot automatically determine model class in " + implClass.getSimpleName());
+        }
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        Class<T> typeVar = (Class)modelType;
+        if (! typeVar.isAnnotationPresent(Table.class)) {
+            throw new IllegalStateException("Cannot automatically determine model class in " + implClass.getSimpleName()
+                    + ": Detected class " + typeVar.getSimpleName() + " does not have a @Table annotation - Please add it to the model.");
+        }
+        return typeVar;
+    }
 }
