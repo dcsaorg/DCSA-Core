@@ -1,21 +1,16 @@
 package org.dcsa.core.service.impl;
 
 import org.dcsa.core.exception.NotFoundException;
-import org.dcsa.core.model.GetId;
 import org.dcsa.core.service.BaseService;
-import org.dcsa.core.exception.NotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public abstract class BaseServiceImpl<R extends R2dbcRepository<T, I>, T extends GetId<I>, I> implements BaseService<T, I> {
+public abstract class BaseServiceImpl<R extends R2dbcRepository<T, I>, T, I> implements BaseService<T, I> {
+
     public abstract R getRepository();
     public abstract String getType();
-
-    @Autowired
-    ApplicationContext applicationContext;
+    public abstract I getIdOfEntity(T entity);
 
     @Override
     public Flux<T> findAll() {
@@ -44,7 +39,7 @@ public abstract class BaseServiceImpl<R extends R2dbcRepository<T, I>, T extends
 
     @Override
     public Mono<T> update(final T update) {
-        return findById(update.getId())
+        return findById(getIdOfEntity(update))
                 .flatMap(current -> this.preUpdateHook(current, update))
                 .flatMap(this::save);
     }
@@ -58,7 +53,7 @@ public abstract class BaseServiceImpl<R extends R2dbcRepository<T, I>, T extends
 
     @Override
     public Mono<Void> delete(T t) {
-        return findById(t.getId())
+        return findById(getIdOfEntity(t))
                 .flatMap(this::preDeleteHook)
                 .flatMap(getRepository()::delete);
     }
@@ -78,7 +73,7 @@ public abstract class BaseServiceImpl<R extends R2dbcRepository<T, I>, T extends
     /**
      * A hook for subclasses that need a hook before *any* attempt to save a newly created model instance.
      *
-     * This will be run <i>before</i> the {@link #preSaveHook(GetId)} and can contain create specific logic
+     * This will be run <i>before</i> the {@link #preSaveHook(Object)} and can contain create specific logic
      * (if any).
      *
      * @param t The instance about to saved.
@@ -92,7 +87,7 @@ public abstract class BaseServiceImpl<R extends R2dbcRepository<T, I>, T extends
     /**
      * A hook for subclasses that need a hook before *any* attempt to save an updated model instance.
      *
-     * This will be run <i>before</i> the {@link #preSaveHook(GetId)} and can contain update specific logic
+     * This will be run <i>before</i> the {@link #preSaveHook(Object)} and can contain update specific logic
      * (if any).
      *
      * @param current The copy of the instance in the database.

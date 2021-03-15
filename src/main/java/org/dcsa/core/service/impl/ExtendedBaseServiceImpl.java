@@ -1,13 +1,12 @@
 package org.dcsa.core.service.impl;
 
 import org.dcsa.core.extendedrequest.ExtendedRequest;
-import org.dcsa.core.model.GetId;
 import org.dcsa.core.repository.ExtendedRepository;
 import org.dcsa.core.service.ExtendedBaseService;
 import org.dcsa.core.util.ReflectUtility;
 import reactor.core.publisher.Flux;
 
-public abstract class ExtendedBaseServiceImpl<R extends ExtendedRepository<T, I>, T extends GetId<I>, I> extends BaseServiceImpl<R, T, I> implements ExtendedBaseService<T, I> {
+public abstract class ExtendedBaseServiceImpl<R extends ExtendedRepository<T, I>, T, I> extends BaseServiceImpl<R, T, I> implements ExtendedBaseService<T, I> {
 
     private transient Class<T> modelClass;
 
@@ -22,6 +21,10 @@ public abstract class ExtendedBaseServiceImpl<R extends ExtendedRepository<T, I>
     @Override
     public String getType() {
         return getModelClass().getSimpleName();
+    }
+
+    public I getIdOfEntity(T entity) {
+        return getRepository().getIdOfEntity(entity);
     }
 
     public Flux<T> findAllExtended(ExtendedRequest<T> extendedRequest) {

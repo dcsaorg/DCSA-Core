@@ -21,12 +21,14 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
     private static final Integer DATABASE_INTERVAL_NATIVE_TYPE = 1186;
 
     private final DatabaseClient databaseClient;
+    private final MappingRelationalEntityInformation<T, I> mappingRelationalEntityInformation;
 
     public ExtendedRepositoryImpl(MappingRelationalEntityInformation<T, I> mappingRelationalEntityInformation,
                                   R2dbcEntityTemplate r2dbcEntityTemplate,
                                   MappingR2dbcConverter mappingR2dbcConverter) {
         super(mappingRelationalEntityInformation, r2dbcEntityTemplate, mappingR2dbcConverter);
         this.databaseClient = r2dbcEntityTemplate.getDatabaseClient();
+        this.mappingRelationalEntityInformation = mappingRelationalEntityInformation;
     }
 
     public Mono<Integer> countAllExtended(final ExtendedRequest<T> extendedRequest) {
@@ -34,6 +36,10 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                 .map((row, metadata) -> row.get(0, Integer.class))
                 .first()
                 .defaultIfEmpty(0);
+    }
+
+    public I getIdOfEntity(T entity) {
+        return mappingRelationalEntityInformation.getId(entity);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

@@ -11,4 +11,6 @@ public interface BaseService<T, I> {
     Mono<T> update(T t);
     Mono<Void> deleteById(I id);
     Mono<Void> delete(T t);
+
+    /* internal */ I getIdOfEntity(T entity);
 }
