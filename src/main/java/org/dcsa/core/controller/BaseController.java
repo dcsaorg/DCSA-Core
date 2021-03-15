@@ -2,7 +2,6 @@ package org.dcsa.core.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.dcsa.core.exception.*;
-import org.dcsa.core.model.GetId;
 import org.dcsa.core.service.BaseService;
 import org.springframework.data.r2dbc.BadSqlGrammarException;
 import org.springframework.http.HttpStatus;
@@ -13,7 +12,7 @@ import reactor.core.publisher.Mono;
 import javax.validation.Valid;
 
 @Slf4j
-public abstract class BaseController<S extends BaseService<T, I>, T extends GetId<I>, I> {
+public abstract class BaseController<S extends BaseService<T, I>, T, I> {
 
     public abstract S getService();
     public abstract String getType();
@@ -27,28 +26,31 @@ public abstract class BaseController<S extends BaseService<T, I>, T extends GetI
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<T> create(@Valid @RequestBody T t) {
-        if (t.getId() != null) {
+        S s = getService();
+        if (s.getIdOfEntity(t) != null) {
             return createMonoError();
         }
-        return getService().create(t);
+        return s.create(t);
     }
 
     @PutMapping("{id}")
     @ResponseStatus(HttpStatus.OK)
     public Mono<T> update(@PathVariable I id, @Valid @RequestBody T t) {
-        if (!id.equals(t.getId())) {
+        S s = getService();
+        if (!id.equals(s.getIdOfEntity(t))) {
             return updateMonoError();
         }
-        return getService().update(t);
+        return s.update(t);
     }
 
     @DeleteMapping()
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> delete(@RequestBody T t) {
-        if (t.getId() == null) {
+        S s = getService();
+        if (s.getIdOfEntity(t) == null) {
             return deleteMonoError();
         }
-        return getService().delete(t);
+        return s.delete(t);
     }
 
     @DeleteMapping("{id}")
