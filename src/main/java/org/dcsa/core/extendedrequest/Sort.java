@@ -1,7 +1,14 @@
 package org.dcsa.core.extendedrequest;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
 import org.dcsa.core.exception.GetException;
+import org.dcsa.core.query.DBEntityAnalysis;
+import org.springframework.data.relational.core.sql.OrderByField;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A class to help managing sorting parameters and ordering of the sql result.
@@ -16,7 +23,7 @@ public class Sort<T> {
 
     private final ExtendedRequest<T> extendedRequest;
     private final ExtendedParameters extendedParameters;
-    private org.springframework.data.domain.Sort sorting;
+    private final List<SortDesc> sortDescriptionList = new ArrayList<>();
 
     public Sort(ExtendedRequest<T> extendedRequest, ExtendedParameters extendedParameters) {
         this.extendedRequest = extendedRequest;
@@ -30,29 +37,34 @@ public class Sort<T> {
 
         if (sortParameter != null) {
             String[] sortableValues = sortParameter.split(SORT_SEPARATOR);
-            for (String sortableValue: sortableValues) {
+            DBEntityAnalysis<T> dbEntityAnalysis = extendedRequest.getDbEntityAnalysis();
+            for (String sortableValue : sortableValues) {
                 String[] fieldAndDirection = sortableValue.split(extendedParameters.getSortDirectionSeparator());
+                String jsonName = fieldAndDirection[0];
+                // Verify that the field exists on the model class and transform it from JSON-name to FieldName
+                QueryField queryField;
                 try {
-                    String jsonName = fieldAndDirection[0];
-                    // Verify that the field exists on the model class and transform it from JSON-name to FieldName
-                    QueryField queryField = extendedRequest.getQueryFieldFromJsonName(jsonName);
-                    String internalQueryName = queryField.getQueryInternalName();
-                    extendedRequest.markQueryFieldInUse(queryField);
+                    queryField = dbEntityAnalysis.getQueryFieldFromJSONName(jsonName);
+                } catch (IllegalArgumentException e) {
+                    throw new GetException("Sort parameter not correctly specified. Field: " + fieldAndDirection[0]
+                            + " does not exist. Use - {fieldName}" + extendedParameters.getSortDirectionSeparator()
+                            + "[ASC|DESC]");
+                }
+                extendedRequest.markQueryFieldInUse(queryField);
 
-                    if (queryField.getCombinedModelField().isAnnotationPresent(JsonIgnore.class)) {
-                        throw new GetException("Cannot sort on an Ignored field: " + jsonName);
-                    }
-                    switch (fieldAndDirection.length) {
-                        case 1:
-                            // Direction is not specified - use ASC as default
-                            updateSort(org.springframework.data.domain.Sort.Direction.ASC, internalQueryName); break;
-                        case 2:
-                            updateSort(parseDirection(fieldAndDirection[1]), internalQueryName); break;
-                        default:
-                            throw new GetException("Sort parameter not correctly specified. Use - {fieldName} " + extendedParameters.getSortDirectionSeparator() + "[ASC|DESC]");
-                    }
-                } catch (NoSuchFieldException noSuchFieldException) {
-                    throw new GetException("Sort parameter not correctly specified. Field: " + fieldAndDirection[0] + " does not exist. Use - {fieldName}" + extendedParameters.getSortDirectionSeparator() + "[ASC|DESC]");
+                if (queryField.getCombinedModelField().isAnnotationPresent(JsonIgnore.class)) {
+                    throw new GetException("Cannot sort on an Ignored field: " + jsonName);
+                }
+                switch (fieldAndDirection.length) {
+                    case 1:
+                        // Direction is not specified - use ASC as default
+                        updateSort(org.springframework.data.domain.Sort.Direction.ASC, queryField);
+                        break;
+                    case 2:
+                        updateSort(parseDirection(fieldAndDirection[1]), queryField);
+                        break;
+                    default:
+                        throw new GetException("Sort parameter not correctly specified. Use - {fieldName} " + extendedParameters.getSortDirectionSeparator() + "[ASC|DESC]");
                 }
             }
             if (!fromCursor) {
@@ -61,13 +73,8 @@ public class Sort<T> {
         }
     }
 
-    private void updateSort(org.springframework.data.domain.Sort.Direction direction, String internalQueryName) {
-        if (sorting == null) {
-            sorting = org.springframework.data.domain.Sort.by(direction, internalQueryName);
-        } else {
-            org.springframework.data.domain.Sort newSort = org.springframework.data.domain.Sort.by(direction, internalQueryName);
-            sorting = sorting.and(newSort);
-        }
+    private void updateSort(org.springframework.data.domain.Sort.Direction direction, QueryField queryField) {
+        sortDescriptionList.add(SortDesc.of(queryField, direction));
     }
 
     private org.springframework.data.domain.Sort.Direction parseDirection(String direction) {
@@ -81,17 +88,17 @@ public class Sort<T> {
     }
 
     protected void getSortQueryString(StringBuilder sb) {
-        if (sorting != null) {
+        if (!sortDescriptionList.isEmpty()) {
             sb.append(" ORDER BY ");
             boolean first = true;
-            for (org.springframework.data.domain.Sort.Order order : sorting.toList()) {
+            for (SortDesc sortDesc : sortDescriptionList) {
                 if (!first) {
                     sb.append(", ");
                 }
                 // Verify that the field exists
-                String internalQueryName = order.getProperty();
-                sb.append(internalQueryName);
-                if (order.isAscending()) {
+                QueryField queryField = sortDesc.queryField;
+                sb.append(queryField.getQueryInternalName());
+                if (sortDesc.getSortDirection().isAscending()) {
                     sb.append(" ASC");
                 } else {
                     sb.append(" DESC");
@@ -102,24 +109,19 @@ public class Sort<T> {
     }
 
     protected void encodeSort(StringBuilder sb) {
-        if (sorting != null) {
+        if (!sortDescriptionList.isEmpty()) {
             if (sb.length() != 0) {
                 sb.append(ExtendedRequest.PARAMETER_SPLIT);
             }
             sb.append(extendedParameters.getSortParameterName()).append(SORT_SPLIT);
             boolean first = true;
-            for (org.springframework.data.domain.Sort.Order order : sorting.toList()) {
+            for (SortDesc sortDesc : sortDescriptionList) {
                 if (!first) {
                     sb.append(SORT_SEPARATOR);
                 }
-                try {
-                    String jsonName = extendedRequest.getQueryFieldFromInternalQueryName(order.getProperty()).getJsonName();
-                    sb.append(jsonName);
-                } catch (NoSuchFieldException noSuchFieldException) {
-                    throw new GetException("Cannot map fieldName: " + order.getProperty() + " to JSON property when creating internal sort-query parameter");
-                }
+                sb.append(sortDesc.getQueryField().getJsonName());
                 // Don't specify ASC direction - this is default
-                if (order.isDescending()) {
+                if (sortDesc.getSortDirection().isDescending()) {
                     sb.append(extendedParameters.getSortDirectionSeparator());
                     sb.append(extendedParameters.getSortDirectionDescendingName());
                 }
@@ -127,4 +129,11 @@ public class Sort<T> {
             }
         }
     }
+
+    @Data(staticConstructor = "of")
+    private static class SortDesc {
+        final QueryField queryField;
+        final org.springframework.data.domain.Sort.Direction sortDirection;
+    }
+
 }

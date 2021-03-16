@@ -4,12 +4,13 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.model.JoinedWithModel;
+import org.springframework.data.relational.core.sql.Join;
 
 @RequiredArgsConstructor(staticName = "of")
 @Data
 public class JoinedWithModelBasedJoinDescriptor implements JoinDescriptor {
 
-    private final org.springframework.data.relational.core.sql.Join.JoinType joinType;
+    private final Join.JoinType joinType;
 
     @NonNull
     private final String tableName;
@@ -25,6 +26,5 @@ public class JoinedWithModelBasedJoinDescriptor implements JoinDescriptor {
     @NonNull
     private final JoinedWithModel joinedWithModel;
     private final Class<?> modelClass;
-    private boolean inUse = false;
 
 }

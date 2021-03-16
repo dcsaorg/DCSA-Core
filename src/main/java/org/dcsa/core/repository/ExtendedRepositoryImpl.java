@@ -4,6 +4,7 @@ import io.r2dbc.spi.ColumnMetadata;
 import org.dcsa.core.exception.DatabaseException;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.extendedrequest.QueryField;
+import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.r2dbc.convert.MappingR2dbcConverter;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
@@ -48,6 +49,8 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
     }
 
     public Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest) {
+        DBEntityAnalysis<T> dbEntityAnalysis = extendedRequest.getDbEntityAnalysis();
+        boolean ignoredUnknownProperties = extendedRequest.ignoreUnknownProperties();
         return extendedRequest.getFindAll(databaseClient)
                 .map((row, metadata) -> {
                     // Get a new instance of the Object to return
@@ -69,7 +72,7 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                             }
                         }
                         value = row.get(columnName, c);
-                        handleColumn(c, object, extendedRequest, columnName, value);
+                        handleColumn(c, object, dbEntityAnalysis, columnName, value, ignoredUnknownProperties);
                     }
 
                     // All columns have been processed - the Object is ready to be returned
@@ -78,9 +81,9 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                 .all();
     }
 
-    private void handleColumn(Class<?> c, T object, ExtendedRequest<T> extendedRequest, String columnName, Object value) {
+    private void handleColumn(Class<?> c, T object, DBEntityAnalysis<T> dbEntityAnalysis, String columnName, Object value, boolean ignoreUnknownProperties) {
         try {
-            QueryField dbField = extendedRequest.getQueryFieldFromSelectName(columnName);
+            QueryField dbField = dbEntityAnalysis.getQueryFieldFromSelectName(columnName);
             Field combinedModelField = dbField.getCombinedModelField();
             Class<?> fieldType;
             if (combinedModelField == null) {
@@ -94,7 +97,7 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
             }
             ReflectUtility.setValue(object, combinedModelField.getName(), c, value);
         } catch (IllegalAccessException | InvocationTargetException | NoSuchFieldException exception) {
-            if (!extendedRequest.ignoreUnknownProperties()) {
+            if (!ignoreUnknownProperties) {
                 throw new DatabaseException("Not possible to map value to columnName:" + columnName + " on object " + object.getClass().getSimpleName(), exception);
             }
         }
