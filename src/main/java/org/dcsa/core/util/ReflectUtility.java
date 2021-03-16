@@ -2,7 +2,9 @@ package org.dcsa.core.util;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.dcsa.core.exception.GetException;
 import org.dcsa.core.model.ModelClass;
+import org.dcsa.core.model.PrimaryModel;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -371,5 +373,26 @@ public class ReflectUtility {
                     + ": Detected class " + typeVar.getSimpleName() + " does not have a @Table annotation - Please add it to the model.");
         }
         return typeVar;
+    }
+
+    public static String getTableName(Class<?> clazz) {
+        StringBuilder sb = new StringBuilder();
+        getTableName(clazz, sb);
+        return sb.toString();
+    }
+
+    public static void getTableName(Class<?> clazz, StringBuilder sb) {
+        PrimaryModel primaryModel = clazz.getAnnotation(PrimaryModel.class);
+        Table table;
+        if (primaryModel != null) {
+            /* If we have a @PrimaryModel then we always use the @Table from referenced model */
+            table = primaryModel.value().getAnnotation(Table.class);
+        } else {
+            table = clazz.getAnnotation(Table.class);
+        }
+        if (table == null) {
+            throw new GetException("@Table not defined on class:" + clazz.getSimpleName());
+        }
+        sb.append(table.value());
     }
 }
