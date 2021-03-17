@@ -1,32 +1,26 @@
 package org.dcsa.core.models;
 
-import org.dcsa.core.extendedrequest.*;
+import org.dcsa.core.extendedrequest.ExtendedParameters;
+import org.dcsa.core.extendedrequest.ExtendedRequest;
+import org.dcsa.core.query.DBEntityAnalysis;
+import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.sql.Join;
+import org.springframework.data.relational.core.sql.SqlIdentifier;
+import org.springframework.data.relational.core.sql.Table;
 
 public class CitySpecificExtendedRequest extends ExtendedRequest<City> {
     public CitySpecificExtendedRequest(ExtendedParameters extendedParameters) {
         super(extendedParameters, City.class);
     }
 
-    public Class<?> getPrimaryModelClass() {
-        return this.getModelClass();
-    }
+    protected DBEntityAnalysis.DBEntityAnalysisBuilder<City> prepareDBEntityAnalysis() {
+        DBEntityAnalysis.DBEntityAnalysisBuilder<City> builder = super.prepareDBEntityAnalysis();
+        Table cityTable = builder.getPrimaryModelTable();
+        Table countryTable = Table.create(SqlIdentifier.unquoted(ReflectUtility.getTableName(County.class))).as(SqlIdentifier.unquoted("c"));
 
-    protected void findAllTablesAndBuildJoins() {
-        super.findAllTablesAndBuildJoins();
-        JoinDescriptor joinDescriptor = SimpleJoinDescriptor.of(
-                Join.JoinType.JOIN,
-                getTableName(County.class),
-                "c",
-                "ON c.id = " + getTableName(getModelClass()) + ".country_id",
-                null
-        );
-        registerJoinDescriptor(joinDescriptor);
-    }
-
-    protected void loadFieldsFromSubclass() {
-        registerQueryField(QueryFields.nonSelectableQueryField(
-                "c", "country_name", "cn", String.class
-        ));
+        return builder
+                .join(Join.JoinType.JOIN, cityTable, countryTable, County.class)
+                .onFieldEqualsThen("countryId", "id")
+                .registerQueryField(SqlIdentifier.unquoted("country_name"), "cn", String.class);
     }
 }

@@ -2,16 +2,18 @@ package org.dcsa.core.extendedrequest;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.dcsa.core.exception.GetException;
-import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.sql.*;
+import org.springframework.r2dbc.core.binding.BindMarker;
+import org.springframework.r2dbc.core.binding.MutableBindings;
 
-import javax.el.MethodNotFoundException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,8 +64,8 @@ public class Filter<T> {
         }
 
         try {
-            queryField = this.extendedRequest.getQueryFieldFromJsonName(parameter);
-        } catch (NoSuchFieldException e) {
+            queryField = this.extendedRequest.getDbEntityAnalysis().getQueryFieldFromJSONName(parameter);
+        } catch (IllegalArgumentException e) {
             throw new GetException("Getter method corresponding to parameter: " + parameter + " not found!");
         }
 

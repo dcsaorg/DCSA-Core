@@ -1,33 +1,35 @@
 package org.dcsa.core.extendedrequest;
 
+import org.springframework.data.relational.core.sql.*;
+
 public interface JoinDescriptor {
 
-    org.springframework.data.relational.core.sql.Join.JoinType getJoinType();
-    String getTableName();
-    String getJoinAlias();
-    String getJoinCondition();
+    Join.JoinType getJoinType();
     String getDependentAlias();
-    boolean isInUse();
-    void setInUse(boolean inUse);
+    Column getLHSColumn();
+    Column getRHSColumn();
 
-    default void apply(Join join) {
-        String tableName = getTableName();
-        String joinAlias = getJoinAlias();
-        String joinCondition = getJoinCondition();
-        String joinLine = tableName + " AS " + joinAlias + " " + joinCondition;
-        org.springframework.data.relational.core.sql.Join.JoinType joinType = getJoinType();
-        switch (joinType) {
-            case JOIN:
-                join.doInner(joinLine);
-                break;
-            case LEFT_OUTER_JOIN:
-                join.doLeft(joinLine);
-                break;
-            case RIGHT_OUTER_JOIN:
-                join.doRight(joinLine);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported joinType: " + joinType.name());
-        }
+    default Class<?> getRHSModel() {
+        return null;
     }
+
+    default Table getRHSTable() {
+        Column rhs = getRHSColumn();
+        Table t = rhs.getTable();
+        if (t == null) {
+            throw new IllegalStateException(this.getClass().getSimpleName() + " has a RHS Column without a table." +
+                    " It needs to provide its own getRHSTable()");
+        }
+        return t;
+    }
+
+    default String getJoinAliasId() {
+        Table t = getRHSTable();
+        // Use IdentifierProcessing.NONE to ensure we get the original case of the alias.
+        if (t instanceof Aliased) {
+            return ((Aliased) t).getAlias().getReference(IdentifierProcessing.NONE);
+        }
+        return t.getReferenceName().getReference(IdentifierProcessing.NONE);
+    }
+
 }
