@@ -1,12 +1,12 @@
 package org.dcsa.core.query;
 
 import org.dcsa.core.extendedrequest.JoinDescriptor;
+import org.dcsa.core.extendedrequest.TableAndJoins;
 import org.dcsa.core.extendedrequest.QueryField;
 import org.dcsa.core.query.impl.DefaultDBEntityAnalysisBuilder;
 import org.springframework.data.relational.core.sql.Table;
 
 import java.util.List;
-import java.util.Map;
 
 public interface DBEntityAnalysis<T> {
 
@@ -14,9 +14,7 @@ public interface DBEntityAnalysis<T> {
     QueryField getQueryFieldFromJavaFieldName(String javaFieldName) throws IllegalArgumentException;
     QueryField getQueryFieldFromSelectName(String selectColumnName) throws IllegalArgumentException;
     List<QueryField> getAllSelectableFields();
-
-    Table getPrimaryTable();
-    Map<String, JoinDescriptor> getJoinDescriptors();
+    TableAndJoins getTableAndJoins();
 
     static <T> DBEntityAnalysisBuilder<T> builder(Class<T> entityType) {
         return new DefaultDBEntityAnalysisBuilder<>(entityType);
@@ -29,6 +27,16 @@ public interface DBEntityAnalysis<T> {
          * annotation or the entity itself (the latter is absent).
          */
         Class<?> getPrimaryModelClass();
+
+        /**
+         *
+         * @return The Table for the Primary model class.  This is the table using in the FROM part of the query.
+         */
+        Table getPrimaryModelTable();
+
+        JoinDescriptor getJoinDescriptor(String aliasId);
+        JoinDescriptor getJoinDescriptor(Class<?> modelClass);
+
         DBEntityAnalysisBuilder<T> loadFieldsAndJoinsFromModel();
 
 
