@@ -54,7 +54,6 @@ public class ExtendedRequest<T> {
 
     protected Sort<T> sort;
     protected Pagination<T> pagination;
-    protected Joiner joiner = new Joiner();
     protected Filter<T> filter;
     @Getter
     @Setter
@@ -113,7 +112,6 @@ public class ExtendedRequest<T> {
         sort = new Sort<>(this, getExtendedParameters());
         pagination = new Pagination<>(this, getExtendedParameters());
         filter = new Filter<>(this, getExtendedParameters());
-        joiner = new Joiner();
         selectDistinct = false;
         joinsResolved = false;
         dbEntityAnalysis = this.prepareDBEntityAnalysis().build();
@@ -130,10 +128,6 @@ public class ExtendedRequest<T> {
 
     public Pagination<T> getPagination() {
         return pagination;
-    }
-
-    public Joiner getJoiner() {
-        return joiner;
     }
 
     private void parseParameter(String key, String value, boolean fromCursor) {
@@ -217,20 +211,14 @@ public class ExtendedRequest<T> {
             for (QueryField selectableField : dbEntityAnalysis.getAllSelectableFields()) {
                 markQueryFieldInUse(selectableField);
             }
-            for (JoinDescriptor joinDescriptor : dbEntityAnalysis.getJoinDescriptors().values()) {
-                if (joinAliasInUse.contains(joinDescriptor.getJoinAlias())) {
-                    joinDescriptor.apply(joiner);
-                }
-            }
             joinsResolved = true;
         }
     }
 
     public String getCountQuery() {
-        StringBuilder sb = new StringBuilder(selectDistinct ? "SELECT DISTINCT COUNT(*) FROM ": "SELECT COUNT(*) FROM ");
-        getTableName(sb);
+        StringBuilder sb = new StringBuilder(selectDistinct ? "SELECT DISTINCT COUNT(*) ": "SELECT COUNT(*) ");
         ensureJoinsAreResolved();
-        getJoiner().getJoinQueryString(sb, joinAliasInUse);
+        dbEntityAnalysis.getTableAndJoins().generateFromAndJoins(sb, joinAliasInUse);
         getFilter().getFilterQueryString(sb);
         return sb.toString();
     }
@@ -250,13 +238,13 @@ public class ExtendedRequest<T> {
      */
     protected void markQueryFieldInUse(QueryField fieldInUse) {
         String joinAlias = fieldInUse.getTableJoinAlias();
-        Map<String, JoinDescriptor> joinAlias2Descriptor = dbEntityAnalysis.getJoinDescriptors();
+        TableAndJoins tableAndJoins = dbEntityAnalysis.getTableAndJoins();
         while (joinAlias != null) {
-            JoinDescriptor descriptor = joinAlias2Descriptor.get(joinAlias);
+            JoinDescriptor descriptor = tableAndJoins.getJoinDescriptor(joinAlias);
             if (descriptor == null) {
                 break;
             }
-            String alias = descriptor.getJoinAlias();
+            String alias = descriptor.getJoinAliasId();
             if (!joinAliasInUse.add(alias)) {
                 break;
             }
@@ -296,19 +284,13 @@ public class ExtendedRequest<T> {
     public String getQuery() {
         StringBuilder sb = new StringBuilder(selectDistinct ? "SELECT DISTINCT " : "SELECT ");
         getTableFields(sb);
-        sb.append(" FROM ");
-        getTableName(sb);
         ensureJoinsAreResolved();
-        getJoiner().getJoinQueryString(sb, joinAliasInUse);
+        dbEntityAnalysis.getTableAndJoins().generateFromAndJoins(sb, joinAliasInUse);
         getFilter().getFilterQueryString(sb);
         getSort().getSortQueryString(sb);
         getPagination().getOffsetQueryString(sb);
         getPagination().getLimitQueryString(sb);
         return sb.toString();
-    }
-
-    public void getTableName(StringBuilder sb) {
-        ReflectUtility.getTableName(modelClass, sb);
     }
 
     public boolean ignoreUnknownProperties() {

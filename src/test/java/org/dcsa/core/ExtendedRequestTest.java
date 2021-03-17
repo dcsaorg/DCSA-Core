@@ -126,7 +126,7 @@ public class ExtendedRequestTest {
         String baseQueryNoExtraJoins =
                 "SELECT city_table.id AS \"id\", city_table.city_name AS \"city_name\", city_table.country_id AS \"country_id\""
                         + " FROM city_table";
-        String extraJoins = " JOIN country_table AS c ON c.id = city_table.country_id";
+        String extraJoins = " JOIN country_table AS c ON city_table.country_id=c.id";
         CitySpecificExtendedRequest request = new CitySpecificExtendedRequest(extendedParameters);
         request(request).verify(baseQueryNoExtraJoins);
 
