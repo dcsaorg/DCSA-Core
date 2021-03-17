@@ -9,11 +9,13 @@ import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.sql.Column;
+import org.springframework.data.relational.core.sql.Join;
 import org.springframework.data.relational.core.sql.SqlIdentifier;
 import org.springframework.data.relational.core.sql.Table;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -99,7 +101,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
             addNewAlias(Object.class, rhsJoinAlias, joinDescriptor);
         }
         joinAlias2Descriptor.put(rhsJoinAlias, joinDescriptor);
-        tableAndJoins.addJoinDescriptor(joinDescriptor);
+        getTableAndJoins().addJoinDescriptor(joinDescriptor);
         return this;
     }
 
@@ -201,7 +203,6 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
             Class<?> rhsModel = joinAnnotation.rhsModel();
             String rhsJoinAlias = joinAnnotation.rhsJoinAlias();
             String rhsFieldName = joinAnnotation.rhsFieldName();
-            String rhsTableName = ReflectUtility.getTableName(rhsModel);
             String rhsColumnName = getColumnName(rhsModel, rhsFieldName, "rhs");
 
             if (!lhsJoinAlias.equals("")) {
@@ -225,10 +226,6 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
                 lhsJoinAlias = ReflectUtility.getTableName(lhsModel);
             }
 
-            if (rhsJoinAlias.equals("")) {
-                rhsJoinAlias = rhsTableName;
-            }
-
             JoinDescriptor lhsJoinDescriptor = joinAlias2Descriptor.get(lhsJoinAlias);
             if (lhsJoinDescriptor != null) {
                 lhsTable = lhsJoinDescriptor.getRHSTable();
@@ -238,7 +235,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
 
             lhsColumnName = getColumnName(lhsModel, lhsFieldName, "lhs");
             Column lhsColumn = Column.create(SqlIdentifier.unquoted(lhsColumnName), lhsTable);
-            Table rhsTable = Table.create(SqlIdentifier.unquoted(rhsTableName)).as(SqlIdentifier.unquoted(rhsJoinAlias));
+            Table rhsTable = getTableForModel(rhsModel, rhsJoinAlias);
             Column rhsColumn = Column.create(SqlIdentifier.unquoted(rhsColumnName), rhsTable);
 
             JoinDescriptor joinDescriptor = JoinedWithModelBasedJoinDescriptor.of(joinType, lhsColumn, rhsColumn,
@@ -388,6 +385,83 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
         this.declaredButNotSelectable.removeAll(this.selectName2DbField.keySet());
     }
 
+    private Table getTableForModel(Class<?> model, String alias) {
+        String tableName = ReflectUtility.getTableName(model);
+        if (alias == null || alias.equals("")) {
+            alias = tableName;
+        }
+        return Table.create(SqlIdentifier.unquoted(tableName)).as(SqlIdentifier.unquoted(alias));
+    }
+
+    private Table getTableFor(String alias) {
+        JoinDescriptor joinDescriptor = getJoinDescriptor(alias);
+        if (joinDescriptor == null) {
+            return getPrimaryModelTable();
+        }
+        return joinDescriptor.getRHSTable();
+    }
+
+    private Table getTableFor(Class<?> model) {
+        JoinDescriptor joinDescriptor = getJoinDescriptor(model);
+        if (joinDescriptor == null) {
+            return getPrimaryModelTable();
+        }
+        return joinDescriptor.getRHSTable();
+    }
+
+    private Class<?> getModelFor(String aliasId) {
+        Class<?> clazz = joinAlias2Class.get(aliasId);
+        if (clazz == null) {
+            throw new IllegalArgumentException("The alias/table " + aliasId + " is not backed by a Java model");
+        }
+        return clazz;
+    }
+
+    private Class<?> getModelFor(Table table) {
+        return getModelFor(ReflectUtility.getAliasId(table));
+    }
+
+    public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Class<?> lhsModel, Class<?> rhsModel) {
+        Table rhsTable = getTableForModel(rhsModel, null);
+        return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, getTableFor(lhsModel), rhsTable);
+    }
+
+    public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Class<?> lhsModel, Class<?> rhsModel, String rhsJoinAlias) {
+        Table rhsTable = getTableForModel(rhsModel, rhsJoinAlias);
+        return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, getTableFor(lhsModel), rhsTable);
+    }
+
+    public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, String lhsJoinAlias, Class<?> rhsModel) {
+        Table rhsTable = getTableForModel(rhsModel, null);
+        return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, getTableFor(lhsJoinAlias), rhsTable);
+    }
+
+    public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, String lhsJoinAlias, Class<?> rhsModel, String rhsJoinAlias) {
+        Table rhsTable = getTableForModel(rhsModel, rhsJoinAlias);
+        return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, getTableFor(lhsJoinAlias), rhsTable);
+    }
+
+    public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Table lhsJoinAlias, Table rhsModel) {
+        return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, lhsJoinAlias, rhsModel);
+    }
+
+    public DBEntityAnalysis.DBEntityAnalysisBuilder<T> joinOn(Join.JoinType joinType, Column lhsColumn, Column rhsColumn) {
+        Table lhsTable = lhsColumn.getTable();
+        if (lhsTable == null) {
+            throw new IllegalArgumentException("lhsColumn must have a non-null getTable()");
+        }
+        if (rhsColumn.getTable() == null) {
+            throw new IllegalArgumentException("rhsColumn must have a non-null getTable()");
+        }
+        String dependentAlias = ReflectUtility.getAliasId(lhsTable);
+        return registerJoinDescriptor(SimpleJoinDescriptor.of(joinType, lhsColumn, rhsColumn, dependentAlias));
+    }
+
+    DBEntityAnalysis.DBEntityAnalysisChainJoinBuilder<T> joinOnThen(Join.JoinType joinType, Column lhsColumn, Column rhsColumn) {
+        joinOn(joinType, lhsColumn, rhsColumn);
+        return DBEntityAnalysisChainJoinBuilderImpl.of(this, Objects.requireNonNull(rhsColumn.getTable()));
+    }
+
     public DBEntityAnalysis<T> build() {
         if (used) {
             throw new IllegalStateException("Already used");
@@ -399,8 +473,103 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
                 Collections.unmodifiableMap(selectName2DbField),
                 Collections.unmodifiableSet(declaredButNotSelectable),
                 Collections.unmodifiableList(allSelectableFields),
-                getPrimaryModelTable(),
-                tableAndJoins
+                getTableAndJoins()
         );
+    }
+
+    @RequiredArgsConstructor(staticName = "of")
+    private static class DBEntityAnalysisJoinBuilderImpl<T> implements DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> {
+        private final DefaultDBEntityAnalysisBuilder<T> builder;
+        private final Join.JoinType joinType;
+        private final Table lhsTable;
+        private final Table rhsTable;
+
+        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> onEquals(String lhsColumnName, String rhsColumnName) {
+            return onEqualsImpl(lhsColumnName, rhsColumnName, Column::create);
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> onEquals(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName) {
+            return onEqualsImpl(lhsColumnName, rhsColumnName, Column::create);
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisChainJoinBuilder<T> onEqualsThen(String lhsColumnName, String rhsColumnName) {
+            return onEqualsThenImpl(lhsColumnName, rhsColumnName, Column::create);
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisChainJoinBuilder<T> onEqualsThen(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName) {
+            return onEqualsThenImpl(lhsColumnName, rhsColumnName, Column::create);
+        }
+
+        private <P> DBEntityAnalysis.DBEntityAnalysisBuilder<T> onEqualsImpl(P lhs, P rhs, BiFunction<P, Table, Column> toColumn) {
+            Column lhsColumn = toColumn.apply(lhs, lhsTable);
+            Column rhsColumn = toColumn.apply(rhs, rhsTable);
+            return builder.joinOn(joinType, lhsColumn, rhsColumn);
+        }
+
+        private <P> DBEntityAnalysis.DBEntityAnalysisChainJoinBuilder<T> onEqualsThenImpl(P lhs, P rhs, BiFunction<P, Table, Column> toColumn) {
+            Column lhsColumn = toColumn.apply(lhs, lhsTable);
+            Column rhsColumn = toColumn.apply(rhs, rhsTable);
+            return builder.joinOnThen(joinType, lhsColumn, rhsColumn);
+        }
+
+        private <B> B onFieldEqualsImpl(String lhsFieldName, String rhsFieldName, BiFunction<String, String, B> impl) {
+            Class<?> lhsModel = builder.getModelFor(lhsTable);
+            Class<?> rhsModel = builder.getModelFor(rhsTable);
+            String lhsColumnName;
+            String rhsColumnName;
+            try {
+                lhsColumnName = ReflectUtility.transformFromFieldNameToColumnName(lhsModel, lhsFieldName,
+                        builder.getPrimaryModelClass() == lhsModel
+                );
+            } catch (NoSuchFieldException e) {
+                throw new IllegalArgumentException("Unknown field \"" + lhsFieldName + "\" on model " + lhsModel.getSimpleName() + " (khs)");
+            }
+            try {
+                rhsColumnName = ReflectUtility.transformFromFieldNameToColumnName(rhsModel, rhsFieldName, false);
+            } catch (NoSuchFieldException e) {
+                throw new IllegalArgumentException("Unknown field \"" + rhsFieldName + "\" on model " + rhsModel.getSimpleName() + " (rhs)");
+            }
+            return impl.apply(lhsColumnName, rhsColumnName);
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> onFieldEquals(String lhsFieldName, String rhsFieldName) {
+            return onFieldEqualsImpl(lhsFieldName, rhsFieldName, this::onFieldEquals);
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisChainJoinBuilder<T> onFieldEqualsThen(String lhsFieldName, String rhsFieldName) {
+            return onFieldEqualsImpl(lhsFieldName, rhsFieldName, this::onFieldEqualsThen);
+        }
+
+    }
+
+    @RequiredArgsConstructor(staticName = "of")
+    private static class DBEntityAnalysisChainJoinBuilderImpl<T> implements DBEntityAnalysis.DBEntityAnalysisChainJoinBuilder<T> {
+
+        private final DefaultDBEntityAnalysisBuilder<T> builder;
+        private final Table lhsTable;
+
+        public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(Class<?> rhsModel) {
+            return chainJoin(Join.JoinType.JOIN, rhsModel);
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(Class<?> rhsModel, String rhsJoinAlias) {
+            return chainJoin(Join.JoinType.JOIN, rhsModel, rhsJoinAlias);
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(Table rhsTable) {
+            return chainJoin(Join.JoinType.JOIN, rhsTable);
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(Join.JoinType joinType, Class<?> rhsModel) {
+            return chainJoin(joinType, builder.getTableForModel(rhsModel, null));
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(Join.JoinType joinType, Class<?> rhsModel, String rhsJoinAlias) {
+            return chainJoin(joinType, builder.getTableForModel(rhsModel, rhsJoinAlias));
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(Join.JoinType joinType, Table rhsTable) {
+            return builder.join(joinType, lhsTable, rhsTable);
+        }
     }
 }

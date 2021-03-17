@@ -7,6 +7,9 @@ import org.dcsa.core.model.ModelClass;
 import org.dcsa.core.model.PrimaryModel;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.sql.Aliased;
+import org.springframework.data.relational.core.sql.IdentifierProcessing;
+import org.springframework.data.relational.core.sql.SqlIdentifier;
 
 import javax.el.MethodNotFoundException;
 import javax.validation.constraints.NotNull;
@@ -394,5 +397,15 @@ public class ReflectUtility {
             throw new GetException("@Table not defined on class:" + clazz.getSimpleName());
         }
         sb.append(table.value());
+    }
+
+    public static String getAliasId(org.springframework.data.relational.core.sql.Table table) {
+        SqlIdentifier aliasId;
+        if (table instanceof Aliased) {
+            aliasId = ((Aliased) table).getAlias();
+        } else {
+            aliasId = table.getReferenceName();
+        }
+        return aliasId.getReference(IdentifierProcessing.NONE);
     }
 }

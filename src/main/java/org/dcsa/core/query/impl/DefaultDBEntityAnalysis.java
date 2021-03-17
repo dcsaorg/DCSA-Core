@@ -20,8 +20,6 @@ public class DefaultDBEntityAnalysis<T> implements DBEntityAnalysis<T> {
     @Getter
     private final List<QueryField> allSelectableFields;
     @Getter
-    private final Table primaryTable;
-    @Getter
     private final TableAndJoins tableAndJoins;
 
 
@@ -52,5 +50,4 @@ public class DefaultDBEntityAnalysis<T> implements DBEntityAnalysis<T> {
             throw e;
         }
     }
-
 }

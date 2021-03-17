@@ -18,14 +18,9 @@ public class CitySpecificExtendedRequest extends ExtendedRequest<City> {
         Table cityTable = builder.getPrimaryModelTable();
         Table countryTable = Table.create(SqlIdentifier.unquoted(ReflectUtility.getTableName(County.class))).as(SqlIdentifier.unquoted("c"));
 
-        JoinDescriptor joinDescriptor = SimpleJoinDescriptor.of(
-                Join.JoinType.JOIN,
-                Column.create(SqlIdentifier.unquoted("country_id"), cityTable),
-                Column.create(SqlIdentifier.unquoted("id"), countryTable),
-                null
-        );
         return builder
-                .registerJoinDescriptor(joinDescriptor)
+                .join(Join.JoinType.JOIN, cityTable, countryTable)
+                .onEquals("country_id", "id")
                 .registerQueryField(QueryFields.nonSelectableQueryField(
                         "c", "country_name", "cn", String.class
                 ));

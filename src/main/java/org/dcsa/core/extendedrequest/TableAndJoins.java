@@ -1,7 +1,9 @@
 package org.dcsa.core.extendedrequest;
 
 import lombok.Getter;
-import org.springframework.data.relational.core.sql.*;
+import org.dcsa.core.util.ReflectUtility;
+import org.springframework.data.relational.core.sql.Column;
+import org.springframework.data.relational.core.sql.Table;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -19,13 +21,7 @@ public class TableAndJoins {
 
     public TableAndJoins(Table primaryTable) {
         this.primaryTable = primaryTable;
-        SqlIdentifier aliasId;
-        if (primaryTable instanceof Aliased) {
-            aliasId = ((Aliased) primaryTable).getAlias();
-        } else {
-            aliasId = primaryTable.getReferenceName();
-        }
-        knownAliases.add(aliasId.getReference(IdentifierProcessing.NONE));
+        knownAliases.add(ReflectUtility.getAliasId(primaryTable));
     }
 
     public void addJoinDescriptor(JoinDescriptor joinDescriptor) {
