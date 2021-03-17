@@ -4,6 +4,9 @@ import org.dcsa.core.extendedrequest.JoinDescriptor;
 import org.dcsa.core.extendedrequest.TableAndJoins;
 import org.dcsa.core.extendedrequest.QueryField;
 import org.dcsa.core.query.impl.DefaultDBEntityAnalysisBuilder;
+import org.springframework.data.relational.core.sql.Column;
+import org.springframework.data.relational.core.sql.Join;
+import org.springframework.data.relational.core.sql.SqlIdentifier;
 import org.springframework.data.relational.core.sql.Table;
 
 import java.util.List;
@@ -53,19 +56,33 @@ public interface DBEntityAnalysis<T> {
          */
         DBEntityAnalysisBuilder<T> registerQueryField(QueryField queryField);
 
-        /*
-        DBEntityAnalysisJoinBuilder<T> joinWith(Class<?> rhsModel);
-        DBEntityAnalysisJoinBuilder<T> joinWith(Class<?> lhsModel, Class<?> rhsModel);
-        DBEntityAnalysisJoinBuilder<T> joinWith(Class<?> lhsModel, Class<?> rhsModel, String rhsJoinAlias);
-        DBEntityAnalysisJoinBuilder<T> joinWith(String lhsJoinAlias, Class<?> rhsModel);
-        DBEntityAnalysisJoinBuilder<T> joinWith(String lhsJoinAlias, Class<?> rhsModel, String rhsJoinAlias);
-         */
+        DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Class<?> lhsModel, Class<?> rhsModel);
+        DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Class<?> lhsModel, Class<?> rhsModel, String rhsJoinAlias);
+        DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, String lhsJoinAlias, Class<?> rhsModel);
+        DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, String lhsJoinAlias, Class<?> rhsModel, String rhsJoinAlias);
+        DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Table lhsJoinAlias, Table rhsModel);
+        DBEntityAnalysisBuilder<T> joinOn(Join.JoinType joinType, Column lhsColumn, Column rhsColumn);
         DBEntityAnalysis<T> build();
     }
 
-    /*
     interface DBEntityAnalysisJoinBuilder<T> {
-        DBEntityAnalysis<T> onEquals(String lhsField, String rhsField);
+        DBEntityAnalysisBuilder<T> onEquals(String lhsColumnName, String rhsColumnName);
+        DBEntityAnalysisBuilder<T> onEquals(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName);
+        DBEntityAnalysisBuilder<T> onFieldEquals(String lhsFieldName, String rhsFieldName);
+
+        // Chain into another join - useful for "FROM A JOIN B (A.x=B.x) JOIN C (B.y=C.y)"-cases
+        DBEntityAnalysisChainJoinBuilder<T> onEqualsThen(String lhsColumnName, String rhsColumnName);
+        DBEntityAnalysisChainJoinBuilder<T> onEqualsThen(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName);
+        DBEntityAnalysisChainJoinBuilder<T> onFieldEqualsThen(String lhsFieldName, String rhsFieldName);
     }
-     */
+
+    interface DBEntityAnalysisChainJoinBuilder<T> {
+
+        DBEntityAnalysisJoinBuilder<T> chainJoin(Class<?> rhsModel);
+        DBEntityAnalysisJoinBuilder<T> chainJoin(Class<?> rhsModel, String rhsJoinAlias);
+        DBEntityAnalysisJoinBuilder<T> chainJoin(Table rhsTable);
+        DBEntityAnalysisJoinBuilder<T> chainJoin(Join.JoinType joinType, Class<?> rhsModel);
+        DBEntityAnalysisJoinBuilder<T> chainJoin(Join.JoinType joinType, Class<?> rhsModel, String rhsJoinAlias);
+        DBEntityAnalysisJoinBuilder<T> chainJoin(Join.JoinType joinType, Table rhsTable);
+    }
 }
