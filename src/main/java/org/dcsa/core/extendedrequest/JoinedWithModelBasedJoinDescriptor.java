@@ -25,4 +25,7 @@ public class JoinedWithModelBasedJoinDescriptor implements JoinDescriptor {
     private final JoinedWithModel joinedWithModel;
     private final Class<?> modelClass;
 
+    public Class<?> getRHSModel() {
+        return joinedWithModel.rhsModel();
+    }
 }

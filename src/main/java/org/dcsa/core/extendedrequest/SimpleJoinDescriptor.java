@@ -17,5 +17,11 @@ public class SimpleJoinDescriptor implements JoinDescriptor {
     @NonNull
     private final Column RHSColumn;
 
+    private final Class<?> RHSModel;
+
     private final String dependentAlias;
+
+    public static JoinDescriptor of(Join.JoinType joinType, Column lhsColumn, Column rhsColumn, String dependentAlias) {
+        return of(joinType, lhsColumn, rhsColumn, null, dependentAlias);
+    }
 }

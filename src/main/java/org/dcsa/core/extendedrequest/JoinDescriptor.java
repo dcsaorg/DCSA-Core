@@ -9,6 +9,10 @@ public interface JoinDescriptor {
     Column getLHSColumn();
     Column getRHSColumn();
 
+    default Class<?> getRHSModel() {
+        return null;
+    }
+
     default Table getRHSTable() {
         Column rhs = getRHSColumn();
         Table t = rhs.getTable();
