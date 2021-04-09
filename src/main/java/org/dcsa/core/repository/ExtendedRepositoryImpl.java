@@ -91,7 +91,7 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
             }
             fieldType = combinedModelField.getType();
             if (fieldType.isEnum()) {
-                if (value != null && value instanceof String) {
+                if (value instanceof String) {
                     // Convert to an enum
                     value = parseEnum(fieldType, (String) value);
                 }
