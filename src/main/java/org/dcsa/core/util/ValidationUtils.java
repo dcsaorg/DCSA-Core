@@ -1,7 +1,5 @@
 package org.dcsa.core.util;
 
-import java.security.InvalidParameterException;
-
 public class ValidationUtils {
 
     /**
@@ -11,7 +9,7 @@ public class ValidationUtils {
      *
      * @return true if the vessel IMO Number is valid otherwise false
      */
-    public static boolean validateVesselIMONumber(String vesselIMONumber) throws InvalidParameterException {
+    public static boolean validateVesselIMONumber(String vesselIMONumber) throws IllegalArgumentException {
         if (vesselIMONumber != null && vesselIMONumber.length() == 7) {
             int sum = 0;
             for (int i = 0; i < 6; i++) {
@@ -21,10 +19,10 @@ public class ValidationUtils {
             if (vesselIMONumber.charAt(vesselIMONumber.length() - 1) == s.charAt(s.length() - 1)) {
                 return true;
             } else {
-                throw new InvalidParameterException("Invalid Vessel IMO Number. IMO number does not pass checksum - expected value: " +  s.charAt(s.length() - 1) + " but found: " + vesselIMONumber.charAt(vesselIMONumber.length() - 1));
+                throw new IllegalArgumentException("Invalid Vessel IMO Number. IMO number does not pass checksum - expected value: " +  s.charAt(s.length() - 1) + " but found: " + vesselIMONumber.charAt(vesselIMONumber.length() - 1));
             }
         } else {
-            throw new InvalidParameterException("Invalid Vessel IMO Number. Must match 7-digits");
+            throw new IllegalArgumentException("Invalid Vessel IMO Number. Must match 7-digits");
         }
     }
 }
