@@ -90,9 +90,11 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                 throw new IllegalStateException("Internal error: Attempting to set a value without a backing field!?");
             }
             fieldType = combinedModelField.getType();
-            if (fieldType.isEnum() && value instanceof String) {
-                // Convert to an enum
-                value = parseEnum(fieldType, (String)value);
+            if (fieldType.isEnum()) {
+                if (value != null && value instanceof String) {
+                    // Convert to an enum
+                    value = parseEnum(fieldType, (String) value);
+                }
                 c = fieldType;
             }
             ReflectUtility.setValue(object, combinedModelField.getName(), c, value);
