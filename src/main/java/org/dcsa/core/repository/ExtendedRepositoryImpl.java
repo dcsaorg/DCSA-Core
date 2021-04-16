@@ -1,6 +1,8 @@
 package org.dcsa.core.repository;
 
 import io.r2dbc.spi.ColumnMetadata;
+import io.r2dbc.spi.Row;
+import io.r2dbc.spi.RowMetadata;
 import org.dcsa.core.exception.DatabaseException;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.extendedrequest.QueryField;
@@ -16,6 +18,7 @@ import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.util.function.BiFunction;
 
 public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> implements ExtendedRepository<T, I> {
 
@@ -32,6 +35,11 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
         this.mappingRelationalEntityInformation = mappingRelationalEntityInformation;
     }
 
+    /* internal */
+    public I getIdOfEntity(T entity) {
+        return mappingRelationalEntityInformation.getId(entity);
+    }
+
     public Mono<Integer> countAllExtended(final ExtendedRequest<T> extendedRequest) {
         return extendedRequest.getCount(databaseClient)
                 .map((row, metadata) -> row.get(0, Integer.class))
@@ -39,46 +47,45 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                 .defaultIfEmpty(0);
     }
 
-    public I getIdOfEntity(T entity) {
-        return mappingRelationalEntityInformation.getId(entity);
-    }
-
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static Enum<?> parseEnum(Class<?> enumClass, String value) {
-        return Enum.valueOf((Class)enumClass, value);
+        return Enum.valueOf((Class) enumClass, value);
+    }
+
+    private T mapRow(Row row, RowMetadata metadata, DBEntityAnalysis<T> dbEntityAnalysis, BiFunction<Row, RowMetadata, T> instanceConstructor, boolean ignoreUnknownProperties) {
+        // Get a new instance of the Object to return
+        T object = instanceConstructor.apply(row, metadata);
+
+        // Run through all columns
+        for (String columnName : metadata.getColumnNames()) {
+            ColumnMetadata columnMetadata = metadata.getColumnMetadata(columnName);
+            Class<?> c = columnMetadata.getJavaType();
+            // Get the value for the column
+            Object value;
+
+            if (c == null) {
+                if (DATABASE_INTERVAL_NATIVE_TYPE.equals(columnMetadata.getNativeTypeMetadata())) {
+                    // Handle Database Intervals as Java String type
+                    c = String.class;
+                } else {
+                    throw new DatabaseException("Type for columnName " + columnName + " is null");
+                }
+            }
+            value = row.get(columnName, c);
+            handleColumn(c, object, dbEntityAnalysis, columnName, value, ignoreUnknownProperties);
+        }
+
+        // All columns have been processed - the Object is ready to be returned
+        return object;
     }
 
     public Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest) {
-        DBEntityAnalysis<T> dbEntityAnalysis = extendedRequest.getDbEntityAnalysis();
-        boolean ignoredUnknownProperties = extendedRequest.ignoreUnknownProperties();
+        boolean ignoreUnknownProperties = extendedRequest.ignoreUnknownProperties();
         return extendedRequest.getFindAll(databaseClient)
-                .map((row, metadata) -> {
-                    // Get a new instance of the Object to return
-                    T object = extendedRequest.getModelClassInstance(row, metadata);
-
-                    // Run through all columns
-                    for (String columnName : metadata.getColumnNames()) {
-                        ColumnMetadata columnMetadata = metadata.getColumnMetadata(columnName);
-                        Class<?> c = columnMetadata.getJavaType();
-                        // Get the value for the column
-                        Object value;
-
-                        if (c == null) {
-                            if (DATABASE_INTERVAL_NATIVE_TYPE.equals(columnMetadata.getNativeTypeMetadata())) {
-                                // Handle Database Intervals as Java String type
-                                c = String.class;
-                            } else {
-                                throw new DatabaseException("Type for columnName " + columnName + " is null");
-                            }
-                        }
-                        value = row.get(columnName, c);
-                        handleColumn(c, object, dbEntityAnalysis, columnName, value, ignoredUnknownProperties);
-                    }
-
-                    // All columns have been processed - the Object is ready to be returned
-                    return object;
-                })
-                .all();
+                .map((row, metadata) ->
+                        this.mapRow(row, metadata, extendedRequest.getDbEntityAnalysis(),
+                                extendedRequest::getModelClassInstance, ignoreUnknownProperties)
+                ).all();
     }
 
     private void handleColumn(Class<?> c, T object, DBEntityAnalysis<T> dbEntityAnalysis, String columnName, Object value, boolean ignoreUnknownProperties) {

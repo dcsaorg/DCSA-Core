@@ -1,23 +1,19 @@
 package org.dcsa.core.extendedrequest;
 
+import org.springframework.data.relational.core.sql.Column;
+
 import java.lang.reflect.Field;
 
 public interface QueryField {
 
-    default String getSelectColumnName() {
-        return null;
-    }
-    String getOriginalColumnName();
     String getJsonName();
     String getTableJoinAlias();
+    Column getSelectColumn();
+    Column getInternalQueryColumn();
     Class<?> getType();
 
     default boolean isSelectable() {
-        return getSelectColumnName() != null;
-    }
-
-    default String getQueryInternalName() {
-        return this.getTableJoinAlias() + "." + this.getOriginalColumnName();
+        return getSelectColumn() != null;
     }
 
     default String getDatePattern() {

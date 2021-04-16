@@ -1,6 +1,7 @@
 package org.dcsa.core.extendedrequest;
 
 import org.dcsa.core.exception.GetException;
+import org.springframework.data.relational.core.sql.SelectBuilder;
 
 /**
  * A class to help managing pagination parameters and limiting the sql result.
@@ -66,6 +67,17 @@ public class Pagination<T> {
         if (limit != null) {
             sb.append(" LIMIT ").append(limit);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected <SB extends SelectBuilder.SelectLimitOffset> SB applyLimitOffset(SB t) {
+        if (limit != null && indexCursor != 0) {
+            return (SB) t.limitOffset(limit, indexCursor);
+        }
+        if (limit != null) {
+            return (SB) t.limit(limit);
+        }
+        return indexCursor != 0 ? (SB) t.offset(indexCursor) : t;
     }
 
     protected boolean encodePagination(StringBuilder sb, PageRequest page) {

@@ -1,5 +1,6 @@
 package org.dcsa.core.extendedrequest;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
@@ -136,29 +137,40 @@ public class ExtendedParameters {
     @Value( "${enum.split:,}" )
     private String enumSplit;
 
-    // Force matching on enum types to be exact - if set to true the entire value must match the enum in order for it to
-    // match. If set to false enums will be treated like strings.
-    // This can be changed in Application.yaml fil to "TRUE" by writing:
-    // enum:
-    //   split: TRUE
-    @Value( "${enum.forceExactMatch:FALSE}" )
-    private String forceExactEnumMatch;
-
-    // Set the database format for matching dates when searching/filtering. The database value will be formatted using
-    // the specified format when matching against the user specified value.
-    // This can be changed in application.yaml file to "DD-MM-YYYY" by writing:
+    // Choose how query parameter attributes are handled.  Options include:
+    //
+    // * NO_ATTRIBUTES                 - There are no attributes at all.
+    // * PARAMETER_NAME_ARRAY_NOTATION - The attribute is in the query parameter
+    //                                   name a la "name[attribute]=value"
+    // * PARAMETER_NAME_SUFFIX         - The attribute is in the query parameter
+    //                                   name a la "name:attribute=value".
+    // * PARAMETER_VALUE_PREFIX        - The attribute is a prefix of the value
+    //                                   a la "name=attribute:value".
+    //
+    // Note that attributes are parsed from the decoded parameter name or value.
+    //
+    // Attributes can be used to alter how a query parameter is interpreted and
+    // is often used for operators a la "x >= y"-operations.  However, the
+    // application can implement its own attributes.
+    //
+    // This can be changed in application.yaml file by writing:
     // search:
-    //   date: DD-MM-YYYY
-    @Value( "${search.date:YYYY-MM-DD}" )
-    private String searchableDateFormat;
+    //   queryParameterAttributeHandling: PARAMETER_VALUE_PREFIX
+    @Value("${search.queryParameterAttributeHandling:PARAMETER_NAME_SUFFIX}")
+    @Getter
+    private QueryParameterAttributeHandling queryParameterAttributeHandling;
 
-    // Set the database format for matching dateTimes when searching/filtering. The database value will be formatted
-    // using the specified format when matching against the user specified value.
-    // This can be changed in application.yaml file to "DD-MM-YYYY HH:MI:SS" by writing:
+    // Choose the separator for attributes embedded in the query parameters.
+    // The separator is applied on the decoded value.  Whether it is used
+    // for the name or the value is determined by
+    // queryParameterAttributeHandling.
+    //
+    // This can be changed in application.yaml file by writing:
     // search:
-    //   dateTime: dd-mm-YYYY HH:MI:SS
-    @Value( "${search.dateTime:YYYY-MM-DD HH:MI:SS}" )
-    private String searchableDateTimeFormat;
+    //   queryParameterAttributeSeparator: "_"
+    @Value("${search.queryParameterAttributeSeparator::}")
+    @Getter
+    private String queryParameterAttributeSeparator;
 
     public String getSortDirectionSeparator() {
         return sortDirectionSeparator;
@@ -226,15 +238,4 @@ public class ExtendedParameters {
         return enumSplit;
     }
 
-    public boolean getForceExactEnumMatch() {
-        return "TRUE".equalsIgnoreCase(forceExactEnumMatch);
-    }
-
-    public String getSearchableDateFormat() {
-        return searchableDateFormat;
-    }
-
-    public String getSearchableDateTimeFormat() {
-        return searchableDateTimeFormat;
-    }
 }

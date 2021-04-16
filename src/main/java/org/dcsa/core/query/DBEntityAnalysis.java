@@ -52,7 +52,7 @@ public interface DBEntityAnalysis<T> {
          *
          * @param queryField Register the query field.  If {@link QueryField#isSelectable()} returns true, then
          *                   the field will be extracted from the database query (using
-         *                   {@link QueryField#getSelectColumnName()} as name).
+         *                   {@link QueryField#getSelectColumn()} as name).
          */
         DBEntityAnalysisBuilder<T> registerQueryField(QueryField queryField);
 

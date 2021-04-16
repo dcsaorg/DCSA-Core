@@ -8,11 +8,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.dcsa.core.exception.GetException;
 import org.dcsa.core.query.DBEntityAnalysis;
-import org.dcsa.core.util.ReflectUtility;
+import org.springframework.data.r2dbc.dialect.R2dbcDialect;
+import org.springframework.data.relational.core.dialect.RenderContextFactory;
+import org.springframework.data.relational.core.sql.*;
+import org.springframework.data.relational.core.sql.render.RenderContext;
+import org.springframework.data.relational.core.sql.render.SqlRenderer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.r2dbc.core.PreparedOperation;
+import org.springframework.r2dbc.core.binding.BindTarget;
+import org.springframework.r2dbc.core.binding.Bindings;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -26,6 +33,7 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A class to handle extended requests. Extended requests is request requiring one of the following:
@@ -47,14 +55,17 @@ public class ExtendedRequest<T> {
 
     public static final String PARAMETER_SPLIT = "&";
     public static final String CURSOR_SPLIT = "=";
+    public static final String FILTER_SPLIT = "=";
 
 
     private final ExtendedParameters extendedParameters;
+    private final R2dbcDialect r2dbcDialect;
     private final Class<T> modelClass;
-
     protected Sort<T> sort;
     protected Pagination<T> pagination;
-    protected Filter<T> filter;
+    protected QueryParameterParser<T> queryParameterParser;
+    private CursorBackedFilterCondition filterCondition;
+
     @Getter
     @Setter
     protected boolean selectDistinct;
@@ -63,8 +74,6 @@ public class ExtendedRequest<T> {
     private final Set<String> joinAliasInUse = new HashSet<>();
     @Getter
     private DBEntityAnalysis<T> dbEntityAnalysis;
-
-    private boolean joinsResolved = false;
 
     public Class<T> getModelClass() {
         return modelClass;
@@ -82,44 +91,58 @@ public class ExtendedRequest<T> {
         isCursor = false;
     }
 
-    public void parseParameter(Map<String, String> params) {
+    public void parseParameter(Map<String, List<String>> params) {
         parseParameter(params, false);
     }
 
-    public void parseParameter(Map<String, String> params, boolean fromCursor) {
+    public void parseParameter(Map<String, List<String>> params, boolean fromCursor) {
         // Reset parameters
         resetParameters();
 
-        for (Map.Entry<String, String> entry : params.entrySet()) {
+        ExtendedParameters parameters = getExtendedParameters();
+        Set<String> reservedParameters = new HashSet<>(parameters.getReservedParameters());
+        Set<String> nonFilterParameters = new HashSet<>(reservedParameters);
+
+        nonFilterParameters.add(parameters.getSortParameterName());
+        nonFilterParameters.add(parameters.getPaginationPageSizeName());
+        nonFilterParameters.add(parameters.getPaginationCursorName());
+        nonFilterParameters.add(parameters.getIndexCursorName());
+
+        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
             String key = entry.getKey();
-            if (!getExtendedParameters().getReservedParameters().contains(key)) {
-                parseParameter(key, entry.getValue(), fromCursor);
+            if (reservedParameters.contains(key)) {
+                continue;
+            }
+
+            if (parseParameter(key, entry.getValue(), fromCursor)) {
+                // If the parseParameter consumed it, then it is not a filter parameter
+                nonFilterParameters.add(key);
             }
         }
 
-        for (FilterItem item : filter.getFilters()) {
-            this.markQueryFieldInUse(item.getQueryField());
-        }
+        getQueryParameterParser().parseQueryParameter(params, nonFilterParameters::contains);
         finishedParsingParameters();
     }
 
     // For sub-classes to hook into this
     protected void finishedParsingParameters() {
-        // Do nothing by default
+        filterCondition = getQueryParameterParser().build();
+        for (QueryField queryField : filterCondition.getReferencedQueryFields()) {
+            this.markQueryFieldInUse(queryField);
+        }
     }
 
     public void resetParameters() {
         sort = new Sort<>(this, getExtendedParameters());
         pagination = new Pagination<>(this, getExtendedParameters());
-        filter = new Filter<>(this, getExtendedParameters());
         selectDistinct = false;
-        joinsResolved = false;
         dbEntityAnalysis = this.prepareDBEntityAnalysis().build();
+        queryParameterParser = new QueryParameterParser<>(extendedParameters, r2dbcDialect, dbEntityAnalysis);
         joinAliasInUse.clear();
     }
 
-    public Filter<T> getFilter() {
-        return filter;
+    public QueryParameterParser<T> getQueryParameterParser() {
+        return queryParameterParser;
     }
 
     public Sort<T> getSort() {
@@ -130,22 +153,29 @@ public class ExtendedRequest<T> {
         return pagination;
     }
 
-    private void parseParameter(String key, String value, boolean fromCursor) {
+    private boolean parseParameter(String key, List<String> value, boolean fromCursor) {
+        boolean parsed = false;
         if (getExtendedParameters().getSortParameterName().equals(key)) {
             // Parse sorting
-            getSort().parseSortParameter(value, fromCursor);
+            getSort().parseSortParameter(value.get(0), fromCursor);
+            parsed = true;
         } else if (getExtendedParameters().getPaginationPageSizeName().equals(key)) {
             // Parse limit
-            getPagination().parseLimitParameter(value, fromCursor);
+            getPagination().parseLimitParameter(value.get(0), fromCursor);
+            parsed = true;
         } else if (getExtendedParameters().getPaginationCursorName().equals(key)) {
             // Parse cursor
-            parseCursorParameter(value);
+            parseCursorParameter(value.get(0));
+            parsed = true;
         } else if (getExtendedParameters().getIndexCursorName().equals(key) && fromCursor) {
             // Parse internal pagination cursor
-            getPagination().parseInternalPaginationCursor(value);
-        } else {
-            getFilter().parseFilterParameter(key, value, fromCursor);
+            getPagination().parseInternalPaginationCursor(value.get(0));
+            parsed = true;
         }
+        if (parsed && value.size() != 1) {
+            throw new GetException("param " + key + " was repeated but should only appear once");
+        }
+        return parsed;
     }
 
     private void parseCursorParameter(String cursorValue) {
@@ -161,66 +191,88 @@ public class ExtendedRequest<T> {
             decodedCursor = decrypt(encryptionKey, decodedCursor);
         }
 
-        Map<String, String> params = convertToQueryStringToHashMap(new String(decodedCursor, StandardCharsets.UTF_8));
+        Map<String, List<String>> params = convertToQueryStringToHashMap(new String(decodedCursor, StandardCharsets.UTF_8));
         parseParameter(params, true);
         isCursor = true;
     }
 
-    private static Map<String, String> convertToQueryStringToHashMap(String source) {
-        Map<String, String> data = new HashMap<>();
+    private static Map<String, List<String>> convertToQueryStringToHashMap(String source) {
+        Map<String, List<String>> data = new LinkedHashMap<>();
         final String[] arrParameters = source.split(PARAMETER_SPLIT);
         for (final String tempParameterString : arrParameters) {
             final String[] arrTempParameter = tempParameterString.split("=");
             final String parameterKey = arrTempParameter[0];
+            final List<String> valueList = data.computeIfAbsent(parameterKey, k -> new ArrayList<>());
             if (arrTempParameter.length >= 2) {
                 final String parameterValue = arrTempParameter[1];
-                data.put(parameterKey, parameterValue);
+                valueList.add(parameterValue);
             } else {
-                data.put(parameterKey, "");
+                valueList.add("");
             }
         }
         return data;
     }
 
     public DatabaseClient.GenericExecuteSpec getCount(DatabaseClient databaseClient) {
-        DatabaseClient.GenericExecuteSpec genericExecuteSpec = databaseClient.sql(this::getCountQuery);
-        return setBinds(genericExecuteSpec);
+        return databaseClient.sql(this.getCountQuery());
     }
 
     public DatabaseClient.GenericExecuteSpec getFindAll(DatabaseClient databaseClient) {
-        DatabaseClient.GenericExecuteSpec genericExecuteSpec = databaseClient.sql(this::getQuery);
-        return setBinds(genericExecuteSpec);
+        return databaseClient.sql(this.getQuery());
     }
 
-    private DatabaseClient.GenericExecuteSpec setBinds(DatabaseClient.GenericExecuteSpec genericExecuteSpec) {
-        for (FilterItem filterItem : getFilter().getFilters()) {
-            if (filterItem.doBind()) {
-                genericExecuteSpec = genericExecuteSpec.bind(filterItem.getBindName(), filterItem.getQueryFieldValue());
-            }
+    public Select getSelectQuery() {
+        List<Expression> expressions = dbEntityAnalysis.getAllSelectableFields().stream().map(queryField -> {
+            markQueryFieldInUse(queryField);
+            return queryField.getSelectColumn();
+        }).collect(Collectors.toList());
+        Sort<T> sort = getSort();
+
+        return generateBaseQuery(Select.builder().select(expressions))
+                .orderBy(sort.getOrderByFields()).build();
+    }
+
+    public Select getSelectCountQuery() {
+        return generateBaseQuery(Select.builder().select(
+                Functions.count(Expressions.asterisk()).as("count")
+        )).build();
+    }
+
+    protected SelectBuilder.SelectOrdered generateBaseQuery(SelectBuilder.SelectAndFrom selectBuilder) {
+        if (filterCondition == null) {
+            finishedParsingParameters();
         }
-        return genericExecuteSpec;
+        Pagination<T> pagination = getPagination();
+        if (selectDistinct) {
+            selectBuilder = selectBuilder.distinct();
+        }
+        SelectBuilder.SelectWhere selectWhere = applyJoins(pagination.applyLimitOffset(selectBuilder.from(
+                dbEntityAnalysis.getTableAndJoins().getPrimaryTable()
+        )));
+        Condition con = filterCondition.computeCondition(r2dbcDialect);
+        if (TrueCondition.INSTANCE.equals(con)) {
+            return selectWhere;
+        }
+        return selectWhere.where(con);
     }
 
     public void setQueryCount(Integer count) {
         getPagination().setTotal(count);
     }
 
-    private void ensureJoinsAreResolved() {
-        if (!joinsResolved) {
-            /* Ensure selectable fields are always considered used */
-            for (QueryField selectableField : dbEntityAnalysis.getAllSelectableFields()) {
-                markQueryFieldInUse(selectableField);
-            }
-            joinsResolved = true;
+    protected SelectBuilder.SelectWhere applyJoins(SelectBuilder.SelectFromAndJoin selectBuilder) {
+        if (!joinAliasInUse.isEmpty()) {
+            return dbEntityAnalysis.getTableAndJoins().applyJoins(selectBuilder, joinAliasInUse);
         }
+        return selectBuilder;
     }
 
-    public String getCountQuery() {
-        StringBuilder sb = new StringBuilder(selectDistinct ? "SELECT DISTINCT COUNT(*) ": "SELECT COUNT(*) ");
-        ensureJoinsAreResolved();
-        dbEntityAnalysis.getTableAndJoins().generateFromAndJoins(sb, joinAliasInUse);
-        getFilter().getFilterQueryString(sb);
-        return sb.toString();
+    public PreparedOperation<Select> getCountQuery() {
+        if (filterCondition == null) {
+            finishedParsingParameters();
+        }
+        RenderContextFactory factory = new RenderContextFactory(r2dbcDialect);
+        return PreparedQuery.of(getSelectCountQuery(), factory.createRenderContext(), filterCondition.getBindings());
     }
 
     /**
@@ -229,7 +281,7 @@ public class ExtendedRequest<T> {
      * This is called when a field has been detected as in use for the coming query.
      * Unused fields can cause joins to be omitted.
      *
-     * Note that any field registered via {@link #getFilter()} are automatically
+     * Note that any field registered via {@link #getQueryParameterParser()} are automatically
      * registered via {@link #parseParameter(Map, boolean)} (etc.).  However, subclasses
      * that need special handling of some fields/Sort rules, etc. can call this to
      * register the fields as in used as needed.
@@ -267,30 +319,13 @@ public class ExtendedRequest<T> {
         return DBEntityAnalysis.builder(this.modelClass).loadFieldsAndJoinsFromModel();
     }
 
-    public void getTableFields(StringBuilder sb) {
-        boolean first = true;
-        for (QueryField queryField : dbEntityAnalysis.getAllSelectableFields()) {
-            if (!first) {
-                sb.append(", ");
-            }
-            first = false;
-            markQueryFieldInUse(queryField);
-            sb.append(queryField.getQueryInternalName())
-                    /* Use quotes to preserve the case; which we need when resolving the column later */
-                    .append(" AS \"").append(queryField.getSelectColumnName()).append("\"");
+    public PreparedOperation<Select> getQuery() {
+        if (filterCondition == null) {
+            finishedParsingParameters();
+            assert filterCondition != null;
         }
-    }
-
-    public String getQuery() {
-        StringBuilder sb = new StringBuilder(selectDistinct ? "SELECT DISTINCT " : "SELECT ");
-        getTableFields(sb);
-        ensureJoinsAreResolved();
-        dbEntityAnalysis.getTableAndJoins().generateFromAndJoins(sb, joinAliasInUse);
-        getFilter().getFilterQueryString(sb);
-        getSort().getSortQueryString(sb);
-        getPagination().getOffsetQueryString(sb);
-        getPagination().getLimitQueryString(sb);
-        return sb.toString();
+        RenderContextFactory factory = new RenderContextFactory(r2dbcDialect);
+        return PreparedQuery.of(getSelectQuery(), factory.createRenderContext(), filterCondition.getBindings());
     }
 
     public boolean ignoreUnknownProperties() {
@@ -396,7 +431,15 @@ public class ExtendedRequest<T> {
             return null;
         }
         getSort().encodeSort(sb);
-        getFilter().encodeFilter(sb);
+        for (Map.Entry<String, List<String>> filterParam : filterCondition.getCursorParameters().entrySet()) {
+            String parameter = filterParam.getKey();
+            for (String value : filterParam.getValue()) {
+                if (sb.length() > 0) {
+                    sb.append(PARAMETER_SPLIT);
+                }
+                sb.append(parameter).append(FILTER_SPLIT).append(value);
+            }
+        }
         getPagination().encodeLimit(sb);
         if (page == null) {
             return sb.toString();
@@ -409,5 +452,25 @@ public class ExtendedRequest<T> {
             parameters = encrypt(encryptionKey, parameters);
         }
         return getExtendedParameters().getPaginationCursorName() + CURSOR_SPLIT + Base64.getUrlEncoder().encodeToString(parameters);
+    }
+
+    @RequiredArgsConstructor(staticName = "of")
+    private static class PreparedQuery implements PreparedOperation<Select> {
+
+        @Getter
+        private final Select source;
+        private final RenderContext renderContext;
+        private final Bindings bindings;
+
+        @Override
+        public void bindTo(BindTarget target) {
+            bindings.apply(target);
+        }
+
+        @Override
+        public String toQuery() {
+            SqlRenderer sqlRenderer = SqlRenderer.create(this.renderContext);
+            return sqlRenderer.render(source);
+        }
     }
 }

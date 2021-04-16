@@ -5,17 +5,19 @@ import org.dcsa.core.extendedrequest.ExtendedParameters;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.service.ExtendedBaseService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.r2dbc.dialect.R2dbcDialect;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import reactor.core.publisher.Flux;
 
-import java.util.Map;
-
 public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>, T, I> extends BaseController<S, T, I> {
 
     @Autowired
     private ExtendedParameters extendedParameters;
+
+    @Autowired
+    protected R2dbcDialect r2dbcDialect;
 
     @Override
     public String getType() {
@@ -24,10 +26,9 @@ public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>
 
     @GetMapping()
     public Flux<T> findAll(ServerHttpResponse response, ServerHttpRequest request) {
-        ExtendedRequest<T> extendedRequest = new ExtendedRequest<>(extendedParameters, getService().getModelClass());
+        ExtendedRequest<T> extendedRequest = new ExtendedRequest<>(extendedParameters, r2dbcDialect, getService().getModelClass());
         try {
-            Map<String,String> params = request.getQueryParams().toSingleValueMap();
-            extendedRequest.parseParameter(params);
+            extendedRequest.parseParameter(request.getQueryParams());
         } catch (GetException getException) {
             return Flux.error(getException);
         }

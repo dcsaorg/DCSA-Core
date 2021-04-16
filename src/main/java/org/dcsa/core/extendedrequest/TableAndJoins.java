@@ -3,6 +3,8 @@ package org.dcsa.core.extendedrequest;
 import lombok.Getter;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.sql.Column;
+import org.springframework.data.relational.core.sql.Expression;
+import org.springframework.data.relational.core.sql.SelectBuilder;
 import org.springframework.data.relational.core.sql.Table;
 
 import java.util.HashSet;
@@ -74,4 +76,46 @@ public class TableAndJoins {
         }
     }
 
+    public boolean hasJoins() {
+        return !joins.isEmpty();
+    }
+
+    public SelectBuilder.SelectFromAndJoinCondition applyJoins(SelectBuilder.SelectFromAndJoin selectFromAndJoin, Set<String> selectedJoinAliases) {
+        SelectBuilder.SelectJoin current = selectFromAndJoin;
+        int selectedJoins = 0;
+        if (!hasJoins()) {
+            throw new IllegalStateException("No joins to apply");
+        }
+        for (JoinDescriptor joinDescriptor: joins.values()) {
+            if (selectedJoinAliases.contains(joinDescriptor.getJoinAliasId())) {
+                current = applyJoin(joinDescriptor, current);
+                selectedJoins++;
+            }
+        }
+        if (selectedJoinAliases.size() != selectedJoins) {
+            throw new IllegalArgumentException("selectedJoinAliases contained an unknown alias");
+        }
+        return (SelectBuilder.SelectFromAndJoinCondition)current;
+    }
+
+
+    private SelectBuilder.SelectFromAndJoinCondition applyJoin(JoinDescriptor joinDescriptor, SelectBuilder.SelectJoin selectBuilder) {
+        SelectBuilder.SelectOn selectOn;
+        Table table = joinDescriptor.getRHSTable();
+        Expression lhsExpression = joinDescriptor.getLHSColumn();
+        Expression rhsExpression = joinDescriptor.getRHSColumn();
+        switch (joinDescriptor.getJoinType()) {
+            case JOIN:
+                selectOn = selectBuilder.join(table);
+                break;
+            case LEFT_OUTER_JOIN:
+                selectOn = selectBuilder.leftOuterJoin(table);
+                break;
+            case RIGHT_OUTER_JOIN:
+                throw new UnsupportedOperationException("Rewrite to use LEFT JOIN instead");
+            default:
+                throw new UnsupportedOperationException("Unsupported join type: " + joinDescriptor.getJoinType());
+        }
+        return selectOn.on(lhsExpression).equals(rhsExpression);
+    }
 }
