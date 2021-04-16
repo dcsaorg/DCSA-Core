@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.dcsa.core.exception.GetException;
 import org.dcsa.core.query.DBEntityAnalysis;
+import org.springframework.data.relational.core.sql.Column;
 import org.springframework.data.relational.core.sql.OrderByField;
 
 import java.util.ArrayList;
@@ -87,25 +88,16 @@ public class Sort<T> {
         }
     }
 
-    protected void getSortQueryString(StringBuilder sb) {
-        if (!sortDescriptionList.isEmpty()) {
-            sb.append(" ORDER BY ");
-            boolean first = true;
-            for (SortDesc sortDesc : sortDescriptionList) {
-                if (!first) {
-                    sb.append(", ");
-                }
-                // Verify that the field exists
-                QueryField queryField = sortDesc.queryField;
-                sb.append(queryField.getQueryInternalName());
-                if (sortDesc.getSortDirection().isAscending()) {
-                    sb.append(" ASC");
-                } else {
-                    sb.append(" DESC");
-                }
-                first = false;
+    protected List<OrderByField> getOrderByFields() {
+        return sortDescriptionList.stream().map(sortDesc -> {
+            // Use select name where possible due to
+            // https://github.com/spring-projects/spring-data-jdbc/issues/968
+            Column column = sortDesc.queryField.getSelectColumn();
+            if (column == null) {
+                column = sortDesc.queryField.getInternalQueryColumn();
             }
-        }
+            return OrderByField.from(column, sortDesc.sortDirection);
+        }).collect(Collectors.toList());
     }
 
     protected void encodeSort(StringBuilder sb) {

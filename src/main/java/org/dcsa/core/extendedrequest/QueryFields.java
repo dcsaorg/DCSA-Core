@@ -1,10 +1,11 @@
 package org.dcsa.core.extendedrequest;
 
-import lombok.Data;
-import lombok.NonNull;
+import lombok.*;
+import org.dcsa.core.model.ModelClass;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.sql.Aliased;
 import org.springframework.data.relational.core.sql.Column;
+import org.springframework.data.relational.core.sql.SqlIdentifier;
 import org.springframework.data.relational.core.sql.Table;
 
 import java.lang.reflect.Field;
@@ -12,55 +13,94 @@ import java.util.Objects;
 
 public class QueryFields {
 
-    public static QueryField queryFieldFromField(Class<?> modelType, Field field, Class<?> modelClassForField, String joinAlias, boolean selectable) {
-        return DbField.of(modelType, field, modelClassForField, joinAlias, selectable);
+    @SneakyThrows(NoSuchFieldException.class)
+    public static QueryField queryFieldFromField(Class<?> combinedModelClass, Field combinedModelField, Class<?> originalModelClass, Table table, boolean selectable) {
+        Class<?> modelClass = combinedModelClass;
+        String tableAlias = ReflectUtility.getAliasId(table);
+        String columnName;
+        Column internalColumn;
+        Column selectColumn = null;
+        String jsonName = ReflectUtility.transformFromFieldNameToJsonName(combinedModelField);
+        if (!combinedModelField.isAnnotationPresent(ModelClass.class)) {
+            /* Special-case: Use the primary model when the field does not have a ModelClass */
+            modelClass = originalModelClass;
+        }
+        columnName = ReflectUtility.transformFromFieldNameToColumnName(modelClass, combinedModelField.getName());
+        internalColumn = table.column(SqlIdentifier.unquoted(columnName));
+        if (selectable) {
+            org.springframework.data.relational.core.mapping.Column column = combinedModelField.getDeclaredAnnotation(org.springframework.data.relational.core.mapping.Column.class);
+            String selectName;
+            if (column != null) {
+                // Use that name as requested
+                selectName = column.value();
+            } else {
+                /* Use the Field name.  By definition we can only have one of it anyway and the database does not mind. */
+                selectName = combinedModelField.getName();
+            }
+            selectColumn = internalColumn.as(SqlIdentifier.quoted(selectName));
+        }
+        return FieldBackedQueryField.of(
+                combinedModelField,
+                internalColumn,
+                selectColumn,
+                tableAlias,
+                jsonName
+        );
     }
 
     public static QueryField nonSelectableQueryField(Column column, String jsonName, Class<?> type) {
-        return nonSelectableQueryField(column, jsonName, type, null);
-    }
-
-    public static QueryField nonSelectableQueryField(Column column, String jsonName, Class<?> type, String dateFormat) {
         Table table = Objects.requireNonNull(column.getTable(), "column.getTable() must be non-null");
         String joinAlias = ReflectUtility.getAliasId(table);
-        String columnName = column.getName().toString();
         if (column instanceof Aliased) {
             // Future proofing.
             throw new IllegalArgumentException("Column must not be aliased");
         }
-        return SimpleQueryField.of(joinAlias, columnName, jsonName, type, dateFormat);
-    }
-
-    public static QueryField nonSelectableQueryField(String joinAlias, String columnName, String jsonName, Class<?> type) {
-        return nonSelectableQueryField(joinAlias, columnName, jsonName, type, null);
-    }
-
-    public static QueryField nonSelectableQueryField(String joinAlias, String columnName, String jsonName, Class<?> type, String dateFormat) {
-        return SimpleQueryField.of(joinAlias, columnName, jsonName, type, dateFormat);
+        return SimpleQueryField.of(column, joinAlias, jsonName, type);
     }
 
     @Data(staticConstructor = "of")
     private static class SimpleQueryField implements QueryField {
-        @NonNull
-        private final String tableJoinAlias;
 
         @NonNull
-        private final String originalColumnName;
+        private final Column internalQueryColumn;
+
+        @NonNull
+        private final String tableJoinAlias;
 
         @NonNull
         private final String jsonName;
 
         private final Class<?> type;
 
-        private final String datePattern;
-
-        private String internalQueryName;
-
-        public String getQueryInternalName() {
-            if (internalQueryName == null) {
-                internalQueryName = this.getTableJoinAlias() + "." + this.getOriginalColumnName();
-            }
-            return internalQueryName;
+        public Column getSelectColumn() {
+            return null;
         }
+    }
+
+    @Data(staticConstructor = "of")
+    private static class FieldBackedQueryField implements QueryField {
+
+        @NonNull
+        @Getter
+        private final Field combinedModelField;
+
+        @NonNull
+        private final Column internalQueryColumn;
+
+        private final Column selectColumn;
+
+        @NonNull
+        private final String tableJoinAlias;
+
+        @NonNull
+        private final String jsonName;
+
+        public Class<?> getType() {
+            return combinedModelField.getType();
+        }
+
+        @Getter(lazy = true)
+        @EqualsAndHashCode.Exclude
+        private final String datePattern = ReflectUtility.getDateFormat(combinedModelField, null);
     }
 }

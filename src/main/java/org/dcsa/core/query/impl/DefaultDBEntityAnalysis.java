@@ -2,10 +2,9 @@ package org.dcsa.core.query.impl;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.dcsa.core.extendedrequest.TableAndJoins;
 import org.dcsa.core.extendedrequest.QueryField;
+import org.dcsa.core.extendedrequest.TableAndJoins;
 import org.dcsa.core.query.DBEntityAnalysis;
-import org.springframework.data.relational.core.sql.Table;
 
 import java.util.List;
 import java.util.Map;
@@ -20,8 +19,8 @@ public class DefaultDBEntityAnalysis<T> implements DBEntityAnalysis<T> {
     @Getter
     private final List<QueryField> allSelectableFields;
     @Getter
-    private final TableAndJoins tableAndJoins;
 
+    private final TableAndJoins tableAndJoins;
 
     private static QueryField getFieldFromTable(Map<String, QueryField> table, String key) throws IllegalArgumentException {
         QueryField field = table.get(key);

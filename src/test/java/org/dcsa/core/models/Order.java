@@ -5,6 +5,8 @@ import lombok.Data;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.time.OffsetDateTime;
+
 @Data
 @Table("order_table")
 public class Order {
@@ -25,4 +27,7 @@ public class Order {
     @JsonProperty(JsonProperty.USE_DEFAULT_NAME)
     @Column("address_id")
     private Long warehouseAddressId;
+
+    @Column("delivery_date")
+    private OffsetDateTime deliveryDate;
 }

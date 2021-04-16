@@ -8,10 +8,7 @@ import org.dcsa.core.model.ViaJoinAlias;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.annotation.Transient;
-import org.springframework.data.relational.core.sql.Column;
-import org.springframework.data.relational.core.sql.Join;
-import org.springframework.data.relational.core.sql.SqlIdentifier;
-import org.springframework.data.relational.core.sql.Table;
+import org.springframework.data.relational.core.sql.*;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -300,7 +297,14 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
                         + ", there are more than 1 option and the default name is not one of them.");
             }
         }
-        queryField = QueryFields.queryFieldFromField(modelType, field, modelClassForField, joinAlias, selectable);
+        JoinDescriptor descriptor = joinAlias2Descriptor.get(joinAlias);
+        Table fieldTable;
+        if (descriptor != null) {
+            fieldTable = descriptor.getRHSTable();
+        } else {
+            fieldTable = getPrimaryModelTable();
+        }
+        queryField = QueryFields.queryFieldFromField(modelType, field, modelClassForField, fieldTable, selectable);
         registerQueryField(queryField);
     }
 
@@ -308,19 +312,27 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
         detectClash(jsonName2DbField, queryField.getJsonName(), queryField, "JSON key",
                 "Probably one or both of them has a invalid @JsonProperty");
         if (queryField.isSelectable()) {
-            String columnName = Objects.requireNonNull(queryField.getSelectColumnName(), "selectColumnName");
+            Column column = Objects.requireNonNull(queryField.getSelectColumn(), "selectColumn");
+            SqlIdentifier name = column.getName();
+            if (column instanceof Aliased) {
+                name = ((Aliased)column).getAlias();
+            }
             this.allSelectableFields.add(queryField);
-            detectClash(selectName2DbField, columnName, queryField, "SelectColumn",
+            detectClash(selectName2DbField, name.getReference(), queryField, "SelectColumn",
                     "This can happen with explicit @Column names in the combined model class. "
                             + "Note @Column is often unnecessary and removing it might be easier."
             );
         } else {
-            String selectableColumn = queryField.getSelectColumnName();
+            Column selectableColumn = queryField.getSelectColumn();
             if (selectableColumn != null) {
-                declaredButNotSelectable.add(selectableColumn);
+                SqlIdentifier name = selectableColumn.getName();
+                if (selectableColumn instanceof Aliased) {
+                    name = ((Aliased)selectableColumn).getAlias();
+                }
+                declaredButNotSelectable.add(name.getReference());
             }
         }
-        detectClash(internalQueryName2DbField, queryField.getQueryInternalName(), queryField,
+        detectClash(internalQueryName2DbField, queryField.getInternalQueryColumn().toString(), queryField,
                 "Internal Query name",
                 "This should not happen (you ought to have gotten a conflict due to reused JoinAliases or Column names)"
         );
@@ -387,6 +399,9 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
         String tableName = ReflectUtility.getTableName(model);
         if (alias == null || alias.equals("")) {
             alias = tableName;
+        }
+        if (alias.equals(tableName)) {
+            return Table.create(SqlIdentifier.unquoted(tableName));
         }
         return Table.create(SqlIdentifier.unquoted(tableName)).as(SqlIdentifier.unquoted(alias));
     }
@@ -607,7 +622,6 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
 
         public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName) {
             Field field;
-            String alias;
             if (lhsModel == null) {
                 throw new UnsupportedOperationException("Cannot use field based field registration as there is no model"
                         + " associated with the table");
@@ -618,12 +632,11 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
                 throw new IllegalArgumentException("The model " + lhsModel.getSimpleName() + " does not have a field \""
                         + fieldName + "\"");
             }
-            alias = ReflectUtility.getAliasId(lhsTable);
             return builder.registerQueryField(QueryFields.queryFieldFromField(
                     builder.getPrimaryModelClass(),
                     field,
                     lhsModel,
-                    alias,
+                    lhsTable,
                     false
             ));
         }
