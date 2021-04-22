@@ -75,7 +75,7 @@ public class QueryParameterParser<T> {
 
     public void parseQueryParameter(Map<String, List<String>> queryParameters, Predicate<String> ignoredParameter) {
         for (Map.Entry<String, List<String>> queryParameter : queryParameters.entrySet()) {
-            String parameterKey = queryParameter.getKey();
+            final String parameterKey = queryParameter.getKey();
             List<String> values = queryParameter.getValue();
             String jsonName = parameterKey;
             String fieldAttribute = null;
@@ -95,8 +95,11 @@ public class QueryParameterParser<T> {
                 String separator = extendedParameters.getQueryParameterAttributeSeparator();
                 int index = parameterKey.indexOf(separator);
                 if (index > -1) {
-                    fieldAttribute = parameterKey.substring(0, index - 1);
-                    parameterKey = parameterKey.substring(index + 1);
+                    jsonName = parameterKey.substring(0, index);
+                    if (ignoredParameter.test(jsonName)) {
+                        continue;
+                    }
+                    fieldAttribute = parameterKey.substring(index + separator.length());
                 }
             }
             if (values.isEmpty()) {
@@ -117,8 +120,8 @@ public class QueryParameterParser<T> {
             String separator = extendedParameters.getQueryParameterAttributeSeparator();
             int index = value.indexOf(separator);
             if (index > -1) {
-                valueAttribute = value.substring(0, index - 1);
-                value = value.substring(index + 1);
+                valueAttribute = value.substring(0, index);
+                value = value.substring(index + separator.length());
             }
         }
         parseSingleValueQueryParameter(getQueryFieldFromJSONName(jsonName), fieldAttribute, valueAttribute, value);
