@@ -355,27 +355,37 @@ public class ReflectUtility {
         }
     }
 
-    public static <T> Class<T> getConcreteTypeVarOfSubclass(Class<?> implClass, int typeVarIndex, int expectedTypeNumber) {
+    public static <T> Class<T> getConcreteModelClassForService(Class<?> implClass) {
         Type genericSuperclass = implClass.getGenericSuperclass();
         if (!(genericSuperclass instanceof ParameterizedType)) {
             throw new IllegalStateException("Cannot automatically determine model class in " + implClass.getSimpleName());
         }
         ParameterizedType parameterizedType = (ParameterizedType)genericSuperclass;
         Type[] types = parameterizedType.getActualTypeArguments();
-        if (types.length != expectedTypeNumber) {
-            throw new IllegalStateException("Cannot automatically determine model class in " + implClass.getSimpleName());
+        Class<?> typeVar = null;
+
+        for (Type t : types) {
+            if (!(t instanceof Class)) {
+                continue;
+            }
+            Class<?> tVar = (Class<?>) t;
+            if (! tVar.isAnnotationPresent(Table.class)) {
+                continue;
+            }
+            if (typeVar != null) {
+                throw new IllegalStateException("Cannot automatically determine model class in " + implClass.getSimpleName()
+                        + ": Both " + tVar.getSuperclass() + " and " + typeVar.getSimpleName() + " had a @Table annotation");
+            }
+            typeVar = tVar;
         }
-        Type modelType = types[typeVarIndex];
-        if (!(modelType instanceof Class)) {
-            throw new IllegalStateException("Cannot automatically determine model class in " + implClass.getSimpleName());
-        }
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        Class<T> typeVar = (Class)modelType;
-        if (! typeVar.isAnnotationPresent(Table.class)) {
+        if (typeVar == null) {
             throw new IllegalStateException("Cannot automatically determine model class in " + implClass.getSimpleName()
-                    + ": Detected class " + typeVar.getSimpleName() + " does not have a @Table annotation - Please add it to the model.");
+                    + ": None of Type Variables had a @Table annotation");
         }
-        return typeVar;
+
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        Class<T> modelClass = (Class)typeVar;
+        return modelClass;
     }
 
     public static String getTableName(Class<?> clazz) {

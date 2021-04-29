@@ -13,7 +13,7 @@ public abstract class ExtendedBaseServiceImpl<R extends ExtendedRepository<T, I>
     @Override
     public Class<T> getModelClass() {
         if (modelClass == null) {
-            this.modelClass = ReflectUtility.getConcreteTypeVarOfSubclass(this.getClass(), 1, 3);
+            this.modelClass = ReflectUtility.getConcreteModelClassForService(this.getClass());
         }
         return modelClass;
     }
