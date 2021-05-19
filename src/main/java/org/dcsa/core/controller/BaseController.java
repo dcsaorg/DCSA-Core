@@ -2,15 +2,20 @@ package org.dcsa.core.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.dcsa.core.exception.*;
+import org.dcsa.core.model.transferobjects.ConcreteRequestErrorMessageTO;
+import org.dcsa.core.model.transferobjects.RequestFailureTO;
 import org.dcsa.core.service.BaseService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.r2dbc.BadSqlGrammarException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.List;
 
 @Slf4j
 public abstract class BaseController<S extends BaseService<T, I>, T, I> {
@@ -76,7 +81,7 @@ public abstract class BaseController<S extends BaseService<T, I>, T, I> {
     }
 
     public Mono<T> createMonoError() {
-        return Mono.error(new CreateException("Id not allowed when creating a new " + getType()));
+        return Mono.error(ConcreteRequestErrorMessageException.invalidParameter(getType(), null, "Id not allowed when creating a new " + getType()));
     }
 
     @ExceptionHandler
@@ -94,29 +99,39 @@ public abstract class BaseController<S extends BaseService<T, I>, T, I> {
     public void handle(BadSqlGrammarException ex) {
         if ("22001".equals(ex.getR2dbcException().getSqlState())) {
             // The error with code 22001 is thrown when trying to insert a value that is too long for the column
-            if (ex.getSql().startsWith("INSERT INTO")) {
-                log.warn(this.getClass().getSimpleName() + " insert into error! - " + ex.getR2dbcException().getMessage());
-                throw new CreateException("Trying to insert a string value that is too long");
-            } else {
-                log.warn(this.getClass().getSimpleName() + " update error! - " + ex.getR2dbcException().getMessage());
-                throw new UpdateException("Trying to update a string value that is too long");
-            }
+            // - we "should" have handled that by @Size attributes, so this is mostly here as a fallback
+            throw ConcreteRequestErrorMessageException.invalidParameter("Trying to update a string value that is too long");
         } else if ("42804".equals(ex.getR2dbcException().getSqlState())) {
-            log.error(this.getClass().getSimpleName() + " database error! - " + ex.getR2dbcException().getMessage());
-            throw new DatabaseException("Internal mismatch between backEnd and database - please see log");
+            throw ConcreteRequestErrorMessageException.internalServerError("Internal mismatch between backEnd and database.", ex);
         } else {
-            log.error(this.getClass().getSimpleName() + " R2dbcException!", ex);
-            throw new DatabaseException("Internal error with database operation - please see log");
+            throw ConcreteRequestErrorMessageException.internalServerError("Internal error with database operation.", ex);
         }
     }
+
     @ExceptionHandler(ServerWebInputException.class)
     public void handle(ServerWebInputException ex) {
-        if (ex.getMessage() != null && ex.getMessage().contains("Invalid UUID string:")) {
-            log.warn("Invalid UUID string");
-            throw new InvalidParameterException("Input was not a valid UUID format");
-        } else {
-            log.error(this.getClass().getSimpleName());
-            throw ex;
+        throw ConcreteRequestErrorMessageException.invalidParameter(ex.getMessage(), ex);
+    }
+
+    @ExceptionHandler(ConcreteRequestErrorMessageException.class)
+    public ResponseEntity<RequestFailureTO> handle(HttpServletRequest httpServletRequest, ConcreteRequestErrorMessageException ex) {
+        ResponseStatus responseStatusAnnotation = ex.getClass().getAnnotation(ResponseStatus.class);
+        HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        ConcreteRequestErrorMessageTO errorEntity = ex.asConcreteRequestMessage();
+        if (responseStatusAnnotation != null) {
+            httpStatus = responseStatusAnnotation.code();
         }
+        StringBuffer requestUri = httpServletRequest.getRequestURL();
+        String query = httpServletRequest.getQueryString();
+        if (query != null) {
+            requestUri.append('?').append(httpServletRequest.getQueryString());
+        }
+        RequestFailureTO failureTO = new RequestFailureTO(
+                httpServletRequest.getMethod(),
+                requestUri.toString(),
+                List.of(errorEntity),
+                httpStatus
+        );
+        return new ResponseEntity<>(failureTO, httpStatus);
     }
 }
