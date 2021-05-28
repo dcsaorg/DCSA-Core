@@ -129,14 +129,18 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
             initJoinAliasTable();
         }
 
-        loadJoinsAndFieldsAndForeignKeysDeep(entityType, model -> model.isAssignableFrom(entityType), "", "");
+        loadJoinsAndFieldsAndForeignKeysDeep(entityType, model -> model.isAssignableFrom(entityType), "", "", null);
     }
 
-    private void loadJoinsAndFieldsAndForeignKeysDeep(Class<?> modelType, Predicate<Class<?>> skipFieldRegistration, String prefix, String joinAlias) {
+    private void loadJoinsAndFieldsAndForeignKeysDeep(Class<?> modelType, Predicate<Class<?>> skipFieldRegistration,
+                                                      String prefix, String joinAlias, Table table) {
         if (joinAlias.equals("")) {
             joinAlias = ReflectUtility.getTableName(modelType);
         }
-        Table table = getTableForModel(modelType, joinAlias);
+
+        if (table == null) {
+            table = getTableForModel(modelType, joinAlias);
+        }
 
         for (Field field : modelType.getDeclaredFields()) {
             if (field.isAnnotationPresent(Transient.class)) {
@@ -167,7 +171,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
 
                 // load fields recursively with new prefix
                 String newPrefix = prefix + ReflectUtility.transformFromFieldNameToJsonName(intoField) + ".";
-                loadJoinsAndFieldsAndForeignKeysDeep(intoField.getType(), skipFieldRegistration, newPrefix, intoJoinAlias);
+                loadJoinsAndFieldsAndForeignKeysDeep(intoField.getType(), skipFieldRegistration, newPrefix, intoJoinAlias, null);
             }
 
             if (skipFieldRegistration != null && skipFieldRegistration.test(modelType)) {
@@ -180,7 +184,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
 
         Class<?> superClass = modelType.getSuperclass();
         if (superClass != Object.class) {
-            loadJoinsAndFieldsAndForeignKeysDeep(superClass, skipFieldRegistration, prefix, joinAlias);
+            loadJoinsAndFieldsAndForeignKeysDeep(superClass, skipFieldRegistration, prefix, joinAlias, table);
         }
     }
 
