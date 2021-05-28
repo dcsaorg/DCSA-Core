@@ -13,7 +13,7 @@ public class StubRowMetadata implements RowMetadata {
 
     @Override
     public ColumnMetadata getColumnMetadata(int i) {
-        return null;
+        throw new UnsupportedOperationException("stub; not implemented");
     }
 
     @Override

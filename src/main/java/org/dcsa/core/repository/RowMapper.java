@@ -90,7 +90,7 @@ public class RowMapper {
                         if (currentValue instanceof Map) {
                             currentMap = (Map<String, Object>) currentValue;
                         } else {
-                            throw new IllegalStateException("Key:" + key + " in columnName:" + columnName
+                            throw new IllegalStateException("Key: " + key + " in columnName: " + columnName
                                     + " is already set to a value of class " + currentValue.getClass().getSimpleName()
                                     + ", but expected to be a Map. Is the value for the key set twice?");
                         }
@@ -115,7 +115,7 @@ public class RowMapper {
         try {
             dbField = dbEntityAnalysis.getQueryFieldFromSelectName(selectName);
         } catch (IllegalArgumentException exception) {
-            throw new DatabaseException("Query field is unavailable for selectName:" + selectName, exception);
+            throw new DatabaseException("Query field is unavailable for selectName: " + selectName, exception);
         }
         Field combinedModelField = dbField.getCombinedModelField();
         if (combinedModelField == null) {

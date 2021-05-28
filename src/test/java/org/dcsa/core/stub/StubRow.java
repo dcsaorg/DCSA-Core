@@ -14,7 +14,7 @@ public class StubRow implements Row {
 
     @Override
     public <T> T get(int i, Class<T> clazz) {
-        return null;
+        throw new UnsupportedOperationException("stub; not implemented");
     }
 
     @SuppressWarnings({"unchecked"})

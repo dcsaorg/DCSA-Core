@@ -174,9 +174,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
                 continue;
             }
 
-            boolean selectable = true; // We already skip non-selectables (Transient).
-
-            QueryField queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(entityType, field, modelType, table, selectable, prefix);
+            QueryField queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(entityType, field, modelType, table, true, prefix);
             registerQueryField(queryField);
         }
 
