@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> implements ExtendedRepository<T, I> {
     private final DatabaseClient databaseClient;
     private final MappingRelationalEntityInformation<T, I> mappingRelationalEntityInformation;
+    private final RowMapper rowMapper = new RowMapper();
 
     public ExtendedRepositoryImpl(MappingRelationalEntityInformation<T, I> mappingRelationalEntityInformation,
                                   R2dbcEntityTemplate r2dbcEntityTemplate,
@@ -37,7 +38,7 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
         boolean ignoreUnknownProperties = extendedRequest.ignoreUnknownProperties();
         return extendedRequest.getFindAll(databaseClient)
                 .map((row, metadata) ->
-                        RowMapper.mapRow(row, metadata, extendedRequest.getDbEntityAnalysis(),
+                        rowMapper.mapRow(row, metadata, extendedRequest.getDbEntityAnalysis(),
                                 extendedRequest.getModelClass(), ignoreUnknownProperties)
                 ).all();
     }

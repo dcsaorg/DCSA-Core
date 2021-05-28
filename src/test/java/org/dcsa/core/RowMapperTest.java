@@ -239,6 +239,7 @@ public class RowMapperTest {
         private final RowMetadata rowMetadata;
 
         private final ExtendedRequest<T> request;
+        private final RowMapper rowMapper = new RowMapper();
 
         public void verify(T expected, Consumer<ExtendedRequest<T>> requestMutator) {
             T actual;
@@ -249,7 +250,7 @@ public class RowMapperTest {
                 requestMutator.accept(request);
             }
 
-            actual = RowMapper.mapRow(row, rowMetadata, request.getDbEntityAnalysis(), request.getModelClass(),
+            actual = rowMapper.mapRow(row, rowMetadata, request.getDbEntityAnalysis(), request.getModelClass(),
                     request.ignoreUnknownProperties());
             Assertions.assertEquals(expected, actual);
         }

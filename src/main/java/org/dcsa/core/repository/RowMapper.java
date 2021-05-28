@@ -23,23 +23,22 @@ import java.util.Map;
 public class RowMapper {
     private static final Integer DATABASE_INTERVAL_NATIVE_TYPE = 1186;
 
-    public static <T> T mapRow(Row row, RowMetadata metadata, DBEntityAnalysis<T> dbEntityAnalysis, Class<T> modelClass, boolean ignoreUnknownProperties) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        JacksonAnnotationIntrospector ignoreJsonAnnotationsIntrospector = new JacksonAnnotationIntrospector() {
-            @Override
-            protected <A extends Annotation> A _findAnnotation(Annotated annotated, Class<A> annoClass) {
-                if (annotated.hasAnnotation(JsonIgnore.class) || annotated.hasAnnotation(JsonProperty.class)) {
-                    return null;
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule()) // Needed to process time objects.
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
+            .enable(SerializationFeature.WRITE_DATES_WITH_ZONE_ID)
+            .setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
+                @Override
+                protected <A extends Annotation> A _findAnnotation(Annotated annotated, Class<A> annoClass) {
+                    if (annotated.hasAnnotation(JsonIgnore.class) || annotated.hasAnnotation(JsonProperty.class)) {
+                        return null;
+                    }
+                    return super._findAnnotation(annotated, annoClass);
                 }
-                return super._findAnnotation(annotated, annoClass);
-            }
-        };
-        objectMapper.setAnnotationIntrospector(ignoreJsonAnnotationsIntrospector);
-        objectMapper.registerModule(new JavaTimeModule()) // Needed to process time objects.
-                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                    .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
-                    .enable(SerializationFeature.WRITE_DATES_WITH_ZONE_ID);
+            });
 
+    public <T> T mapRow(Row row, RowMetadata metadata, DBEntityAnalysis<T> dbEntityAnalysis, Class<T> modelClass, boolean ignoreUnknownProperties) {
         Map<String, Object> objectMap = objectMapFromRow(row, metadata, dbEntityAnalysis, ignoreUnknownProperties);
         return objectMapper.convertValue(objectMap, modelClass);
     }
