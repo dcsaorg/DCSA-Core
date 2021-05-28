@@ -41,13 +41,13 @@ public class RowMapperTest {
         customerWithAddress.setName("customerName");
         customerWithAddress.setAddress("customerAddress");
 
-        StubRow row = new StubRow(Map.of(
+        StubRow row = StubRow.of(Map.of(
                 "id", 1L,
                 "name", "customerName",
                 "address", "customerAddress"
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
-        RowMetadata rowMetadata = new StubRowMetadata(columnMetadatas);
+        RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
 
         rowMap(row, rowMetadata, CustomerWithAddress.class, extendedParameters).verify(customerWithAddress);
     }
@@ -70,7 +70,7 @@ public class RowMapperTest {
         customer.setPaymentAddressId(3L);
         customer.setPaymentAddress(paymentAddress);
 
-        StubRow row = new StubRow(Map.of(
+        StubRow row = StubRow.of(Map.of(
                 "deliveryAddress.address_id", 1L,
                 "deliveryAddress.street_name", "deliveryAddress",
                 "deliveryAddress.city_id", 2L,
@@ -83,7 +83,7 @@ public class RowMapperTest {
                 "payment_address_id", 3L
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
-        RowMetadata rowMetadata = new StubRowMetadata(columnMetadatas);
+        RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
 
         rowMap(row, rowMetadata, CustomerWithForeignKeyAddresses.class, extendedParameters).verify(customer);
     }
@@ -111,7 +111,7 @@ public class RowMapperTest {
         customerBook.setCustomerId(5L);
         customerBook.setCustomer(customer);
 
-        StubRow row = new StubRow(Map.ofEntries(
+        StubRow row = StubRow.of(Map.ofEntries(
                 Map.entry("customer.deliveryAddress.address_id", 1L),
                 Map.entry("customer.deliveryAddress.street_name", "deliveryAddress"),
                 Map.entry("customer.deliveryAddress.city_id", 2L),
@@ -127,7 +127,7 @@ public class RowMapperTest {
                 Map.entry("customer_id", 5L)
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
-        RowMetadata rowMetadata = new StubRowMetadata(columnMetadatas);
+        RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
 
         rowMap(row, rowMetadata, CustomerBook.class, extendedParameters).verify(customerBook);
     }
@@ -161,7 +161,7 @@ public class RowMapperTest {
         cityCustomerBook.setCityId("cityId");
         cityCustomerBook.setCity(city);
 
-        StubRow row = new StubRow(Map.ofEntries(
+        StubRow row = StubRow.of(Map.ofEntries(
                 Map.entry("customer.deliveryAddress.address_id", 1L),
                 Map.entry("customer.deliveryAddress.street_name", "deliveryAddress"),
                 Map.entry("customer.deliveryAddress.city_id", 2L),
@@ -181,7 +181,7 @@ public class RowMapperTest {
                 Map.entry("customer_id", 5L)
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
-        RowMetadata rowMetadata = new StubRowMetadata(columnMetadatas);
+        RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
 
         rowMap(row, rowMetadata, CityCustomerBook.class, extendedParameters).verify(cityCustomerBook);
     }
@@ -193,13 +193,13 @@ public class RowMapperTest {
         orderWithCustomerAndAddresses.setCustomerName("customerName");
         orderWithCustomerAndAddresses.setWarehouseAddress("warehouseAddress");
 
-        StubRow row = new StubRow(Map.ofEntries(
+        StubRow row = StubRow.of(Map.ofEntries(
                 Map.entry("orderline", "orderLine"),
                 Map.entry("customerName", "customerName"),
                 Map.entry("warehouseAddress", "warehouseAddress")
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
-        RowMetadata rowMetadata = new StubRowMetadata(columnMetadatas);
+        RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
 
         rowMap(row, rowMetadata, OrderWithCustomerAndAddresses.class, extendedParameters).verify(orderWithCustomerAndAddresses);
     }
@@ -214,7 +214,7 @@ public class RowMapperTest {
         extendedOrder.setDeliveryDate(OffsetDateTime.parse("2021-05-18T15:20:30+01:00"));
         extendedOrder.setWarehouseAddress("warehouseAddress");
 
-        StubRow row = new StubRow(Map.ofEntries(
+        StubRow row = StubRow.of(Map.ofEntries(
                 Map.entry("order_id", 1L),
                 Map.entry("orderline", "orderLine"),
                 Map.entry("customer_id", 2L),
@@ -223,7 +223,7 @@ public class RowMapperTest {
                 Map.entry("warehouseAddress", "warehouseAddress")
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
-        RowMetadata rowMetadata = new StubRowMetadata(columnMetadatas);
+        RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
 
         rowMap(row, rowMetadata, ExtendedOrder.class, extendedParameters).verify(extendedOrder);
     }

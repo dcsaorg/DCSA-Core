@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor()
+@RequiredArgsConstructor(staticName = "of")
 public class StubRow implements Row {
     private final Map<String, ?> name2Object;
 
@@ -25,7 +25,7 @@ public class StubRow implements Row {
 
     public List<ColumnMetadata> getStubColumnMetadatas() {
         return name2Object.keySet().stream()
-                .map(column -> (ColumnMetadata) new StubColumnMetadata(column, name2Object.get(column).getClass()))
+                .map(column -> (ColumnMetadata) StubColumnMetadata.of(column, name2Object.get(column).getClass()))
                 .collect(Collectors.toList());
     }
 }

@@ -2,12 +2,14 @@ package org.dcsa.core.stub;
 
 import io.r2dbc.spi.ColumnMetadata;
 import io.r2dbc.spi.RowMetadata;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor()
+@Getter
+@RequiredArgsConstructor(staticName = "of")
 public class StubRowMetadata implements RowMetadata {
     private final Collection<ColumnMetadata> columnMetadatas;
 
@@ -20,11 +22,6 @@ public class StubRowMetadata implements RowMetadata {
     public ColumnMetadata getColumnMetadata(String columnName) {
         return columnMetadatas.stream().filter(columnMetadata -> columnMetadata.getName().equals(columnName))
                 .findFirst().orElse(null);
-    }
-
-    @Override
-    public Iterable<? extends ColumnMetadata> getColumnMetadatas() {
-        return columnMetadatas;
     }
 
     @Override
