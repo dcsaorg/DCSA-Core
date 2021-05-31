@@ -2,9 +2,7 @@ package org.dcsa.core.query.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.extendedrequest.*;
-import org.dcsa.core.model.JoinedWithModel;
-import org.dcsa.core.model.PrimaryModel;
-import org.dcsa.core.model.ViaJoinAlias;
+import org.dcsa.core.model.*;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.annotation.Transient;
@@ -13,6 +11,7 @@ import org.springframework.data.relational.core.sql.*;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -34,6 +33,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
 
 
     public DBEntityAnalysis.DBEntityAnalysisBuilder<T> loadFieldsAndJoinsFromModel() {
+        loadForeignKeysFromEntityClass();
         loadJoinsFromAnnotationsOnEntityClass();
         loadFieldFromModelClass();
         loadFilterFieldsFromJoinedWithModelDeclaredJoins();
@@ -122,6 +122,70 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
                 field -> !field.isAnnotationPresent(Transient.class),
                 field -> this.registerField(field, null, true)
         );
+    }
+
+    private void loadForeignKeysFromEntityClass() {
+        if (joinAlias2Class.isEmpty()) {
+            initJoinAliasTable();
+        }
+
+        loadJoinsAndFieldsAndForeignKeysDeep(entityType, model -> model.isAssignableFrom(entityType), "", "", null);
+    }
+
+    private void loadJoinsAndFieldsAndForeignKeysDeep(Class<?> modelType, Predicate<Class<?>> skipFieldRegistration,
+                                                      String prefix, String joinAlias, Table table) {
+        if (joinAlias.equals("")) {
+            joinAlias = ReflectUtility.getTableName(modelType);
+        }
+
+        if (table == null) {
+            table = getTableForModel(modelType, joinAlias);
+        }
+
+        for (Field field : modelType.getDeclaredFields()) {
+            if (field.isAnnotationPresent(Transient.class)) {
+                continue;
+            }
+
+            if (field.isAnnotationPresent(ForeignKey.class)) {
+                ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
+                String intoFieldName = foreignKey.into();
+                Field intoField;
+                try {
+                    intoField = ReflectUtility.getDeclaredField(modelType, intoFieldName);
+                } catch (NoSuchFieldException e) {
+                    throw new IllegalArgumentException("Invalid into");
+                }
+                Class<?> intoModelType = intoField.getType();
+                String intoJoinAlias = foreignKey.viaJoinAlias();
+
+                // Join descriptor
+                String lhsColumnName = getColumnName(modelType, field.getName(), "lhs");
+                Column lhsColumn = Column.create(SqlIdentifier.unquoted(lhsColumnName), table);
+                String rhsColumnName = getColumnName(intoModelType, foreignKey.foreignFieldName(), "rhs");
+                Table rhsTable = getTableForModel(intoModelType, intoJoinAlias);
+                Column rhsColumn = Column.create(SqlIdentifier.unquoted(rhsColumnName), rhsTable);
+
+                SimpleJoinDescriptor joinDescriptor = SimpleJoinDescriptor.of(Join.JoinType.JOIN, lhsColumn, rhsColumn, intoModelType, joinAlias);
+                registerJoinDescriptor(joinDescriptor);
+
+                // load fields recursively with new prefix
+                String newPrefix = prefix + ReflectUtility.transformFromFieldNameToJsonName(intoField) + ".";
+                loadJoinsAndFieldsAndForeignKeysDeep(intoField.getType(), skipFieldRegistration, newPrefix, intoJoinAlias, null);
+            }
+
+            if (skipFieldRegistration != null && skipFieldRegistration.test(modelType)) {
+                continue;
+            }
+
+            QueryField queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(entityType, field, modelType, table, true, prefix);
+            registerQueryField(queryField);
+        }
+
+        Class<?> superClass = modelType.getSuperclass();
+        if (superClass != Object.class) {
+            loadJoinsAndFieldsAndForeignKeysDeep(superClass, skipFieldRegistration, prefix, joinAlias, table);
+        }
     }
 
     private void loadFilterFieldsFromJoinedWithModelDeclaredJoins() {

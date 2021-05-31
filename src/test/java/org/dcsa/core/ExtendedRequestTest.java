@@ -43,6 +43,36 @@ public class ExtendedRequestTest {
     }
 
     @Test
+    public void testCustomerWithForeignKeyAddresses() {
+        String baseQuery = "SELECT delivery_address.address_id AS \"deliveryAddress.address_id\", delivery_address.street_name AS \"deliveryAddress.street_name\", delivery_address.city_id AS \"deliveryAddress.city_id\", payment_address.address_id AS \"paymentAddress.address_id\", payment_address.street_name AS \"paymentAddress.street_name\", payment_address.city_id AS \"paymentAddress.city_id\", customer_table.customer_id AS \"customer_id\", customer_table.customer_name AS \"customer_name\", customer_table.delivery_address_id AS \"delivery_address_id\", customer_table.payment_address_id AS \"payment_address_id\""
+                + " FROM customer_table"
+                + " JOIN address_table delivery_address ON customer_table.delivery_address_id = delivery_address.address_id"
+                + " JOIN address_table payment_address ON customer_table.payment_address_id = payment_address.address_id";
+        request(CustomerWithForeignKeyAddresses.class, extendedParameters).verify(baseQuery);
+    }
+
+    @Test
+    public void testCustomerBook() {
+        String baseQuery = "SELECT customer_table.customer_id AS \"customer.customer_id\", customer_table.customer_name AS \"customer.customer_name\", delivery_address.address_id AS \"customer.deliveryAddress.address_id\", delivery_address.street_name AS \"customer.deliveryAddress.street_name\", delivery_address.city_id AS \"customer.deliveryAddress.city_id\", customer_table.delivery_address_id AS \"customer.delivery_address_id\", payment_address.address_id AS \"customer.paymentAddress.address_id\", payment_address.street_name AS \"customer.paymentAddress.street_name\", payment_address.city_id AS \"customer.paymentAddress.city_id\", customer_table.payment_address_id AS \"customer.payment_address_id\", customer_book_table.customer_book_id AS \"customer_book_id\", customer_book_table.customer_book_name AS \"customer_book_name\", customer_book_table.customer_id AS \"customer_id\""
+                + " FROM customer_book_table"
+                + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
+                + " JOIN address_table delivery_address ON customer_table.delivery_address_id = delivery_address.address_id"
+                + " JOIN address_table payment_address ON customer_table.payment_address_id = payment_address.address_id";
+        request(CustomerBook.class, extendedParameters).verify(baseQuery);
+    }
+
+    @Test
+    public void testCityCustomerBook() {
+        String baseQuery = "SELECT city_table.id AS \"city.id\", city_table.city_name AS \"city.city_name\", city_table.country_id AS \"city.country_id\", customer_table.customer_id AS \"customer.customer_id\", customer_table.customer_name AS \"customer.customer_name\", delivery_address.address_id AS \"customer.deliveryAddress.address_id\", delivery_address.street_name AS \"customer.deliveryAddress.street_name\", delivery_address.city_id AS \"customer.deliveryAddress.city_id\", customer_table.delivery_address_id AS \"customer.delivery_address_id\", payment_address.address_id AS \"customer.paymentAddress.address_id\", payment_address.street_name AS \"customer.paymentAddress.street_name\", payment_address.city_id AS \"customer.paymentAddress.city_id\", customer_table.payment_address_id AS \"customer.payment_address_id\", customer_book_table.city_id AS \"city_id\", customer_book_table.customer_book_id AS \"customer_book_id\", customer_book_table.customer_book_name AS \"customer_book_name\", customer_book_table.customer_id AS \"customer_id\""
+                + " FROM customer_book_table"
+                + " JOIN city_table ON customer_book_table.city_id = city_table.id"
+                + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
+                + " JOIN address_table delivery_address ON customer_table.delivery_address_id = delivery_address.address_id"
+                + " JOIN address_table payment_address ON customer_table.payment_address_id = payment_address.address_id";
+        request(CityCustomerBook.class, extendedParameters).verify(baseQuery);
+    }
+
+    @Test
     public void testOrderWithCustomerAndAddresses() {
         String baseQuery = "SELECT order_table.orderline AS \"orderline\", customer_table.customer_name AS \"customerName\", customer_address.street_name AS \"customerAddress\", warehouse_address.street_name AS \"warehouseAddress\""
                 + " FROM order_table"
