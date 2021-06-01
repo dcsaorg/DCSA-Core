@@ -1,33 +1,27 @@
 package org.dcsa.core.extendedrequest;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.r2dbc.spi.Row;
-import io.r2dbc.spi.RowMetadata;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.dcsa.core.exception.GetException;
 import org.dcsa.core.query.DBEntityAnalysis;
+import org.dcsa.core.query.impl.AbstractQueryFactory;
+import org.dcsa.core.query.impl.PreparedQuery;
 import org.springframework.data.r2dbc.dialect.R2dbcDialect;
 import org.springframework.data.relational.core.dialect.RenderContextFactory;
 import org.springframework.data.relational.core.sql.*;
-import org.springframework.data.relational.core.sql.render.RenderContext;
-import org.springframework.data.relational.core.sql.render.SqlRenderer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.r2dbc.core.PreparedOperation;
-import org.springframework.r2dbc.core.binding.BindTarget;
-import org.springframework.r2dbc.core.binding.Bindings;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -51,7 +45,7 @@ import java.util.stream.Collectors;
  *  * object.
  */
 @RequiredArgsConstructor
-public class ExtendedRequest<T> {
+public class ExtendedRequest<T> extends AbstractQueryFactory<T> {
 
     public static final String PARAMETER_SPLIT = "&";
     public static final String CURSOR_SPLIT = "=";
@@ -122,6 +116,20 @@ public class ExtendedRequest<T> {
 
         getQueryParameterParser().parseQueryParameter(params, nonFilterParameters::contains);
         finishedParsingParameters();
+    }
+
+    protected CursorBackedFilterCondition getFilterCondition() {
+        return filterCondition;
+    }
+
+    @Override
+    protected Set<String> getJoinAliasInUse() {
+        return joinAliasInUse;
+    }
+
+    @Override
+    protected SelectBuilder.SelectFromAndJoin applyLimitOffset(SelectBuilder.SelectFromAndJoin t) {
+        return getPagination().applyLimitOffset(t);
     }
 
     // For sub-classes to hook into this
@@ -214,65 +222,44 @@ public class ExtendedRequest<T> {
     }
 
     public DatabaseClient.GenericExecuteSpec getCount(DatabaseClient databaseClient) {
-        return databaseClient.sql(this.getCountQuery());
+        return databaseClient.sql(this.generateCountQuery());
     }
 
     public DatabaseClient.GenericExecuteSpec getFindAll(DatabaseClient databaseClient) {
-        return databaseClient.sql(this.getQuery());
+        return databaseClient.sql(this.generateSelectQuery());
     }
 
-    public Select getSelectQuery() {
-        List<Expression> expressions = dbEntityAnalysis.getAllSelectableFields().stream().map(queryField -> {
-            markQueryFieldInUse(queryField);
-            return queryField.getSelectColumn();
-        }).collect(Collectors.toList());
-        Sort<T> sort = getSort();
-
-        return generateBaseQuery(Select.builder().select(expressions))
-                .orderBy(sort.getOrderByFields()).build();
+    protected SelectBuilder.BuildSelect applyOrder(SelectBuilder.SelectOrdered builder) {
+        return builder.orderBy(getSort().getOrderByFields());
     }
 
-    public Select getSelectCountQuery() {
-        return generateBaseQuery(Select.builder().select(
-                Functions.count(Expressions.asterisk()).as("count")
-        )).build();
-    }
-
+    @Override
     protected SelectBuilder.SelectOrdered generateBaseQuery(SelectBuilder.SelectAndFrom selectBuilder) {
         if (filterCondition == null) {
             finishedParsingParameters();
         }
-        Pagination<T> pagination = getPagination();
-        if (selectDistinct) {
-            selectBuilder = selectBuilder.distinct();
-        }
-        SelectBuilder.SelectWhere selectWhere = applyJoins(pagination.applyLimitOffset(selectBuilder.from(
-                dbEntityAnalysis.getTableAndJoins().getPrimaryTable()
-        )));
-        Condition con = filterCondition.computeCondition(r2dbcDialect);
-        if (TrueCondition.INSTANCE.equals(con)) {
-            return selectWhere;
-        }
-        return selectWhere.where(con);
+        return super.generateBaseQuery(selectBuilder);
+    }
+
+    @Override
+    protected Condition generateCondition() {
+        return getFilterCondition().computeCondition(r2dbcDialect);
     }
 
     public void setQueryCount(Integer count) {
         getPagination().setTotal(count);
     }
 
-    protected SelectBuilder.SelectWhere applyJoins(SelectBuilder.SelectFromAndJoin selectBuilder) {
-        if (!joinAliasInUse.isEmpty()) {
-            return dbEntityAnalysis.getTableAndJoins().applyJoins(selectBuilder, joinAliasInUse);
-        }
-        return selectBuilder;
-    }
-
-    public PreparedOperation<Select> getCountQuery() {
+    public PreparedOperation<Select> generateCountQuery() {
         if (filterCondition == null) {
             finishedParsingParameters();
         }
+        return super.generateCountQuery();
+    }
+
+    protected PreparedQuery createPreparedOperation(Select select) {
         RenderContextFactory factory = new RenderContextFactory(r2dbcDialect);
-        return PreparedQuery.of(getSelectCountQuery(), factory.createRenderContext(), filterCondition.getBindings());
+        return PreparedQuery.of(select, factory.createRenderContext(), filterCondition.getBindings());
     }
 
     /**
@@ -319,27 +306,25 @@ public class ExtendedRequest<T> {
         return DBEntityAnalysis.builder(this.modelClass).loadFieldsAndJoinsFromModel();
     }
 
-    public PreparedOperation<Select> getQuery() {
+    public PreparedOperation<Select> generateSelectQuery() {
+        List<Expression> expressions = dbEntityAnalysis.getAllSelectableFields().stream().map(queryField -> {
+            markQueryFieldInUse(queryField);
+            return queryField.getSelectColumn();
+        }).collect(Collectors.toList());
+        return this.generateSelectQuery(expressions);
+    }
+
+    protected PreparedOperation<Select> generateSelectQuery(List<Expression> expressions) {
         if (filterCondition == null) {
             finishedParsingParameters();
             assert filterCondition != null;
         }
-        RenderContextFactory factory = new RenderContextFactory(r2dbcDialect);
-        return PreparedQuery.of(getSelectQuery(), factory.createRenderContext(), filterCondition.getBindings());
+        return super.generateSelectQuery(expressions);
     }
 
     public boolean ignoreUnknownProperties() {
         JsonIgnoreProperties jsonIgnoreProperties = modelClass.getAnnotation(JsonIgnoreProperties.class);
         return jsonIgnoreProperties != null && jsonIgnoreProperties.ignoreUnknown();
-    }
-
-    public T getModelClassInstance(Row row, RowMetadata meta) {
-        try {
-            Constructor<T> constructor = modelClass.getDeclaredConstructor();
-            return constructor.newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new GetException("Error when creating a new instance of: " + modelClass.getSimpleName());
-        }
     }
 
     /*
@@ -454,23 +439,4 @@ public class ExtendedRequest<T> {
         return getExtendedParameters().getPaginationCursorName() + CURSOR_SPLIT + Base64.getUrlEncoder().encodeToString(parameters);
     }
 
-    @RequiredArgsConstructor(staticName = "of")
-    private static class PreparedQuery implements PreparedOperation<Select> {
-
-        @Getter
-        private final Select source;
-        private final RenderContext renderContext;
-        private final Bindings bindings;
-
-        @Override
-        public void bindTo(BindTarget target) {
-            bindings.apply(target);
-        }
-
-        @Override
-        public String toQuery() {
-            SqlRenderer sqlRenderer = SqlRenderer.create(this.renderContext);
-            return sqlRenderer.render(source);
-        }
-    }
 }

@@ -569,6 +569,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
         this.verifyFieldsAndJoins();
         used = true;
         return new DefaultDBEntityAnalysis<>(
+                entityType,
                 Collections.unmodifiableMap(jsonName2DbField),
                 Collections.unmodifiableMap(selectName2DbField),
                 Collections.unmodifiableSet(declaredButNotSelectable),

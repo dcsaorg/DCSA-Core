@@ -13,6 +13,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DefaultDBEntityAnalysis<T> implements DBEntityAnalysis<T> {
 
+    @Getter
+    private final Class<T> entityType;
     private final Map<String, QueryField> jsonName2QueryField;
     private final Map<String, QueryField> selectName2QueryField;
     private final Set<String> declaredButNotSelectable;

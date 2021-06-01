@@ -206,7 +206,7 @@ public class ExtendedRequestTest {
             if (requestMutator != null) {
                 requestMutator.accept(request);
             }
-            generated = request.getQuery().toQuery();
+            generated = request.generateSelectQuery().toQuery();
             Assertions.assertEquals(prettifyQuery(query), prettifyQuery(generated));
         }
 

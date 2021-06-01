@@ -7,6 +7,7 @@ import org.springframework.data.relational.core.sql.Expression;
 import org.springframework.data.relational.core.sql.SelectBuilder;
 import org.springframework.data.relational.core.sql.Table;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -43,6 +44,13 @@ public class TableAndJoins {
 
     public boolean hasJoins() {
         return !joins.isEmpty();
+    }
+
+    public Set<String> getAvailableJoinAliases(boolean includePrimary) {
+        if (includePrimary) {
+            return Collections.unmodifiableSet(knownAliases);
+        }
+        return Collections.unmodifiableSet(joins.keySet());
     }
 
     public SelectBuilder.SelectFromAndJoinCondition applyJoins(SelectBuilder.SelectFromAndJoin selectFromAndJoin, Set<String> selectedJoinAliases) {

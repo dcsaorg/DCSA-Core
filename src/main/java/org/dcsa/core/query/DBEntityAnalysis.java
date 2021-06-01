@@ -18,6 +18,7 @@ public interface DBEntityAnalysis<T> {
     QueryField getQueryFieldFromSelectName(String selectColumnName) throws IllegalArgumentException;
     List<QueryField> getAllSelectableFields();
     TableAndJoins getTableAndJoins();
+    Class<T> getEntityType();
 
     static <T> DBEntityAnalysisBuilder<T> builder(Class<T> entityType) {
         return new DefaultDBEntityAnalysisBuilder<>(entityType);
