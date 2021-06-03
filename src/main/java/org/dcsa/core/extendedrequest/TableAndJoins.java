@@ -20,10 +20,12 @@ public class TableAndJoins {
     private final Table primaryTable;
     private final Set<String> knownAliases = new HashSet<>();
     private final LinkedHashMap<String, JoinDescriptor> joins = new LinkedHashMap<>();
+    private final String primaryTableAlias;
 
     public TableAndJoins(Table primaryTable) {
         this.primaryTable = primaryTable;
-        knownAliases.add(ReflectUtility.getAliasId(primaryTable));
+        primaryTableAlias = ReflectUtility.getAliasId(primaryTable);
+        knownAliases.add(primaryTableAlias);
     }
 
     public void addJoinDescriptor(JoinDescriptor joinDescriptor) {
@@ -56,6 +58,10 @@ public class TableAndJoins {
                 current = applyJoin(joinDescriptor, current);
                 selectedJoins++;
             }
+        }
+        // "Forgive" if the primary table is included as well.
+        if (selectedJoinAliases.contains(primaryTableAlias)) {
+            selectedJoins++;
         }
         if (selectedJoinAliases.size() != selectedJoins) {
             throw new IllegalArgumentException("selectedJoinAliases contained an unknown alias");
