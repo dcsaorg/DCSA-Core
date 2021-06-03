@@ -221,14 +221,6 @@ public class ExtendedRequest<T> extends AbstractQueryFactory<T> {
         return data;
     }
 
-    public DatabaseClient.GenericExecuteSpec getCount(DatabaseClient databaseClient) {
-        return databaseClient.sql(this.generateCountQuery());
-    }
-
-    public DatabaseClient.GenericExecuteSpec getFindAll(DatabaseClient databaseClient) {
-        return databaseClient.sql(this.generateSelectQuery());
-    }
-
     protected SelectBuilder.BuildSelect applyOrder(SelectBuilder.SelectOrdered builder) {
         return builder.orderBy(getSort().getOrderByFields());
     }
