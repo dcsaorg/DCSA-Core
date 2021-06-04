@@ -2,7 +2,10 @@ package org.dcsa.core.query.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.extendedrequest.*;
-import org.dcsa.core.model.*;
+import org.dcsa.core.model.ForeignKey;
+import org.dcsa.core.model.JoinedWithModel;
+import org.dcsa.core.model.PrimaryModel;
+import org.dcsa.core.model.ViaJoinAlias;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.annotation.Transient;
@@ -20,6 +23,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
     private final Class<T> entityType;
 
     private final Map<String, QueryField> jsonName2DbField = new HashMap<>();
+    private final Map<String, QueryField> javaFieldName2DbField = new HashMap<>();
     private final Map<String, QueryField> selectName2DbField = new HashMap<>();
     private final List<QueryField> allSelectableFields = new ArrayList<>();
     private final Map<String, QueryField> internalQueryName2DbField = new HashMap<>();
@@ -129,11 +133,11 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
             initJoinAliasTable();
         }
 
-        loadJoinsAndFieldsAndForeignKeysDeep(entityType, model -> model.isAssignableFrom(entityType), "", "", null);
+        loadJoinsAndFieldsAndForeignKeysDeep(entityType, model -> model.isAssignableFrom(entityType), "", "", null, new HashSet<>());
     }
 
     private void loadJoinsAndFieldsAndForeignKeysDeep(Class<?> modelType, Predicate<Class<?>> skipFieldRegistration,
-                                                      String prefix, String joinAlias, Table table) {
+                                                      String prefix, String joinAlias, Table table, Set<String> seenFields) {
         if (joinAlias.equals("")) {
             joinAlias = ReflectUtility.getTableName(modelType);
         }
@@ -146,6 +150,12 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
             if (field.isAnnotationPresent(Transient.class)) {
                 continue;
             }
+            String fieldName = field.getName();
+            // Cope with fields being shadowed in subclasses - we take the "first" (subclass) definition we find.
+            if (seenFields.contains(fieldName)) {
+                continue;
+            }
+            seenFields.add(fieldName);
 
             if (field.isAnnotationPresent(ForeignKey.class)) {
                 ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
@@ -171,7 +181,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
 
                 // load fields recursively with new prefix
                 String newPrefix = prefix + ReflectUtility.transformFromFieldNameToJsonName(intoField) + ".";
-                loadJoinsAndFieldsAndForeignKeysDeep(intoField.getType(), skipFieldRegistration, newPrefix, intoJoinAlias, null);
+                loadJoinsAndFieldsAndForeignKeysDeep(intoField.getType(), skipFieldRegistration, newPrefix, intoJoinAlias, null, new HashSet<>());
             }
 
             if (skipFieldRegistration != null && skipFieldRegistration.test(modelType)) {
@@ -184,7 +194,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
 
         Class<?> superClass = modelType.getSuperclass();
         if (superClass != Object.class) {
-            loadJoinsAndFieldsAndForeignKeysDeep(superClass, skipFieldRegistration, prefix, joinAlias, table);
+            loadJoinsAndFieldsAndForeignKeysDeep(superClass, skipFieldRegistration, prefix, joinAlias, table, seenFields);
         }
     }
 
@@ -375,6 +385,11 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
     public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryField(QueryField queryField) {
         detectClash(jsonName2DbField, queryField.getJsonName(), queryField, "JSON key",
                 "Probably one or both of them has a invalid @JsonProperty");
+        String fieldPath = queryField.getFieldPath();
+        if (fieldPath != null) {
+            detectClash(javaFieldName2DbField, fieldPath, queryField, "JavaFieldName",
+                    "This should not be possible");
+        }
         if (queryField.isSelectable()) {
             Column column = Objects.requireNonNull(queryField.getSelectColumn(), "selectColumn");
             SqlIdentifier name = column.getName();
@@ -571,6 +586,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
         return new DefaultDBEntityAnalysis<>(
                 entityType,
                 Collections.unmodifiableMap(jsonName2DbField),
+                Collections.unmodifiableMap(javaFieldName2DbField),
                 Collections.unmodifiableMap(selectName2DbField),
                 Collections.unmodifiableSet(declaredButNotSelectable),
                 Collections.unmodifiableList(allSelectableFields),

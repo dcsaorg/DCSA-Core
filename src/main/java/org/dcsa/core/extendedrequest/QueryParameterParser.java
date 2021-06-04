@@ -1,16 +1,16 @@
 package org.dcsa.core.extendedrequest;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.exception.GetException;
 import org.dcsa.core.query.DBEntityAnalysis;
+import org.dcsa.core.query.impl.ComparisonType;
+import org.dcsa.core.query.impl.DelegatingCursorBackedFilterCondition;
+import org.dcsa.core.query.impl.InlineableFilterCondition;
 import org.springframework.data.annotation.Transient;
-import org.springframework.data.r2dbc.dialect.PostgresDialect;
 import org.springframework.data.r2dbc.dialect.R2dbcDialect;
 import org.springframework.data.relational.core.sql.*;
 import org.springframework.r2dbc.core.binding.BindMarker;
-import org.springframework.r2dbc.core.binding.Bindings;
 import org.springframework.r2dbc.core.binding.MutableBindings;
 
 import java.lang.reflect.Field;
@@ -21,15 +21,13 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.Temporal;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static org.dcsa.core.query.impl.QueryGeneratorUtils.andAllFilters;
 
 @RequiredArgsConstructor
 public class QueryParameterParser<T> {
-
-    public static final FilterCondition EMPTY_CONDITION = InlineableFilterCondition.of(TrueCondition.INSTANCE);
 
     protected final ExtendedParameters extendedParameters;
     protected final R2dbcDialect r2dbcDialect;
@@ -275,165 +273,5 @@ public class QueryParameterParser<T> {
         return queryField;
     }
 
-    private static FilterCondition isubstr(Expression lhs, Expression rhsOrig) {
-        Expression rhs = surroundWithWildCards(rhsOrig);
-        return r2dbcDialect -> {
-            if (r2dbcDialect instanceof PostgresDialect) {
-                return Comparison.create(lhs, "ILIKE", rhs);
-            }
-            return Conditions.like(Functions.upper(lhs), Functions.upper(rhs));
-        };
-    }
 
-    private static FilterCondition iequal(Expression lhs, Expression rhs) {
-        return InlineableFilterCondition.of(Conditions.isEqual(Functions.upper(lhs), Functions.upper(rhs)));
-    }
-
-    private static Expression surroundWithWildCards(Expression rhs) {
-        List<Expression> params = new ArrayList<>(3);
-        params.add(SQL.literalOf("%"));
-        params.add(rhs);
-        params.add(SQL.literalOf("%"));
-        return SimpleFunction.create("CONCAT", params);
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    protected enum ComparisonType {
-        GT(true, Conditions::isGreater),
-        GTE(true, Conditions::isGreaterOrEqualTo),
-        EQ(false, Conditions::isEqual),
-        LTE(true, Conditions::isLessOrEqualTo),
-        LT(true, Conditions::isLess),
-        NEQ(false, Conditions::isNotEqual),
-        SUBSTR(false, Conditions::like),
-        IEQ(false, true, QueryParameterParser::iequal),
-        ISUBSTR(false, true, QueryParameterParser::isubstr),
-        ;
-
-        private final boolean requiredOrdering;
-        private final boolean convertToString;
-        private final BiFunction<Expression, Expression, FilterCondition> singleValueConverter;
-
-        ComparisonType(boolean requiredOrdering, BiFunction<Expression, Expression, Condition> conditionBiFunction) {
-            this(requiredOrdering, false, (lhs, rhs) -> InlineableFilterCondition.of(conditionBiFunction.apply(lhs, rhs)));
-        }
-
-        public Expression defaultFieldConversion(QueryField queryField) {
-            boolean needsCast = convertToString;
-            if (needsCast) {
-                Class<?> valueType = queryField.getType();
-                if (valueType.isEnum() || String.class.equals(valueType)) {
-                    needsCast = false;
-                }
-            }
-            if (needsCast) {
-                Column aliased = queryField.getInternalQueryColumn().as(SqlIdentifier.unquoted("VARCHAR"));
-                return SimpleFunction.create("CAST", Collections.singletonList(aliased));
-            }
-            return queryField.getInternalQueryColumn();
-        }
-
-        public FilterCondition singleNonNullValueCondition(QueryField queryField, Expression expression) {
-            return singleNonNullValueCondition(defaultFieldConversion(queryField), expression);
-        }
-
-        public FilterCondition singleNonNullValueCondition(Expression field, Expression expression) {
-            return singleValueConverter.apply(field, expression);
-        }
-
-        public FilterCondition multiValueCondition(QueryField queryField, List<Expression> expressions) {
-            return multiValueCondition(defaultFieldConversion(queryField), expressions);
-        }
-
-        public FilterCondition multiValueCondition(Expression field, List<Expression> expressions) {
-            if (expressions.isEmpty()) {
-                throw new IllegalArgumentException("Right-hand side expression list must be non-empty");
-            }
-            if (expressions.size() == 1) {
-                return singleNonNullValueCondition(field, expressions.get(0));
-            } else if (this == EQ || this == NEQ) {
-                if (this == EQ) {
-                    return InlineableFilterCondition.of(Conditions.in(field, expressions));
-                }
-                return InlineableFilterCondition.of(Conditions.notIn(field, expressions));
-            } else {
-                return andAllFilters(
-                        expressions.stream().map(e -> singleValueConverter.apply(field, e)).collect(Collectors.toList()),
-                        true
-                );
-            }
-        }
-    }
-
-    private static FilterCondition andAllFilters(List<FilterCondition> filters, boolean nestOnMultiple) {
-        if (filters.isEmpty()) {
-            return EMPTY_CONDITION;
-        }
-        if (filters.size() == 1) {
-            return filters.get(0);
-        }
-        if (filters.stream().allMatch(FilterCondition::isInlineable)) {
-            return InlineableFilterCondition.of(andAll(filters.stream().map(FilterCondition::computeCondition), nestOnMultiple));
-        }
-        return (r2dbcDialect) -> andAll(filters.stream().map(f -> f.computeCondition(r2dbcDialect)), nestOnMultiple);
-    }
-
-    private static Condition andAll(Stream<Condition> conditions, boolean nestOnMultiple) {
-        return andAll(conditions::iterator, nestOnMultiple);
-    }
-
-    private static Condition andAll(Iterable<Condition> conditions, boolean nestOnMultiple) {
-        Iterator<Condition> iter = conditions.iterator();
-        assert iter.hasNext();
-        Condition con = iter.next();
-        if (!iter.hasNext()) {
-            return con;
-        }
-        do {
-            con = con.and(iter.next());
-        } while (iter.hasNext());
-        if (!nestOnMultiple) {
-            return con;
-        }
-        return Conditions.nest(con);
-    }
-
-    @RequiredArgsConstructor(staticName = "of")
-    private static class InlineableFilterCondition implements FilterCondition {
-        private final Condition condition;
-
-        public Condition computeCondition(R2dbcDialect r2dbcDialect) {
-            return condition;
-        }
-
-        public boolean isInlineable() {
-            return true;
-        }
-    }
-
-    @RequiredArgsConstructor(staticName = "of")
-    private static class DelegatingCursorBackedFilterCondition implements CursorBackedFilterCondition {
-
-        private final FilterCondition delegate;
-
-        @Getter
-        private final Map<String, List<String>> cursorParameters;
-
-        @Getter
-        private final Set<QueryField> referencedQueryFields;
-
-        @Getter
-        private final Bindings bindings;
-
-        @Override
-        public Condition computeCondition(R2dbcDialect r2dbcDialect) {
-            return delegate.computeCondition(r2dbcDialect);
-        }
-
-        @Override
-        public boolean isInlineable() {
-            return delegate.isInlineable();
-        }
-    }
 }

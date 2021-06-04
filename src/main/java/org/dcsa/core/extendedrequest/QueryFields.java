@@ -44,6 +44,7 @@ public class QueryFields {
             selectColumn = internalColumn.as(SqlIdentifier.quoted(namePrefix + selectName));
         }
         return FieldBackedQueryField.of(
+                namePrefix + combinedModelField.getName(),
                 combinedModelField,
                 internalColumn,
                 selectColumn,
@@ -83,6 +84,10 @@ public class QueryFields {
 
     @Data(staticConstructor = "of")
     private static class FieldBackedQueryField implements QueryField {
+
+        @NonNull
+        @Getter
+        private final String fieldPath;
 
         @NonNull
         @Getter
