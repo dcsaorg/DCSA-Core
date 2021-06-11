@@ -5,7 +5,6 @@ import org.dcsa.core.exception.*;
 import org.dcsa.core.service.BaseService;
 import org.springframework.http.HttpStatus;
 import org.springframework.r2dbc.BadSqlGrammarException;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
@@ -24,7 +23,6 @@ public abstract class BaseController<S extends BaseService<T, I>, T, I> {
         return getService().findById(id);
     }
 
-    @Transactional
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<T> create(@Valid @RequestBody T t) {
@@ -35,7 +33,6 @@ public abstract class BaseController<S extends BaseService<T, I>, T, I> {
         return s.create(t);
     }
 
-    @Transactional
     @PutMapping("{id}")
     @ResponseStatus(HttpStatus.OK)
     public Mono<T> update(@PathVariable I id, @Valid @RequestBody T t) {
@@ -46,7 +43,6 @@ public abstract class BaseController<S extends BaseService<T, I>, T, I> {
         return s.update(t);
     }
 
-    @Transactional
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> delete(@RequestBody T t) {
@@ -57,7 +53,6 @@ public abstract class BaseController<S extends BaseService<T, I>, T, I> {
         return s.delete(t);
     }
 
-    @Transactional
     @DeleteMapping("{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> deleteById(@PathVariable I id) {
