@@ -42,7 +42,7 @@ jobs:
           token: ${{ secrets.REPO_ACCESS_PAT }}
 
       - name: Build Track & Trace API
-        run: cd DCSA-TNT && mvn package -DskipTests -Ddcsa.version=$MAVEN_PROJECT_VERSION -Ddcsa.tag=${{ github.head_ref }} -Ddcsa.artifacttype=-SNAPSHOT #Get maven package that was just published
+        run: cd DCSA-TNT && mvn package -DskipTests -Ddcsa.version=$MAVEN_PROJECT_VERSION -Ddcsa.core.tag=${{ github.head_ref }} -Ddcsa.artifacttype=-SNAPSHOT #Get maven package that was just published
 
       - name: Checkout IM
         uses: actions/checkout@v2
