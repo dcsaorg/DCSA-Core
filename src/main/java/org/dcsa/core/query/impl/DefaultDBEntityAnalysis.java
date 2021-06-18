@@ -13,7 +13,10 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DefaultDBEntityAnalysis<T> implements DBEntityAnalysis<T> {
 
+    @Getter
+    private final Class<T> entityType;
     private final Map<String, QueryField> jsonName2QueryField;
+    private final Map<String, QueryField> javaFieldName2QueryField;
     private final Map<String, QueryField> selectName2QueryField;
     private final Set<String> declaredButNotSelectable;
     @Getter
@@ -36,7 +39,7 @@ public class DefaultDBEntityAnalysis<T> implements DBEntityAnalysis<T> {
 
     @Override
     public QueryField getQueryFieldFromJavaFieldName(String javaFieldName) throws IllegalArgumentException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return getFieldFromTable(javaFieldName2QueryField, javaFieldName);
     }
 
     public QueryField getQueryFieldFromSelectName(String selectName) throws IllegalArgumentException {

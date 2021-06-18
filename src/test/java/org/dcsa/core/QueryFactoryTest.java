@@ -1,45 +1,30 @@
 package org.dcsa.core;
 
-import lombok.RequiredArgsConstructor;
-import org.dcsa.core.extendedrequest.ExtendedParameters;
-import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.mock.MockR2dbcDialect;
-import org.dcsa.core.models.CitySpecificExtendedRequest;
 import org.dcsa.core.models.combined.*;
+import org.dcsa.core.query.DBEntityAnalysis;
+import org.dcsa.core.query.QueryFactoryBuilder;
+import org.dcsa.core.query.impl.AbstractQueryFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.r2dbc.dialect.R2dbcDialect;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.data.domain.Sort;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.function.Consumer;
+import java.time.OffsetDateTime;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-@SpringBootTest(properties = {
-        "sort.sortName=sort",
-        "search.queryParameterAttributeHandling=PARAMETER_NAME_ARRAY_NOTATION"
-})
-@ContextConfiguration(classes = ExtendedParameters.class)
-public class ExtendedRequestTest {
+public class QueryFactoryTest {
 
     private static final Pattern COLLAPSE_SPACE = Pattern.compile("\\s\\s++");
     private static final Pattern PRETTY_PRINT_SPLIT =
             Pattern.compile("\\s+(FROM|(?:LEFT|RIGHT)?\\s*(?:INNER|OUTER)?\\s*JOIN|WHERE|ORDER BY)\\s");
-
-    @Autowired
-    private ExtendedParameters extendedParameters;
 
     @Test
     public void testCustomerWithAddress() {
         String baseQuery = "SELECT customer_table.customer_id AS \"id\", customer_table.customer_name AS \"name\", address_table.street_name AS \"address\""
                 + " FROM customer_table"
                 + " JOIN address_table ON customer_table.address_id = address_table.address_id";
-        request(CustomerWithAddress.class, extendedParameters).verify(baseQuery);
+        verify(CustomerWithAddress.class, baseQuery);
     }
 
     @Test
@@ -48,7 +33,7 @@ public class ExtendedRequestTest {
                 + " FROM customer_table"
                 + " JOIN address_table delivery_address ON customer_table.delivery_address_id = delivery_address.address_id"
                 + " JOIN address_table payment_address ON customer_table.payment_address_id = payment_address.address_id";
-        request(CustomerWithForeignKeyAddresses.class, extendedParameters).verify(baseQuery);
+        verify(CustomerWithForeignKeyAddresses.class, baseQuery);
     }
 
     @Test
@@ -58,7 +43,7 @@ public class ExtendedRequestTest {
                 + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
                 + " JOIN address_table delivery_address ON customer_table.delivery_address_id = delivery_address.address_id"
                 + " JOIN address_table payment_address ON customer_table.payment_address_id = payment_address.address_id";
-        request(CustomerBook.class, extendedParameters).verify(baseQuery);
+        verify(CustomerBook.class, baseQuery);
     }
 
     @Test
@@ -69,7 +54,7 @@ public class ExtendedRequestTest {
                 + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
                 + " JOIN address_table delivery_address ON customer_table.delivery_address_id = delivery_address.address_id"
                 + " JOIN address_table payment_address ON customer_table.payment_address_id = payment_address.address_id";
-        request(CityCustomerBook.class, extendedParameters).verify(baseQuery);
+        verify(CityCustomerBook.class, baseQuery);
     }
 
     @Test
@@ -79,31 +64,40 @@ public class ExtendedRequestTest {
                 + " JOIN customer_table ON order_table.customer_id = customer_table.address_id"
                 + " JOIN address_table customer_address ON customer_table.address_id = customer_address.address_id"
                 + " JOIN address_table warehouse_address ON order_table.address_id = warehouse_address.address_id";
-        request(OrderWithCustomerAndAddresses.class, extendedParameters).verify(baseQuery);
 
-        request(OrderWithCustomerAndAddresses.class, extendedParameters)
-                .withParam("warehouse", "a")
-                .verify(baseQuery + " WHERE warehouse_address.street_name = :warehouse");
+        QueryFactoryBuilder.FrozenBuilder<QueryFactoryBuilder.ConditionBuilder<OrderInCountry>> baseBuilder = builderForClass(OrderInCountry.class)
+                .conditions().freeze();
 
-        request(OrderWithCustomerAndAddresses.class, extendedParameters)
-                .withParam("warehouse", "a")
-                .withParam("customerName", "b")
-                .verify(baseQuery
+        QueryFactoryBuilder.FrozenBuilder<QueryFactoryBuilder.ConditionBuilder<OrderInCountry>> withWarehouse = baseBuilder.copyBuilder()
+                .fieldByJsonName("warehouse").equalTo("a").freeze();
+
+        QueryFactoryBuilder.FrozenBuilder<QueryFactoryBuilder.ConditionBuilder<OrderInCountry>> withWarehouseAndCustomerName = withWarehouse.copyBuilder()
+                .fieldByJsonName("customerName").equalTo("b").freeze();
+
+        verify(baseBuilder.copyBuilder().build(), baseQuery);
+
+        verify(withWarehouse.copyBuilder().build(),
+                baseQuery + " WHERE warehouse_address.street_name = :warehouse");
+
+        verify(withWarehouseAndCustomerName.copyBuilder().build(),
+                baseQuery
                         + " WHERE warehouse_address.street_name = :warehouse"
                         +  " AND customer_table.customer_name = :customerName"
                 );
 
-        request(OrderWithCustomerAndAddresses.class, extendedParameters)
-                .withParam("warehouse", "a")
-                .withParam("customerName", "b")
-                .withParam("customerAddress", "c")
-                .withParam("sort", "customerAddress,warehouse")
-                .verify(baseQuery
+        verify(withWarehouseAndCustomerName.copyBuilder()
+                .fieldByJsonName("customerAddress").equalTo("c")
+                .withQuery()
+                .order((orderBuilder, dbAnalysis) -> orderBuilder.orderBy(
+                        dbAnalysis.getQueryFieldFromJSONName("customerAddress").asOrderByField(Sort.Direction.ASC),
+                        dbAnalysis.getQueryFieldFromJSONName("warehouse").asOrderByField(Sort.Direction.ASC)
+                )).build(),
+                baseQuery
                         + " WHERE warehouse_address.street_name = :warehouse"
                         + " AND customer_table.customer_name = :customerName"
                         + " AND customer_address.street_name = :customerAddress"
                         + " ORDER BY \"customerAddress\" ASC, \"warehouseAddress\" ASC"
-                );
+        );
     }
 
     @Test
@@ -116,11 +110,13 @@ public class ExtendedRequestTest {
                 + " JOIN address_table warehouse_address ON order_table.address_id = warehouse_address.address_id";
         String extraJoins = " JOIN city_table ON customer_address.city_id = city_table.id"
                 +  " JOIN country_table ON city_table.country_id = country_table.id";
-        request(OrderInCountry.class, extendedParameters).verify(baseQueryNoExtraJoins);
 
-        request(OrderInCountry.class, extendedParameters)
-                .withParam("countryName", "dk")
-                .verify(baseQueryNoExtraJoins + extraJoins + " WHERE country_table.country_name = :countryName");
+        QueryFactoryBuilder.FrozenBuilder<QueryFactoryBuilder.ConditionBuilder<OrderInCountry>> builder = builderForClass(OrderInCountry.class)
+                .conditions().freeze();
+        verify(builder.copyBuilder().build(), baseQueryNoExtraJoins);
+
+        verify(builder.copyBuilder().fieldByJsonName("countryName").equalTo("dk").build(),
+                baseQueryNoExtraJoins + extraJoins + " WHERE country_table.country_name = :countryName");
     }
 
     @Test
@@ -133,11 +129,14 @@ public class ExtendedRequestTest {
                         + " JOIN address_table warehouse_address ON order_table.address_id = warehouse_address.address_id";
         String extraJoins = " JOIN city_table ON customer_address.city_id = city_table.id"
                 +  " JOIN country_table ON city_table.country_id = country_table.id";
-        request(OrderWithEverything.class, extendedParameters).verify(baseQueryNoExtraJoins);
 
-        request(OrderWithEverything.class, extendedParameters)
-                .withParam("countryName", "dk")
-                .verify(baseQueryNoExtraJoins + extraJoins + " WHERE country_table.country_name = :countryName");
+        QueryFactoryBuilder.FrozenBuilder<QueryFactoryBuilder.ConditionBuilder<OrderWithEverything>> builder = builderForClass(OrderWithEverything.class)
+                .conditions().freeze();
+
+        verify(builder.copyBuilder().build(), baseQueryNoExtraJoins);
+
+        verify(builder.copyBuilder().fieldByJsonName("countryName").equalTo("dk").build(),
+                baseQueryNoExtraJoins + extraJoins + " WHERE country_table.country_name = :countryName");
     }
 
     @Test
@@ -146,11 +145,13 @@ public class ExtendedRequestTest {
                 "SELECT address_table.street_name AS \"warehouseAddress\", order_table.order_id AS \"order_id\", order_table.orderline AS \"orderline\", order_table.customer_id AS \"customer_id\", order_table.address_id AS \"address_id\", order_table.delivery_date AS \"delivery_date\""
                         + " FROM order_table"
                         + " JOIN address_table ON order_table.address_id = address_table.address_id";
-        request(ExtendedOrder.class, extendedParameters).verify(query);
+        QueryFactoryBuilder.FrozenBuilder<QueryFactoryBuilder.ConditionBuilder<ExtendedOrder>> builder = builderForClass(ExtendedOrder.class)
+                .conditions().freeze();
 
-        request(ExtendedOrder.class, extendedParameters)
-                .withParam("deliveryDate[gte]", "2021-01-01T00:00:00Z")
-                .verify(query + " WHERE order_table.delivery_date >= :deliveryDate");
+        verify(builder.copyBuilder().build(), query);
+
+        verify(builder.copyBuilder().fieldByJsonName("deliveryDate").greaterThanOrEqualTo(OffsetDateTime.parse("2021-01-01T00:00:00Z")).build(),
+                query + " WHERE order_table.delivery_date >= :deliveryDate");
     }
 
     @Test
@@ -159,65 +160,32 @@ public class ExtendedRequestTest {
                 "SELECT DISTINCT address_table.street_name AS \"warehouseAddress\", order_table.order_id AS \"order_id\", order_table.orderline AS \"orderline\", order_table.customer_id AS \"customer_id\", order_table.address_id AS \"address_id\", order_table.delivery_date AS \"delivery_date\""
                         + " FROM order_table"
                         + " JOIN address_table ON order_table.address_id = address_table.address_id";
-        request(ExtendedOrder.class, extendedParameters).verify(query, req -> req.setSelectDistinct(true));
+        verify(ExtendedOrder.class, builder -> builder.distinct().conditions().build(), query);
     }
 
-    @Test
-    public void testQueryBySubclassExtendedRequest() {
-        String baseQueryNoExtraJoins =
-                "SELECT city_table.id AS \"id\", city_table.city_name AS \"city_name\", city_table.country_id AS \"country_id\""
-                        + " FROM city_table";
-        String extraJoins = " JOIN country_table c ON city_table.country_id = c.id";
-        Function<R2dbcDialect, CitySpecificExtendedRequest> requestConstructor = (r2dbcDialect) -> new CitySpecificExtendedRequest(extendedParameters, r2dbcDialect);
-        request(requestConstructor).verify(baseQueryNoExtraJoins);
 
-        request(requestConstructor)
-                .withParam("cn", "dk")
-                .verify(baseQueryNoExtraJoins + extraJoins + " WHERE c.country_name = :cn");
+    private static <T> QueryFactoryBuilder<T> builderForClass(Class<T> clazz) {
+        return QueryFactoryBuilder.builder(DBEntityAnalysis.builder(clazz).loadFieldsAndJoinsFromModel().build())
+                .r2dbcDialect(new MockR2dbcDialect());
     }
 
-    private static <T> ExtendedRequestVerifier<T> request(Class<T> clazz, ExtendedParameters extendedParameters) {
-        return new ExtendedRequestVerifier<>(new ExtendedRequest<>(extendedParameters, new MockR2dbcDialect(), clazz));
+    private static <T> void verify(AbstractQueryFactory<T> factory, String expected) {
+        String generated = factory.generateSelectQuery().toQuery();
+        Assertions.assertEquals(prettifyQuery(expected), prettifyQuery(generated));
     }
 
-    private static <T> ExtendedRequestVerifier<T> request(Function<R2dbcDialect, ? extends ExtendedRequest<T>> requestCreator) {
-        return new ExtendedRequestVerifier<>(requestCreator.apply(new MockR2dbcDialect()));
+    private static <T> void verify(Class<T> clazz, String expected) {
+        verify(clazz, b -> b.conditions().build(), expected);
     }
 
-    @RequiredArgsConstructor
-    private static class ExtendedRequestVerifier<T> {
 
-        private final ExtendedRequest<T> request;
+    private static <T> void verify(Class<T> clazz, Function<QueryFactoryBuilder<T>, AbstractQueryFactory<T>> mutator, String expected) {
+        verify(mutator.apply(builderForClass(clazz)), expected);
+    }
 
-        private final LinkedHashMap<String, List<String>> params = new LinkedHashMap<>();
-
-        public ExtendedRequestVerifier<T> withParam(String param, String value) {
-            this.params.computeIfAbsent(param, k -> new ArrayList<>()).add(value);
-            return this;
-        }
-
-        public void verify(String query, Consumer<ExtendedRequest<T>> requestMutator) {
-            String generated;
-            if (params.isEmpty()) {
-                request.resetParameters();
-            } else {
-                request.parseParameter(params);
-            }
-            if (requestMutator != null) {
-                requestMutator.accept(request);
-            }
-            generated = request.generateSelectQuery().toQuery();
-            Assertions.assertEquals(prettifyQuery(query), prettifyQuery(generated));
-        }
-
-        public void verify(String query) {
-            this.verify(query, null);
-        }
-
-        // makes IntelliJ's "show differences" view more useful in case of a mismatch
-        private static String prettifyQuery(String text) {
-            String intermediate = COLLAPSE_SPACE.matcher(text).replaceAll(" ");
-            return PRETTY_PRINT_SPLIT.matcher(intermediate).replaceAll("\n $1 ");
-        }
+    // makes IntelliJ's "show differences" view more useful in case of a mismatch
+    private static String prettifyQuery(String text) {
+        String intermediate = COLLAPSE_SPACE.matcher(text).replaceAll(" ");
+        return PRETTY_PRINT_SPLIT.matcher(intermediate).replaceAll("\n $1 ");
     }
 }

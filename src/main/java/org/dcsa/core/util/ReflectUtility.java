@@ -346,8 +346,9 @@ public class ReflectUtility {
         }
         while (currentClass != Object.class) {
             for (Field f : currentClass.getDeclaredFields()) {
-                if (!seenFields.contains(f.getName()) && matching.test(f)) {
-                    seenFields.add(f.getName());
+                String name = f.getName();
+                if (!seenFields.contains(name) && matching.test(f)) {
+                    seenFields.add(name);
                     fieldConsumer.accept(f);
                 }
             }
