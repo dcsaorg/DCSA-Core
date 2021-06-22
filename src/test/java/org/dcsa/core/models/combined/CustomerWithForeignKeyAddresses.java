@@ -2,7 +2,6 @@ package org.dcsa.core.models.combined;
 
 import lombok.Data;
 import org.dcsa.core.model.ForeignKey;
-import org.dcsa.core.model.ViaJoinAlias;
 import org.dcsa.core.models.Address;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
@@ -26,9 +25,9 @@ public class CustomerWithForeignKeyAddresses {
     private Address deliveryAddress;
 
     @Column("payment_address_id")
-    @ForeignKey(into="paymentAddress", foreignFieldName="addressId", viaJoinAlias = "payment_address")
     private Long paymentAddressId;
 
     @Transient
+    @ForeignKey(fromFieldName = "paymentAddressId", foreignFieldName="addressId", viaJoinAlias = "payment_address")
     private Address paymentAddress;
 }
