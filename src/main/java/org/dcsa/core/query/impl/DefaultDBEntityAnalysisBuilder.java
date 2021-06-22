@@ -143,24 +143,40 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
         }
 
         for (Field field : modelType.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Transient.class)) {
-                continue;
-            }
-
             if (field.isAnnotationPresent(ForeignKey.class)) {
                 ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
                 String intoFieldName = foreignKey.into();
+                String fromFieldName = foreignKey.fromFieldName();
                 Field intoField;
-                try {
-                    intoField = ReflectUtility.getDeclaredField(modelType, intoFieldName);
-                } catch (NoSuchFieldException e) {
-                    throw new IllegalArgumentException("Invalid into");
+                Field fromField;
+                if (intoFieldName.equals("") && fromFieldName.equals("")) {
+                    throw new IllegalArgumentException("Invalid @ForeignKey on " + modelType.getSimpleName() + "."
+                            + field.getName() + ": exactly one of \"into\" OR \"fromFieldName\" must be given (neither were given)");
+                }
+                if (!intoFieldName.equals("") && !fromFieldName.equals("")) {
+                    throw new IllegalArgumentException("Invalid @ForeignKey on " + modelType.getSimpleName() + "."
+                            + field.getName() + ": exactly one of \"into\" OR \"fromFieldName\" must be given (both were given)");
+                }
+                if (intoFieldName.equals("")) {
+                    intoField = field;
+                    try {
+                        fromField = ReflectUtility.getDeclaredField(modelType, fromFieldName);
+                    } catch (NoSuchFieldException e) {
+                        throw new IllegalArgumentException("Invalid from field name");
+                    }
+                } else {
+                    fromField = field;
+                    try {
+                        intoField = ReflectUtility.getDeclaredField(modelType, intoFieldName);
+                    } catch (NoSuchFieldException e) {
+                        throw new IllegalArgumentException("Invalid into field name");
+                    }
                 }
                 Class<?> intoModelType = intoField.getType();
                 String intoJoinAlias = foreignKey.viaJoinAlias();
 
                 // Join descriptor
-                String lhsColumnName = getColumnName(modelType, field.getName(), "lhs");
+                String lhsColumnName = getColumnName(modelType, fromField.getName(), "lhs");
                 Column lhsColumn = Column.create(SqlIdentifier.unquoted(lhsColumnName), table);
                 String rhsColumnName = getColumnName(intoModelType, foreignKey.foreignFieldName(), "rhs");
                 Table rhsTable = getTableForModel(intoModelType, intoJoinAlias);
@@ -172,6 +188,11 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
                 // load fields recursively with new prefix
                 String newPrefix = prefix + ReflectUtility.transformFromFieldNameToJsonName(intoField) + ".";
                 loadJoinsAndFieldsAndForeignKeysDeep(intoField.getType(), skipFieldRegistration, newPrefix, intoJoinAlias, null);
+            }
+
+            // @Transient check must come after @ForeignKey as @ForeignKey can be used on the model field
+            if (field.isAnnotationPresent(Transient.class)) {
+                continue;
             }
 
             if (skipFieldRegistration != null && skipFieldRegistration.test(modelType)) {
