@@ -21,6 +21,7 @@
 		<java.version>11</java.version>
 		<revision>0.8.5</revision>
 		<apache.commons.version>3.12.0</apache.commons.version>
+		<apache.commons.codec.version>1.15</apache.commons.codec.version>
 		<sha1/>
 		<changelist/>
 	</properties>
@@ -55,6 +56,11 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>${apache.commons.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>${apache.commons.codec.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
