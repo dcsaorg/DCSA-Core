@@ -20,6 +20,7 @@
 	<properties>
 		<java.version>11</java.version>
 		<revision>0.8.5</revision>
+		<apache.commons.version>3.12.0</apache.commons.version>
 		<sha1/>
 		<changelist/>
 	</properties>
@@ -49,6 +50,11 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>${apache.commons.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
