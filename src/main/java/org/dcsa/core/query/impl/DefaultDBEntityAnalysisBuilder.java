@@ -173,7 +173,9 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
                     }
                 }
                 Class<?> intoModelType = intoField.getType();
-                String intoJoinAlias = foreignKey.viaJoinAlias();
+                // Avoid "." which causes issues for SQL - we replace it with "__" to make more distinct and less likely
+                // clash by accident.
+                String intoJoinAlias = prefix.replace(".", "__") + foreignKey.viaJoinAlias();
 
                 // Join descriptor
                 String lhsColumnName = getColumnName(modelType, fromField.getName(), "lhs");

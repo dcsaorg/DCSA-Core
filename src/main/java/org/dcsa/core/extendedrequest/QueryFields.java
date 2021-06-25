@@ -32,16 +32,7 @@ public class QueryFields {
         columnName = ReflectUtility.transformFromFieldNameToColumnName(modelClass, combinedModelField.getName());
         internalColumn = table.column(SqlIdentifier.unquoted(columnName));
         if (selectable) {
-            org.springframework.data.relational.core.mapping.Column column = combinedModelField.getDeclaredAnnotation(org.springframework.data.relational.core.mapping.Column.class);
-            String selectName;
-            if (column != null) {
-                // Use that name as requested
-                selectName = column.value();
-            } else {
-                /* Use the Field name.  By definition we can only have one of it anyway and the database does not mind. */
-                selectName = combinedModelField.getName();
-            }
-            selectColumn = internalColumn.as(SqlIdentifier.quoted(namePrefix + selectName));
+            selectColumn = internalColumn.as(SqlIdentifier.quoted(jsonName));
         }
         return FieldBackedQueryField.of(
                 combinedModelField,
