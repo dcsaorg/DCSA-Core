@@ -31,7 +31,7 @@ public class RowMapper {
             .setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
                 @Override
                 protected <A extends Annotation> A _findAnnotation(Annotated annotated, Class<A> annoClass) {
-                    if (annotated.hasAnnotation(JsonIgnore.class) || annotated.hasAnnotation(JsonProperty.class)) {
+                    if (JsonIgnore.class.equals(annoClass) || JsonProperty.class.equals(annoClass)) {
                         return null;
                     }
                     return super._findAnnotation(annotated, annoClass);
