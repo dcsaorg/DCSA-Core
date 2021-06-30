@@ -147,8 +147,45 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
             if (Modifier.isStatic(field.getModifiers())) {
                 continue;
             }
-            if (field.isAnnotationPresent(ForeignKey.class)) {
-                ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
+
+            ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
+            MapEntity mapEntity = field.getAnnotation(MapEntity.class);
+            if (foreignKey != null && mapEntity != null) {
+                throw new IllegalStateException(modelType.getSimpleName() + "." + field.getName()
+                        + " has both @MapEntity and @ForeignKey.  Please remove one of them.");
+            }
+
+            if (mapEntity != null) {
+                String joinAliasFromMapEntity = mapEntity.joinAlias();
+                Class<?> mapEntityType = field.getType();
+                String newPrefix = prefix + ReflectUtility.transformFromFieldNameToJsonName(field) + ".";
+
+                if (!joinAliasFromMapEntity.equals("")) {
+                    Class<?> classFromAlias = joinAlias2Class.get(joinAliasFromMapEntity);
+                    if (classFromAlias == null) {
+                        throw new IllegalArgumentException("Invalid @MapEntity on " + entityType.getSimpleName()
+                                + ": The joinAlias must use an earlier table name/alias (alias "
+                                + joinAliasFromMapEntity + ")");
+                    }
+
+                    if (classFromAlias != mapEntityType) {
+                        throw new IllegalArgumentException("Invalid @MapEntity on " + entityType.getSimpleName()
+                                + ": The lhsJoinAlias and lhsModel are both defined but they do not agree on the type - "
+                                + classFromAlias.getSimpleName() + " (via alias " + joinAliasFromMapEntity + " ) != "
+                                + mapEntityType);
+                    }
+                } else {
+                    joinAliasFromMapEntity = ReflectUtility.getTableName(mapEntityType);
+                }
+                loadJoinsAndFieldsAndForeignKeysDeep(
+                        mapEntityType,
+                        skipFieldRegistration,
+                        newPrefix,
+                        joinAliasFromMapEntity,
+                        null
+                );
+            }
+            if (foreignKey != null) {
                 String intoFieldName = foreignKey.into();
                 String fromFieldName = foreignKey.fromFieldName();
                 Field intoField;
