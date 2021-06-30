@@ -9,6 +9,7 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.sql.*;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -119,7 +120,7 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
     private void loadFieldFromModelClass() {
         ReflectUtility.visitAllFields(
                 entityType,
-                field -> !field.isAnnotationPresent(Transient.class),
+                field -> !field.isAnnotationPresent(Transient.class) && !Modifier.isStatic(field.getModifiers()),
                 field -> this.registerField(field, null, true)
         );
     }
@@ -143,6 +144,9 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
         }
 
         for (Field field : modelType.getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers())) {
+                continue;
+            }
             if (field.isAnnotationPresent(ForeignKey.class)) {
                 ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
                 String intoFieldName = foreignKey.into();
