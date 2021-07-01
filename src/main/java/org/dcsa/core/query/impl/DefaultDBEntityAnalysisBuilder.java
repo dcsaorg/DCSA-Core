@@ -187,8 +187,9 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
                 String rhsColumnName = getColumnName(intoModelType, foreignKey.foreignFieldName(), "rhs");
                 Table rhsTable = getTableForModel(intoModelType, intoJoinAlias);
                 Column rhsColumn = Column.create(SqlIdentifier.unquoted(rhsColumnName), rhsTable);
+                Join.JoinType joinType = foreignKey.joinType();
 
-                SimpleJoinDescriptor joinDescriptor = SimpleJoinDescriptor.of(Join.JoinType.JOIN, lhsColumn, rhsColumn, intoModelType, joinAlias);
+                SimpleJoinDescriptor joinDescriptor = SimpleJoinDescriptor.of(joinType, lhsColumn, rhsColumn, intoModelType, joinAlias);
                 registerJoinDescriptor(joinDescriptor);
 
                 // load fields recursively with new prefix
