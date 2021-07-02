@@ -19,7 +19,7 @@
 
 	<properties>
 		<java.version>11</java.version>
-		<revision>0.8.6</revision>
+		<revision>0.8.7</revision>
 		<apache.commons.version>3.12.0</apache.commons.version>
 		<apache.commons.codec.version>1.15</apache.commons.codec.version>
 		<sha1/>
