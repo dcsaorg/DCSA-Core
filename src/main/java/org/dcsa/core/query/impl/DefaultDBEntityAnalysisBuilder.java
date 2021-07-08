@@ -468,6 +468,16 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
         return this;
     }
 
+    public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryFieldAlias(String jsonName, String jsonNameAlias) {
+        QueryField queryField = jsonName2DbField.get(jsonName);
+        if (queryField == null) {
+            throw new IllegalArgumentException("No QueryField with jsonName " + jsonName + " exists");
+        }
+        detectClash(jsonName2DbField, jsonNameAlias, queryField, "JSON key (alias)",
+                "The alias clashes with an existing field or alias");
+        return this;
+    }
+
     private void detectClash(Map<String, QueryField> map, String key, QueryField value, String nameForKey, String hint) {
         QueryField clash = map.putIfAbsent(key, value);
         if (clash != null) {
@@ -749,6 +759,10 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
             return DBEntityAnalysisJoinBuilderImpl.of(builder, joinType, lhsTable, rhsTable, rhsModel);
         }
 
+        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryFieldAlias(String jsonName, String jsonNameAlias) {
+            return builder.registerQueryFieldAlias(jsonName, jsonNameAlias);
+        }
+
         public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName) {
             Field field;
             if (lhsModel == null) {
@@ -775,13 +789,5 @@ public class DefaultDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEnt
             return builder.registerQueryField(QueryFields.nonSelectableQueryField(column, jsonName, valueType));
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> registerQueryFieldFromFieldThen(String fieldName) {
-            registerQueryFieldFromField(fieldName);
-            return this;
-        }
-        public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> registerQueryFieldThen(SqlIdentifier columnName, String jsonName, Class<?> valueType) {
-            registerQueryField(columnName, jsonName, valueType);
-            return this;
-        }
     }
 }
