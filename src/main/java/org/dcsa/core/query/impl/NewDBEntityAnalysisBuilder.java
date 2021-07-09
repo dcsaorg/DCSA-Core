@@ -12,7 +12,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -164,6 +163,7 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
 
             if (mapEntity != null) {
                 EntityTreeNode mappedNode = currentNode.getChild(mapEntity.joinAlias());
+                mappedNode.setSelectName(field.getName());
                 loadModelDeep(field.getType(), mappedNode, skipQueryFields);
             }
 
@@ -199,7 +199,10 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
 
                 Join.JoinType joinType = foreignKey.joinType();
                 String intoJoinAlias = foreignKey.viaJoinAlias();
-                EntityTreeNode intoNode = EntityTreeNode.of(intoModelType, intoJoinAlias, joinType, fromField.getName(), foreignKey.foreignFieldName());
+                EntityTreeNode intoNode = EntityTreeNode.of(
+                        intoModelType, intoJoinAlias, joinType,
+                        fromField.getName(), foreignKey.foreignFieldName());
+                intoNode.setSelectName(intoFieldName);
                 currentNode.addChild(intoNode);
                 loadModelDeep(intoModelType, intoNode, skipQueryFields);
             }
@@ -287,7 +290,6 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
             newPrefix = prefix + currentNode.getLhsFieldName() + "__";
         }
 
-
         for (EntityTreeNode childNode : currentNode.getChildren()) {
             // Join current node (lhs) with child node (rhs)
             Table lhsTable = getTableFor(currentNode);
@@ -321,11 +323,11 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
             registerQueryField(queryField);
         }
 
-
-
         for (EntityTreeNode childNode : currentNode.getChildren()) {
-            // TODO: the prefix should use the _into_ field name, as this is used when mapping result to an object.
-            String newPrefix = prefix + childNode.getLhsFieldName() + ".";
+            String newPrefix = prefix;
+            if (childNode.getSelectName() != null) {
+                newPrefix = prefix + childNode.getSelectName() + ".";
+            }
             generatePrefixedQueryFieldsDeep(childNode, newPrefix);
         }
     }
@@ -422,6 +424,7 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
                 if (rhsModel != null && rhsModel != Object.class) {
                     modelRef = rhsModel.getSimpleName();
                 }
+                // FIXME: DELETE AFTER TESTING
 //                throw new IllegalArgumentException("Unnecessary join alias \"" + joinDescriptor.getJoinAliasId()
 //                        + "\" from unknown source. Related Model: " + modelRef);
             }

@@ -1,13 +1,11 @@
 package org.dcsa.core.query.impl;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.dcsa.core.extendedrequest.QueryField;
+import lombok.Setter;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.sql.Join;
 
-import java.lang.reflect.Field;
 import java.util.*;
 
 @RequiredArgsConstructor(staticName = "of")
@@ -15,6 +13,9 @@ public class EntityTreeNode {
     @Getter
     private final Class<?> modelType;
     private final String alias;
+    @Getter
+    @Setter
+    private String selectName;
     @Getter
     private final Join.JoinType joinType;
     @Getter
