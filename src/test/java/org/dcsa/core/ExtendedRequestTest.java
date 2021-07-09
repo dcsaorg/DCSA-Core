@@ -81,7 +81,8 @@ public class ExtendedRequestTest {
                 + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
                 + " JOIN address_table customer__delivery_address ON customer_table.delivery_address_id = customer__delivery_address.address_id"
                 + " JOIN address_table customer__payment_address ON customer_table.payment_address_id = customer__payment_address.address_id";
-        request(A.class, extendedParameters).verify(baseQuery);
+        request(A.class, extendedParameters)
+                .verify(baseQuery);
     }
 
     @Test
