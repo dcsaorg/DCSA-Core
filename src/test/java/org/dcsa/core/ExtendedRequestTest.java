@@ -75,14 +75,26 @@ public class ExtendedRequestTest {
 
     @Test
     public void testA() {
-        String baseQuery = "SELECT city_table.id AS \"city.id\", city_table.city_name AS \"city.name\", city_table.country_id AS \"city.countryId\", customer_table.customer_id AS \"customer.id\", customer_table.customer_name AS \"customer.name\", customer__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customer__delivery_address.street_name AS \"customer.deliveryAddress.address\", customer__delivery_address.city_id AS \"customer.deliveryAddress.cityId\", customer_table.delivery_address_id AS \"customer.deliveryAddressId\", customer_table.payment_address_id AS \"customer.paymentAddressId\", customer__payment_address.address_id AS \"customer.paymentAddress.addressId\", customer__payment_address.street_name AS \"customer.paymentAddress.address\", customer__payment_address.city_id AS \"customer.paymentAddress.cityId\", customer_book_table.city_id AS \"cityId\", customer_book_table.customer_book_id AS \"id\", customer_book_table.customer_book_name AS \"name\", customer_book_table.customer_id AS \"customerId\""
-                + " FROM customer_book_table"
-                + " JOIN city_table ON customer_book_table.city_id = city_table.id"
-                + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
-                + " JOIN address_table customer__delivery_address ON customer_table.delivery_address_id = customer__delivery_address.address_id"
-                + " JOIN address_table customer__payment_address ON customer_table.payment_address_id = customer__payment_address.address_id";
+        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"bId.id\", B_table.cId AS \"bId.cId\", B_table.dId AS \"bId.dId\", B_table.fId AS \"bId.fId\", bId__cId__e_alias.id AS \"bId.cId.eId.id\", bId__cId__e_alias.name AS \"bId.cId.eId.name\", bId__F_table.id AS \"bId.fId.id\""
+                + " FROM A_table"
+                + " JOIN B_table ON A_table.bId = B_table.id"
+                + " JOIN C_table bId__C_table ON B_table.cId = bId__C_table.id"
+                + " JOIN E_table bId__cId__e_alias ON bId__C_table.eId = bId__cId__e_alias.id"
+                + " JOIN F_table bId__F_table ON B_table.fId = bId__F_table.id";
+        request(A.class, extendedParameters).verify(baseQuery);
+    }
+
+    @Test
+    public void testAWithWhere() {
+        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"bId.id\", B_table.cId AS \"bId.cId\", B_table.dId AS \"bId.dId\", B_table.fId AS \"bId.fId\", bId__cId__e_alias.id AS \"bId.cId.eId.id\", bId__cId__e_alias.name AS \"bId.cId.eId.name\", bId__F_table.id AS \"bId.fId.id\""
+                + " FROM A_table"
+                + " JOIN B_table ON A_table.bId = B_table.id"
+                + " JOIN C_table bId__C_table ON B_table.cId = bId__C_table.id"
+                + " JOIN E_table bId__cId__e_alias ON bId__C_table.eId = bId__cId__e_alias.id"
+                + " JOIN F_table bId__F_table ON B_table.fId = bId__F_table.id";
         request(A.class, extendedParameters)
-                .verify(baseQuery);
+                .withParam("name", "a")
+                .verify(baseQuery + " WHERE bId__cId__e_alias.name = :name");
     }
 
     @Test

@@ -4,6 +4,7 @@ import lombok.Data;
 import org.dcsa.core.model.ForeignKey;
 import org.dcsa.core.model.JoinedWithModel;
 import org.dcsa.core.model.MapEntity;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Data
@@ -19,10 +20,12 @@ public class B {
     private Long dId;
 
     @MapEntity(joinAlias = "e_alias")
+    @Transient
     private E e;
 
     @ForeignKey(into="f", foreignFieldName="id")
     private Long fId;
 
+    @Transient
     private F f;
 }

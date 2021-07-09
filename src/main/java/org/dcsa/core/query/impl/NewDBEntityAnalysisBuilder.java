@@ -149,10 +149,9 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
     }
 
     private void loadFieldsDeep(Class<?> modelType, EntityTreeNode currentNode, boolean skipQueryFields) {
-        List<Field> visitedFields = new LinkedList<>();
         for (Field field : modelType.getDeclaredFields()) {
             System.out.println("New field: " + modelType.getSimpleName() +  " : " + field.getName() );
-            if (Modifier.isStatic(field.getModifiers()) || visitedFields.contains(field)) {
+            if (Modifier.isStatic(field.getModifiers())) {
                 continue;
             }
 
@@ -164,7 +163,6 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
             }
 
             if (mapEntity != null) {
-                //FIXME: this may not work if there is another field with
                 EntityTreeNode mappedNode = currentNode.getChild(mapEntity.joinAlias());
                 loadModelDeep(field.getType(), mappedNode, skipQueryFields);
             }
@@ -204,7 +202,6 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
                 EntityTreeNode intoNode = EntityTreeNode.of(intoModelType, intoJoinAlias, joinType, fromField.getName(), foreignKey.foreignFieldName());
                 currentNode.addChild(intoNode);
                 loadModelDeep(intoModelType, intoNode, skipQueryFields);
-                visitedFields.add(intoField);
             }
 
             // @Transient check must come after @ForeignKey as @ForeignKey can be used on the model field
@@ -212,12 +209,10 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
                 continue;
             }
 
-            if (!skipQueryFields && !field.isAnnotationPresent(MapEntity.class)) {
+            if (!skipQueryFields) {
                 QField queryField = QField.of(field);
                 currentNode.addQueryField(queryField);
             }
-
-            visitedFields.add(field);
         }
     }
 
@@ -320,14 +315,8 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
             Field field = qField.getField();
             System.out.println(currentNode.getAlias() + field.getName());
 
-            MapEntity mapEntity = field.getAnnotation(MapEntity.class);
-            if (mapEntity != null) {
-//                mapEntity.joinAlias()
-            }
-            else {
-                QueryField queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, modelType, table, true, prefix);
-                registerQueryField(queryField);
-            }
+            QueryField queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, modelType, table, true, prefix);
+            registerQueryField(queryField);
         }
 
 
