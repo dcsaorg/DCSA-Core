@@ -296,7 +296,7 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
         for (EntityTreeNode childNode : currentNode.getChildren()) {
             // Join current node (lhs) with child node (rhs)
             Table lhsTable = getTableFor(currentNode);
-            Column lhsColumn = Column.create(SqlIdentifier.unquoted(childNode.getLhsFieldName()), lhsTable);
+            Column lhsColumn = Column.create(SqlIdentifier.unquoted(childNode.getLhsFieldName()), lhsTable); // TODO: Use getColumnName to support @ColumnName
             Table rhsTable = getTableFor(childNode);
             Column rhsColumn = Column.create(SqlIdentifier.unquoted(childNode.getRhsFieldName()), rhsTable);
 
