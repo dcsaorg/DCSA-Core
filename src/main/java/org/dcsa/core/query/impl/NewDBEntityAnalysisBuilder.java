@@ -142,16 +142,17 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
         loadModelDeep(entityType, rootEntityTreeNode, false);
     }
 
-    private void loadModelDeep(Class<?> modelType, EntityTreeNode currentNode, boolean skipFields) {
+    private void loadModelDeep(Class<?> modelType, EntityTreeNode currentNode, boolean skipQueryFields) {
         System.out.println("New model: " + modelType.getSimpleName());
         loadJoinedWithModelAnnotationsDeep(modelType, currentNode);
-        loadFieldsDeep(modelType, currentNode, skipFields);
+        loadFieldsDeep(modelType, currentNode, skipQueryFields);
     }
 
-    private void loadFieldsDeep(Class<?> modelType, EntityTreeNode currentNode, boolean skipFields) {
+    private void loadFieldsDeep(Class<?> modelType, EntityTreeNode currentNode, boolean skipQueryFields) {
+        List<Field> visitedFields = new LinkedList<>();
         for (Field field : modelType.getDeclaredFields()) {
             System.out.println("New field: " + modelType.getSimpleName() +  " : " + field.getName() );
-            if (Modifier.isStatic(field.getModifiers())) {
+            if (Modifier.isStatic(field.getModifiers()) || visitedFields.contains(field)) {
                 continue;
             }
 
@@ -163,8 +164,11 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
             }
 
             if (mapEntity != null) {
-                System.out.println("MapEntity annotation");
+                //FIXME: this may not work if there is another field with
+                EntityTreeNode mappedNode = currentNode.getChild(mapEntity.joinAlias());
+                loadModelDeep(field.getType(), mappedNode, skipQueryFields);
             }
+
             if (foreignKey != null) {
                 String intoFieldName = foreignKey.into();
                 String fromFieldName = foreignKey.fromFieldName();
@@ -194,30 +198,13 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
                     }
                 }
                 Class<?> intoModelType = intoField.getType();
-                // Avoid "." which causes issues for SQL - we replace it with "__" to make more distinct and less likely
-                // clash by accident.
-//                String intoJoinAlias = prefix.replace(".", "__") + foreignKey.viaJoinAlias();
-//
-//                // Join descriptor
-//                String lhsColumnName = getColumnName(modelType, fromField.getName(), "lhs");
-//                Column lhsColumn = Column.create(SqlIdentifier.unquoted(lhsColumnName), table);
-//                String rhsColumnName = getColumnName(intoModelType, foreignKey.foreignFieldName(), "rhs");
-//                Table rhsTable = getTableForModel(intoModelType, intoJoinAlias, prefix);
-//                Column rhsColumn = Column.create(SqlIdentifier.unquoted(rhsColumnName), rhsTable);
-//                Join.JoinType joinType = foreignKey.joinType();
-//
-//
-//                joinDescriptor = SimpleJoinDescriptor.of(joinType, lhsColumn, rhsColumn, intoModelType, joinAlias);
-//                System.out.println(joinDescriptor.getJoinAliasId());
-//                registerJoinDescriptor(joinDescriptor);
-//
-//                // load fields recursively with new prefix
-//                String newPrefix = prefix + ReflectUtility.transformFromFieldNameToJsonName(intoField) + ".";
+
                 Join.JoinType joinType = foreignKey.joinType();
                 String intoJoinAlias = foreignKey.viaJoinAlias();
                 EntityTreeNode intoNode = EntityTreeNode.of(intoModelType, intoJoinAlias, joinType, fromField.getName(), foreignKey.foreignFieldName());
                 currentNode.addChild(intoNode);
-                loadModelDeep(intoModelType, intoNode, skipFields);
+                loadModelDeep(intoModelType, intoNode, skipQueryFields);
+                visitedFields.add(intoField);
             }
 
             // @Transient check must come after @ForeignKey as @ForeignKey can be used on the model field
@@ -225,10 +212,12 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
                 continue;
             }
 
-            if (!skipFields) {
-                QField queryField = QField.of(modelType, field);
+            if (!skipQueryFields && !field.isAnnotationPresent(MapEntity.class)) {
+                QField queryField = QField.of(field);
                 currentNode.addQueryField(queryField);
             }
+
+            visitedFields.add(field);
         }
     }
 
@@ -330,76 +319,24 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
         for (QField qField : currentNode.getQueryFields()) {
             Field field = qField.getField();
             System.out.println(currentNode.getAlias() + field.getName());
-            QueryField queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, modelType, table, true, prefix);
-            registerQueryField(queryField);
+
+            MapEntity mapEntity = field.getAnnotation(MapEntity.class);
+            if (mapEntity != null) {
+//                mapEntity.joinAlias()
+            }
+            else {
+                QueryField queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, modelType, table, true, prefix);
+                registerQueryField(queryField);
+            }
         }
 
 
 
         for (EntityTreeNode childNode : currentNode.getChildren()) {
+            // TODO: the prefix should use the _into_ field name, as this is used when mapping result to an object.
             String newPrefix = prefix + childNode.getLhsFieldName() + ".";
             generatePrefixedQueryFieldsDeep(childNode, newPrefix);
         }
-    }
-
-    private void registerField(Field field, Class<?> modelType, boolean selectable) {
-        Class<?> modelClassForField;
-        Set<String> joinAliasesForModel;
-        String joinAlias = null;
-        QueryField queryField;
-        ViaJoinAlias viaJoinAlias = field.getAnnotation(ViaJoinAlias.class);
-        if (modelType == null) {
-            modelType = entityType;
-        }
-        modelClassForField = ReflectUtility.getFieldModelClass(modelType, field);
-
-        /* Rewrite the combined model to the primary model class as that is what we used for defining
-         * join aliases.
-         */
-        if (modelClassForField == entityType) {
-            modelClassForField = getPrimaryModelClass();
-        }
-
-        joinAliasesForModel = model2Aliases.get(modelClassForField);
-
-        if (joinAliasesForModel == null) {
-            throw new IllegalArgumentException("Missing Join for " + field.getName() + " on class "
-                    + entityType.getSimpleName() + ". There is no join for model "
-                    + modelClassForField.getSimpleName()
-            );
-        }
-
-        if (viaJoinAlias != null) {
-            joinAlias = viaJoinAlias.value();
-            if (joinAlias.equals("")) {
-                throw new IllegalStateException("Cannot have empty alias in @ViaJoinAlias annotation on field "
-                        + field.getName() + " on class " + modelClassForField.getSimpleName());
-            }
-            if (!joinAliasesForModel.contains(joinAlias)) {
-                throw new IllegalArgumentException("Invalid join alias defined in @ViaJoinAlias annotation on field "
-                        + field.getName() + " on class " + modelClassForField.getSimpleName()
-                        + ": The alias is not declared in any @JoinWithModel for " + entityType.getSimpleName());
-            }
-        } else if (joinAliasesForModel.size() == 1) {
-            joinAlias = joinAliasesForModel.stream().findFirst().get();
-        }
-        if (joinAlias == null) {
-            joinAlias = ReflectUtility.getTableName(modelClassForField);
-            if (!joinAliasesForModel.contains(joinAlias)) {
-                throw new IllegalArgumentException("Cannot compute automatic join alias for " + field.getName()
-                        + " on class " + modelClassForField.getSimpleName()
-                        + ", there are more than 1 option and the default name is not one of them.");
-            }
-        }
-        JoinDescriptor descriptor = joinAlias2Descriptor.get(joinAlias);
-        Table fieldTable;
-        if (descriptor != null) {
-            fieldTable = descriptor.getRHSTable();
-        } else {
-            fieldTable = getPrimaryModelTable();
-        }
-        queryField = QueryFields.queryFieldFromField(modelType, field, modelClassForField, fieldTable, selectable);
-        registerQueryField(queryField);
     }
 
     public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryField(QueryField queryField) {

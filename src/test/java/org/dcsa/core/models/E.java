@@ -7,4 +7,6 @@ import org.springframework.data.relational.core.mapping.Table;
 @Table("E_table")
 public class E {
     private Long id;
+
+    private String name;
 }
