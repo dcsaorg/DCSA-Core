@@ -75,7 +75,7 @@ public class ExtendedRequestTest {
 
     @Test
     public void testA() {
-        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"bId.id\", B_table.cId AS \"bId.cId\", B_table.dId AS \"bId.dId\", B_table.fId_column AS \"bId.fId\", bId__cId__e_alias.id AS \"bId.cId.eId.id\", bId__cId__e_alias.name AS \"bId.cId.eId.name\", bId__F_table.id AS \"bId.fId.id\""
+        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"b.id\", B_table.cId AS \"b.cId\", B_table.dId AS \"b.dId\", B_table.fId_column AS \"b.fId\", bId__cId__e_alias.id AS \"b.e.id\", bId__cId__e_alias.name AS \"b.e.name\", bId__F_table.id AS \"b.f.id\""
                 + " FROM A_table"
                 + " JOIN B_table ON A_table.bId = B_table.id"
                 + " JOIN C_table bId__C_table ON B_table.cId = bId__C_table.id"
@@ -86,7 +86,7 @@ public class ExtendedRequestTest {
 
     @Test
     public void testAWithWhere() {
-        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"bId.id\", B_table.cId AS \"bId.cId\", B_table.dId AS \"bId.dId\", B_table.fId_column AS \"bId.fId\", bId__cId__e_alias.id AS \"bId.cId.eId.id\", bId__cId__e_alias.name AS \"bId.cId.eId.name\", bId__F_table.id AS \"bId.fId.id\""
+        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"b.id\", B_table.cId AS \"b.cId\", B_table.dId AS \"b.dId\", B_table.fId_column AS \"b.fId\", bId__cId__e_alias.id AS \"b.e.id\", bId__cId__e_alias.name AS \"b.e.name\", bId__F_table.id AS \"b.f.id\""
                 + " FROM A_table"
                 + " JOIN B_table ON A_table.bId = B_table.id"
                 + " JOIN C_table bId__C_table ON B_table.cId = bId__C_table.id"
