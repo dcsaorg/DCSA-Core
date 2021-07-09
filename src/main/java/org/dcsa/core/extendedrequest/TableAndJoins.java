@@ -29,7 +29,7 @@ public class TableAndJoins {
     }
 
     public void addJoinDescriptor(JoinDescriptor joinDescriptor) {
-        if (joinDescriptor.getDependentAlias() != null && !knownAliases.contains(joinDescriptor.getDependentAlias())) {
+        if (joinDescriptor.getDependentAlias() != null && !joinDescriptor.getDependentAlias().equals("") && !knownAliases.contains(joinDescriptor.getDependentAlias())) {
             throw new IllegalArgumentException("Cannot add joinDescriptor for " + joinDescriptor.getJoinAliasId()
                     + ": It must not be added before " + joinDescriptor.getDependentAlias() + ", which it depends on");
         }
