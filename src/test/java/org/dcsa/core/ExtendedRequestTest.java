@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.dcsa.core.extendedrequest.ExtendedParameters;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.mock.MockR2dbcDialect;
+import org.dcsa.core.models.A;
 import org.dcsa.core.models.CitySpecificExtendedRequest;
 import org.dcsa.core.models.combined.*;
 import org.junit.jupiter.api.Assertions;
@@ -70,6 +71,17 @@ public class ExtendedRequestTest {
                 + " JOIN address_table customer__delivery_address ON customer_table.delivery_address_id = customer__delivery_address.address_id"
                 + " JOIN address_table customer__payment_address ON customer_table.payment_address_id = customer__payment_address.address_id";
         request(CityCustomerBook.class, extendedParameters).verify(baseQuery);
+    }
+
+    @Test
+    public void testA() {
+        String baseQuery = "SELECT city_table.id AS \"city.id\", city_table.city_name AS \"city.name\", city_table.country_id AS \"city.countryId\", customer_table.customer_id AS \"customer.id\", customer_table.customer_name AS \"customer.name\", customer__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customer__delivery_address.street_name AS \"customer.deliveryAddress.address\", customer__delivery_address.city_id AS \"customer.deliveryAddress.cityId\", customer_table.delivery_address_id AS \"customer.deliveryAddressId\", customer_table.payment_address_id AS \"customer.paymentAddressId\", customer__payment_address.address_id AS \"customer.paymentAddress.addressId\", customer__payment_address.street_name AS \"customer.paymentAddress.address\", customer__payment_address.city_id AS \"customer.paymentAddress.cityId\", customer_book_table.city_id AS \"cityId\", customer_book_table.customer_book_id AS \"id\", customer_book_table.customer_book_name AS \"name\", customer_book_table.customer_id AS \"customerId\""
+                + " FROM customer_book_table"
+                + " JOIN city_table ON customer_book_table.city_id = city_table.id"
+                + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
+                + " JOIN address_table customer__delivery_address ON customer_table.delivery_address_id = customer__delivery_address.address_id"
+                + " JOIN address_table customer__payment_address ON customer_table.payment_address_id = customer__payment_address.address_id";
+        request(A.class, extendedParameters).verify(baseQuery);
     }
 
     @Test

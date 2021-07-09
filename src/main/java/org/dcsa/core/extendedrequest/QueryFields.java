@@ -24,7 +24,8 @@ public class QueryFields {
         String columnName;
         Column internalColumn;
         Column selectColumn = null;
-        String jsonName = namePrefix + ReflectUtility.transformFromFieldNameToJsonName(combinedModelField);
+        String prefixedJsonName = namePrefix + ReflectUtility.transformFromFieldNameToJsonName(combinedModelField);
+        System.out.println(prefixedJsonName);
         if (!combinedModelField.isAnnotationPresent(ModelClass.class)) {
             /* Special-case: Use the primary model when the field does not have a ModelClass */
             modelClass = originalModelClass;
@@ -32,14 +33,14 @@ public class QueryFields {
         columnName = ReflectUtility.transformFromFieldNameToColumnName(modelClass, combinedModelField.getName());
         internalColumn = table.column(SqlIdentifier.unquoted(columnName));
         if (selectable) {
-            selectColumn = internalColumn.as(SqlIdentifier.quoted(jsonName));
+            selectColumn = internalColumn.as(SqlIdentifier.quoted(prefixedJsonName));
         }
         return FieldBackedQueryField.of(
                 combinedModelField,
                 internalColumn,
                 selectColumn,
                 tableAlias,
-                jsonName
+                prefixedJsonName
         );
     }
 

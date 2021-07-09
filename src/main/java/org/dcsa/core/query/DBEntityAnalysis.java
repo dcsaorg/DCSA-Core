@@ -4,6 +4,7 @@ import org.dcsa.core.extendedrequest.JoinDescriptor;
 import org.dcsa.core.extendedrequest.QueryField;
 import org.dcsa.core.extendedrequest.TableAndJoins;
 import org.dcsa.core.query.impl.DefaultDBEntityAnalysisBuilder;
+import org.dcsa.core.query.impl.NewDBEntityAnalysisBuilder;
 import org.springframework.data.relational.core.sql.Column;
 import org.springframework.data.relational.core.sql.Join;
 import org.springframework.data.relational.core.sql.SqlIdentifier;
@@ -20,7 +21,7 @@ public interface DBEntityAnalysis<T> {
     TableAndJoins getTableAndJoins();
 
     static <T> DBEntityAnalysisBuilder<T> builder(Class<T> entityType) {
-        return new DefaultDBEntityAnalysisBuilder<>(entityType);
+        return new NewDBEntityAnalysisBuilder<>(entityType);
     }
 
     interface DBEntityAnalysisBuilder<T> {
