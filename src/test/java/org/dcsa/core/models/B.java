@@ -5,6 +5,7 @@ import org.dcsa.core.model.ForeignKey;
 import org.dcsa.core.model.JoinedWithModel;
 import org.dcsa.core.model.MapEntity;
 import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Data
@@ -24,6 +25,7 @@ public class B {
     private E e;
 
     @ForeignKey(into="f", foreignFieldName="id")
+    @Column("fId_column")
     private Long fId;
 
     @Transient

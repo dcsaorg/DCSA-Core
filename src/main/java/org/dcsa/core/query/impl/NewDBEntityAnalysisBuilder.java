@@ -291,9 +291,11 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
         for (EntityTreeNode childNode : currentNode.getChildren()) {
             // Join current node (lhs) with child node (rhs)
             Table lhsTable = getTableFor(currentNode);
-            Column lhsColumn = Column.create(SqlIdentifier.unquoted(childNode.getLhsFieldName()), lhsTable); // TODO: Use getColumnName to support @ColumnName
+            String lhsFieldName = getColumnName(currentNode.getModelType(), childNode.getLhsFieldName(), "lhs");
+            Column lhsColumn = Column.create(SqlIdentifier.unquoted(lhsFieldName), lhsTable);
             Table rhsTable = getTableFor(childNode);
-            Column rhsColumn = Column.create(SqlIdentifier.unquoted(childNode.getRhsFieldName()), rhsTable);
+            String rhsFieldName = getColumnName(childNode.getModelType(), childNode.getRhsFieldName(), "rhs");
+            Column rhsColumn = Column.create(SqlIdentifier.unquoted(rhsFieldName), rhsTable);
 
             String dependentAlias = prefix + currentNode.getAlias();
             JoinDescriptor joinDescriptor = SimpleJoinDescriptor.of(childNode.getJoinType(), lhsColumn, rhsColumn, childNode.getModelType(), dependentAlias);
