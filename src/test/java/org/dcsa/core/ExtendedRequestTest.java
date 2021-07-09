@@ -75,12 +75,12 @@ public class ExtendedRequestTest {
 
     @Test
     public void testA() {
-        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"bId.id\", B_table.cId AS \"bId.cId\", B_table.dId AS \"bId.dId\", B_table.fId AS \"bId.fId\", bId__cId__e_alias.id AS \"bId.cId.eId.id\", bId__cId__e_alias.name AS \"bId.cId.eId.name\", bId__F_table.id AS \"bId.fId.id\""
+        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"bId.id\", B_table.cId AS \"bId.cId\", B_table.dId AS \"bId.dId\", B_table.fId_column AS \"bId.fId\", bId__cId__e_alias.id AS \"bId.cId.eId.id\", bId__cId__e_alias.name AS \"bId.cId.eId.name\", bId__F_table.id AS \"bId.fId.id\""
                 + " FROM A_table"
                 + " JOIN B_table ON A_table.bId = B_table.id"
                 + " JOIN C_table bId__C_table ON B_table.cId = bId__C_table.id"
                 + " JOIN E_table bId__cId__e_alias ON bId__C_table.eId = bId__cId__e_alias.id"
-                + " JOIN F_table bId__F_table ON B_table.fId = bId__F_table.id";
+                + " JOIN F_table bId__F_table ON B_table.fId_column = bId__F_table.id";
         request(A.class, extendedParameters).verify(baseQuery);
     }
 
