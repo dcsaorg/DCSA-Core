@@ -46,7 +46,8 @@ public class ExtendedRequestTest {
 
     @Test
     public void testCustomerWithForeignKeyAddresses() {
-        String baseQuery = "SELECT delivery_address.address_id AS \"deliveryAddress.addressId\", delivery_address.street_name AS \"deliveryAddress.address\", delivery_address.city_id AS \"deliveryAddress.cityId\", payment_address.address_id AS \"paymentAddress.addressId\", payment_address.street_name AS \"paymentAddress.address\", payment_address.city_id AS \"paymentAddress.cityId\", customer_table.customer_id AS \"id\", customer_table.customer_name AS \"name\", customer_table.delivery_address_id AS \"deliveryAddressId\", customer_table.payment_address_id AS \"paymentAddressId\""
+        String baseQuery = "SELECT customer_table.customer_id AS \"id\", customer_table.customer_name AS \"name\", customer_table.delivery_address_id AS \"deliveryAddressId\", customer_table.payment_address_id AS \"paymentAddressId\","
+                + "     delivery_address.address_id AS \"deliveryAddress.addressId\", delivery_address.street_name AS \"deliveryAddress.address\", delivery_address.city_id AS \"deliveryAddress.cityId\", payment_address.address_id AS \"paymentAddress.addressId\", payment_address.street_name AS \"paymentAddress.address\", payment_address.city_id AS \"paymentAddress.cityId\""
                 + " FROM customer_table"
                 + " JOIN address_table delivery_address ON customer_table.delivery_address_id = delivery_address.address_id"
                 + " JOIN address_table payment_address ON customer_table.payment_address_id = payment_address.address_id";
@@ -55,11 +56,14 @@ public class ExtendedRequestTest {
 
     @Test
     public void testCustomerBook() {
-        String baseQuery = "SELECT customer_table.customer_id AS \"customer.id\", customer_table.customer_name AS \"customer.name\", customer__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customer__delivery_address.street_name AS \"customer.deliveryAddress.address\", customer__delivery_address.city_id AS \"customer.deliveryAddress.cityId\", customer_table.delivery_address_id AS \"customer.deliveryAddressId\", customer_table.payment_address_id AS \"customer.paymentAddressId\", customer__payment_address.address_id AS \"customer.paymentAddress.addressId\", customer__payment_address.street_name AS \"customer.paymentAddress.address\", customer__payment_address.city_id AS \"customer.paymentAddress.cityId\", customer_book_table.customer_book_id AS \"id\", customer_book_table.customer_book_name AS \"name\", customer_book_table.customer_id AS \"customerId\""
+        String baseQuery = "SELECT customer_book_table.customer_book_id AS \"id\", customer_book_table.customer_book_name AS \"name\", customer_book_table.customer_id AS \"customerId\","
+                + "      customer_table.customer_id AS \"customer.id\", customer_table.customer_name AS \"customer.name\", customer_table.delivery_address_id AS \"customer.deliveryAddressId\", customer_table.payment_address_id AS \"customer.paymentAddressId\","
+                + "      customerId__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customerId__delivery_address.street_name AS \"customer.deliveryAddress.address\", customerId__delivery_address.city_id AS \"customer.deliveryAddress.cityId\","
+                + "      customerId__payment_address.address_id AS \"customer.paymentAddress.addressId\", customerId__payment_address.street_name AS \"customer.paymentAddress.address\", customerId__payment_address.city_id AS \"customer.paymentAddress.cityId\""
                 + " FROM customer_book_table"
                 + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
-                + " JOIN address_table customer__delivery_address ON customer_table.delivery_address_id = customer__delivery_address.address_id"
-                + " JOIN address_table customer__payment_address ON customer_table.payment_address_id = customer__payment_address.address_id";
+                + " JOIN address_table customerId__delivery_address ON customer_table.delivery_address_id = customerId__delivery_address.address_id"
+                + " JOIN address_table customerId__payment_address ON customer_table.payment_address_id = customerId__payment_address.address_id";
         request(CustomerBook.class, extendedParameters).verify(baseQuery);
     }
 
@@ -67,7 +71,7 @@ public class ExtendedRequestTest {
     public void testCityCustomerBook() {
         String baseQuery = "SELECT customer_book_table.city_id AS \"cityId\", customer_book_table.customer_book_id AS \"id\", customer_book_table.customer_book_name AS \"name\", customer_book_table.customer_id AS \"customerId\","
                 + "     city_table.id AS \"city.id\", city_table.city_name AS \"city.name\", city_table.country_id AS \"city.countryId\","
-                + "     customer_table.customer_id AS \"customer.id\", customer_table.customer_name AS \"customer.name\", customer_table.payment_address_id AS \"customer.paymentAddressId\","
+                + "     customer_table.customer_id AS \"customer.id\", customer_table.customer_name AS \"customer.name\", customer_table.delivery_address_id AS \"customer.deliveryAddressId\", customer_table.payment_address_id AS \"customer.paymentAddressId\","
                 + "     customerId__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customerId__delivery_address.street_name AS \"customer.deliveryAddress.address\", customerId__delivery_address.city_id AS \"customer.deliveryAddress.cityId\","
                 + "     customerId__payment_address.address_id AS \"customer.paymentAddress.addressId\", customerId__payment_address.street_name AS \"customer.paymentAddress.address\", customerId__payment_address.city_id AS \"customer.paymentAddress.cityId\""
                 + " FROM customer_book_table"
