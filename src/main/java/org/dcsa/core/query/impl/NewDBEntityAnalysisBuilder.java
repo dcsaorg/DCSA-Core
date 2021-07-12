@@ -2,7 +2,10 @@ package org.dcsa.core.query.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.extendedrequest.*;
-import org.dcsa.core.model.*;
+import org.dcsa.core.model.ForeignKey;
+import org.dcsa.core.model.JoinedWithModel;
+import org.dcsa.core.model.MapEntity;
+import org.dcsa.core.model.PrimaryModel;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.annotation.Transient;
@@ -12,7 +15,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -250,19 +252,28 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
                 currentNode.getChild(lhsJoinAlias).addChild(rhsNode);
             }
             loadModelDeep(rhsModel, rhsNode, true);
+            checkJoinType(joinType, modelType);
+        }
+    }
 
-            /* Fail-fast on unsupported joins */
-            switch (joinType) {
-                case JOIN:
-                case LEFT_OUTER_JOIN:
-                    break;
-                case RIGHT_OUTER_JOIN:
-                    throw new UnsupportedOperationException("Cannot generate query for " + modelType.getSimpleName()
-                            + ": Please replace RIGHT JOINs with LEFT JOINs");
-                default:
-                    /* Remember to update JoinDescriptor.apply */
-                    throw new IllegalArgumentException("Unsupported joinType: " + joinType.name() + " on " + modelType.getSimpleName());
-            }
+    private void checkJoinType(Join.JoinType joinType, Class<?> modelType) {
+        /* Fail-fast on unsupported joins */
+        switch (joinType) {
+            case JOIN:
+            case LEFT_OUTER_JOIN:
+                break;
+            case RIGHT_OUTER_JOIN:
+                if (modelType == null) {
+                    throw new UnsupportedOperationException("Cannot generate query: Please replace RIGHT JOINs with LEFT JOINs");
+                }
+                throw new UnsupportedOperationException("Cannot generate query for " + modelType.getSimpleName()
+                        + ": Please replace RIGHT JOINs with LEFT JOINs");
+            default:
+                /* Remember to update JoinDescriptor.apply */
+                if (modelType == null) {
+                    throw new IllegalArgumentException("Unsupported joinType: " + joinType.name());
+                }
+                throw new IllegalArgumentException("Unsupported joinType: " + joinType.name() + " on " + modelType.getSimpleName());
         }
     }
 
@@ -522,30 +533,36 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
     }
 
     public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Class<?> lhsModel, Class<?> rhsModel) {
+        checkJoinType(joinType, rhsModel);
         Table rhsTable = getTableForModel(rhsModel, null);
         return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, getTableFor(lhsModel), rhsTable, rhsModel);
     }
 
     public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Class<?> lhsModel, Class<?> rhsModel, String rhsJoinAlias) {
+        checkJoinType(joinType, rhsModel);
         Table rhsTable = getTableForModel(rhsModel, rhsJoinAlias);
         return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, getTableFor(lhsModel), rhsTable, rhsModel);
     }
 
     public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, String lhsJoinAlias, Class<?> rhsModel) {
+        checkJoinType(joinType, rhsModel);
         Table rhsTable = getTableForModel(rhsModel, null);
         return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, getTableFor(lhsJoinAlias), rhsTable, rhsModel);
     }
 
     public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, String lhsJoinAlias, Class<?> rhsModel, String rhsJoinAlias) {
+        checkJoinType(joinType, rhsModel);
         Table rhsTable = getTableForModel(rhsModel, rhsJoinAlias);
         return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, getTableFor(lhsJoinAlias), rhsTable, rhsModel);
     }
 
     public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Table lhsTable, Table rhsTable) {
+        checkJoinType(joinType, null);
         return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, lhsTable, rhsTable, null);
     }
 
     public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Table lhsTable, Table rhsTable, Class<?> rhsModel) {
+        checkJoinType(joinType, rhsModel);
         return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, lhsTable, rhsTable, rhsModel);
     }
 
@@ -555,6 +572,7 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
 
     DBEntityAnalysis.DBEntityAnalysisBuilder<T> joinOnImpl(Join.JoinType joinType, Column lhsColumn, Column rhsColumn, Class<?> rhsModel) {
         Table lhsTable = lhsColumn.getTable();
+        checkJoinType(joinType, rhsModel);
         if (lhsTable == null) {
             throw new IllegalArgumentException("lhsColumn must have a non-null getTable()");
         }
