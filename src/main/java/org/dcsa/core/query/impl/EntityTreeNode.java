@@ -26,7 +26,7 @@ public class EntityTreeNode {
     private final List<EntityTreeNode> children = new LinkedList<>();
     private final Map<String, EntityTreeNode> alias2Child = new HashMap<>();
     @Getter
-    private final List<QField> queryFields = new LinkedList<>(); // FIXME: Might be able to replace with Field
+    private final List<QField> queryFields = new LinkedList<>();
 
     public void addChild(EntityTreeNode child) {
         children.add(child);
