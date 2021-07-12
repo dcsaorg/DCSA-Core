@@ -12,6 +12,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -35,7 +36,7 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
     private TableAndJoins tableAndJoins;
     private EntityTreeNode rootEntityTreeNode;
     private final List<QueryField> allSelectableFields = new LinkedList<>();
-    private Map<EntityTreeNode, Table> entityTreeNode2Table = new HashMap<>();
+    private final Map<EntityTreeNode, Table> entityTreeNode2Table = new HashMap<>();
 
     private boolean used = false;
 
@@ -148,75 +149,80 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
     }
 
     private void loadFieldsDeep(Class<?> modelType, EntityTreeNode currentNode, boolean skipQueryFields) {
-        for (Field field : modelType.getDeclaredFields()) {
-            System.out.println("New field: " + modelType.getSimpleName() +  " : " + field.getName() );
-            if (Modifier.isStatic(field.getModifiers())) {
-                continue;
-            }
-
-            ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
-            MapEntity mapEntity = field.getAnnotation(MapEntity.class);
-            if (foreignKey != null && mapEntity != null) {
-                throw new IllegalStateException(modelType.getSimpleName() + "." + field.getName()
-                        + " has both @MapEntity and @ForeignKey.  Please remove one of them.");
-            }
-
-            if (mapEntity != null) {
-                EntityTreeNode mappedNode = currentNode.getChild(mapEntity.joinAlias());
-                mappedNode.setSelectName(field.getName());
-                loadModelDeep(field.getType(), mappedNode, skipQueryFields);
-            }
-
-            if (foreignKey != null) {
-                String intoFieldName = foreignKey.into();
-                String fromFieldName = foreignKey.fromFieldName();
-                Field intoField;
-                Field fromField;
-                if (intoFieldName.equals("") && fromFieldName.equals("")) {
-                    throw new IllegalArgumentException("Invalid @ForeignKey on " + modelType.getSimpleName() + "."
-                            + field.getName() + ": exactly one of \"into\" OR \"fromFieldName\" must be given (neither were given)");
-                }
-                if (!intoFieldName.equals("") && !fromFieldName.equals("")) {
-                    throw new IllegalArgumentException("Invalid @ForeignKey on " + modelType.getSimpleName() + "."
-                            + field.getName() + ": exactly one of \"into\" OR \"fromFieldName\" must be given (both were given)");
-                }
-                if (intoFieldName.equals("")) {
-                    intoField = field;
-                    try {
-                        fromField = ReflectUtility.getDeclaredField(modelType, fromFieldName);
-                    } catch (NoSuchFieldException e) {
-                        throw new IllegalArgumentException("Invalid from field name");
+        Set<String> seenFields = new HashSet<>();
+        ReflectUtility.visitAllFields(modelType,
+                field -> !seenFields.contains(field.getName()),
+                field -> {
+                    System.out.println("New field: " + modelType.getSimpleName() +  " : " + field.getName() );
+                    if (Modifier.isStatic(field.getModifiers())) {
+                        return;
                     }
-                } else {
-                    fromField = field;
-                    try {
-                        intoField = ReflectUtility.getDeclaredField(modelType, intoFieldName);
-                    } catch (NoSuchFieldException e) {
-                        throw new IllegalArgumentException("Invalid into field name");
+                    seenFields.add(field.getName());
+
+                    ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
+                    MapEntity mapEntity = field.getAnnotation(MapEntity.class);
+                    if (foreignKey != null && mapEntity != null) {
+                        throw new IllegalStateException(modelType.getSimpleName() + "." + field.getName()
+                                + " has both @MapEntity and @ForeignKey.  Please remove one of them.");
+                    }
+
+                    if (mapEntity != null) {
+                        EntityTreeNode mappedNode = currentNode.getChild(mapEntity.joinAlias());
+                        mappedNode.setSelectName(field.getName());
+                        loadModelDeep(field.getType(), mappedNode, skipQueryFields);
+                    }
+
+                    if (foreignKey != null) {
+                        String intoFieldName = foreignKey.into();
+                        String fromFieldName = foreignKey.fromFieldName();
+                        Field intoField;
+                        Field fromField;
+                        if (intoFieldName.equals("") && fromFieldName.equals("")) {
+                            throw new IllegalArgumentException("Invalid @ForeignKey on " + modelType.getSimpleName() + "."
+                                    + field.getName() + ": exactly one of \"into\" OR \"fromFieldName\" must be given (neither were given)");
+                        }
+                        if (!intoFieldName.equals("") && !fromFieldName.equals("")) {
+                            throw new IllegalArgumentException("Invalid @ForeignKey on " + modelType.getSimpleName() + "."
+                                    + field.getName() + ": exactly one of \"into\" OR \"fromFieldName\" must be given (both were given)");
+                        }
+                        if (intoFieldName.equals("")) {
+                            intoField = field;
+                            try {
+                                fromField = ReflectUtility.getDeclaredField(modelType, fromFieldName);
+                            } catch (NoSuchFieldException e) {
+                                throw new IllegalArgumentException("Invalid from field name");
+                            }
+                        } else {
+                            fromField = field;
+                            try {
+                                intoField = ReflectUtility.getDeclaredField(modelType, intoFieldName);
+                            } catch (NoSuchFieldException e) {
+                                throw new IllegalArgumentException("Invalid into field name");
+                            }
+                        }
+                        Class<?> intoModelType = intoField.getType();
+
+                        Join.JoinType joinType = foreignKey.joinType();
+                        String intoJoinAlias = foreignKey.viaJoinAlias();
+                        EntityTreeNode intoNode = EntityTreeNode.of(
+                                intoModelType, intoJoinAlias, joinType,
+                                fromField.getName(), foreignKey.foreignFieldName());
+                        intoNode.setSelectName(intoFieldName);
+                        currentNode.addChild(intoNode);
+                        loadModelDeep(intoModelType, intoNode, skipQueryFields);
+                    }
+
+                    // @Transient check must come after @ForeignKey as @ForeignKey can be used on the model field
+                    if (field.isAnnotationPresent(Transient.class)) {
+                        return;
+                    }
+
+                    if (!skipQueryFields) {
+                        QField queryField = QField.of(field);
+                        currentNode.addQueryField(queryField);
                     }
                 }
-                Class<?> intoModelType = intoField.getType();
-
-                Join.JoinType joinType = foreignKey.joinType();
-                String intoJoinAlias = foreignKey.viaJoinAlias();
-                EntityTreeNode intoNode = EntityTreeNode.of(
-                        intoModelType, intoJoinAlias, joinType,
-                        fromField.getName(), foreignKey.foreignFieldName());
-                intoNode.setSelectName(intoFieldName);
-                currentNode.addChild(intoNode);
-                loadModelDeep(intoModelType, intoNode, skipQueryFields);
-            }
-
-            // @Transient check must come after @ForeignKey as @ForeignKey can be used on the model field
-            if (field.isAnnotationPresent(Transient.class)) {
-                continue;
-            }
-
-            if (!skipQueryFields) {
-                QField queryField = QField.of(field);
-                currentNode.addQueryField(queryField);
-            }
-        }
+        );
     }
 
     private void loadJoinedWithModelAnnotationsDeep(Class<?> modelType, EntityTreeNode currentNode) {
