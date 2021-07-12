@@ -29,6 +29,8 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class QueryParameterParser<T> {
 
+    private static final Predicate<String> IGNORE_NONE = (a) -> false;
+
     public static final FilterCondition EMPTY_CONDITION = InlineableFilterCondition.of(TrueCondition.INSTANCE);
 
     protected final ExtendedParameters extendedParameters;
@@ -70,7 +72,7 @@ public class QueryParameterParser<T> {
     }
 
     public void parseQueryParameter(Map<String, List<String>> queryParameters) {
-        parseQueryParameter(queryParameters, (a) -> false);
+        parseQueryParameter(queryParameters, IGNORE_NONE);
     }
 
     public void parseQueryParameter(Map<String, List<String>> queryParameters, Predicate<String> ignoredParameter) {
