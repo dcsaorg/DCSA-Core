@@ -31,6 +31,7 @@ public class ExtendedRequestTest {
     private static final Pattern COLLAPSE_SPACE = Pattern.compile("\\s\\s++");
     private static final Pattern PRETTY_PRINT_SPLIT =
             Pattern.compile("\\s+(FROM|(?:LEFT|RIGHT)?\\s*(?:INNER|OUTER)?\\s*JOIN|WHERE|ORDER BY)\\s");
+    private static final Pattern FIELD_LIST_SPLIT = Pattern.compile(",");
 
     @Autowired
     private ExtendedParameters extendedParameters;
@@ -64,12 +65,16 @@ public class ExtendedRequestTest {
 
     @Test
     public void testCityCustomerBook() {
-        String baseQuery = "SELECT city_table.id AS \"city.id\", city_table.city_name AS \"city.name\", city_table.country_id AS \"city.countryId\", customer_table.customer_id AS \"customer.id\", customer_table.customer_name AS \"customer.name\", customer__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customer__delivery_address.street_name AS \"customer.deliveryAddress.address\", customer__delivery_address.city_id AS \"customer.deliveryAddress.cityId\", customer_table.delivery_address_id AS \"customer.deliveryAddressId\", customer_table.payment_address_id AS \"customer.paymentAddressId\", customer__payment_address.address_id AS \"customer.paymentAddress.addressId\", customer__payment_address.street_name AS \"customer.paymentAddress.address\", customer__payment_address.city_id AS \"customer.paymentAddress.cityId\", customer_book_table.city_id AS \"cityId\", customer_book_table.customer_book_id AS \"id\", customer_book_table.customer_book_name AS \"name\", customer_book_table.customer_id AS \"customerId\""
+        String baseQuery = "SELECT customer_book_table.city_id AS \"cityId\", customer_book_table.customer_book_id AS \"id\", customer_book_table.customer_book_name AS \"name\", customer_book_table.customer_id AS \"customerId\","
+                + "     city_table.id AS \"city.id\", city_table.city_name AS \"city.name\", city_table.country_id AS \"city.countryId\","
+                + "     customer_table.customer_id AS \"customer.id\", customer_table.customer_name AS \"customer.name\", customer_table.payment_address_id AS \"customer.paymentAddressId\","
+                + "     customerId__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customerId__delivery_address.street_name AS \"customer.deliveryAddress.address\", customerId__delivery_address.city_id AS \"customer.deliveryAddress.cityId\","
+                + "     customerId__payment_address.address_id AS \"customer.paymentAddress.addressId\", customerId__payment_address.street_name AS \"customer.paymentAddress.address\", customerId__payment_address.city_id AS \"customer.paymentAddress.cityId\""
                 + " FROM customer_book_table"
                 + " JOIN city_table ON customer_book_table.city_id = city_table.id"
                 + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
-                + " JOIN address_table customer__delivery_address ON customer_table.delivery_address_id = customer__delivery_address.address_id"
-                + " JOIN address_table customer__payment_address ON customer_table.payment_address_id = customer__payment_address.address_id";
+                + " JOIN address_table customerId__delivery_address ON customer_table.delivery_address_id = customerId__delivery_address.address_id"
+                + " JOIN address_table customerId__payment_address ON customer_table.payment_address_id = customerId__payment_address.address_id";
         request(CityCustomerBook.class, extendedParameters).verify(baseQuery);
     }
 
@@ -232,7 +237,10 @@ public class ExtendedRequestTest {
                 requestMutator.accept(request);
             }
             generated = request.getQuery().toQuery();
-            Assertions.assertEquals(prettifyQuery(query), prettifyQuery(generated));
+            String generatedPretty = prettifyQuery(generated);
+            Assertions.assertEquals(prettifyQuery(query), generatedPretty);
+            Assertions.assertFalse(generatedPretty.contains(".."),
+                    "Generated SQL contains \"..\" which is unlikely to be intentional");
         }
 
         public void verify(String query) {
@@ -242,7 +250,8 @@ public class ExtendedRequestTest {
         // makes IntelliJ's "show differences" view more useful in case of a mismatch
         private static String prettifyQuery(String text) {
             String intermediate = COLLAPSE_SPACE.matcher(text).replaceAll(" ");
-            return PRETTY_PRINT_SPLIT.matcher(intermediate).replaceAll("\n $1 ");
+            String multiline = PRETTY_PRINT_SPLIT.matcher(intermediate).replaceAll("\n $1 ");
+            return FIELD_LIST_SPLIT.matcher(multiline).replaceAll(",\n   ");
         }
     }
 }
