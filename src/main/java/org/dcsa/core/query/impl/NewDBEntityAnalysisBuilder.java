@@ -153,12 +153,9 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
     private void loadFieldsDeep(Class<?> modelType, EntityTreeNode currentNode, boolean skipQueryFields) {
         Set<String> seenFields = new HashSet<>();
         ReflectUtility.visitAllFields(modelType,
-                field -> !seenFields.contains(field.getName()),
+                field -> !seenFields.contains(field.getName()) && !Modifier.isStatic(field.getModifiers()),
                 field -> {
                     System.out.println("New field: " + modelType.getSimpleName() +  " : " + field.getName() );
-                    if (Modifier.isStatic(field.getModifiers())) {
-                        return;
-                    }
                     seenFields.add(field.getName());
 
                     ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
@@ -189,6 +186,7 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
                         }
                         if (intoFieldName.equals("")) {
                             intoField = field;
+                            intoFieldName = field.getName();
                             try {
                                 fromField = ReflectUtility.getDeclaredField(modelType, fromFieldName);
                             } catch (NoSuchFieldException e) {
@@ -345,6 +343,9 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
             if (childNode.getSelectName() != null) {
                 newPrefix = prefix + childNode.getSelectName() + ".";
             }
+            if (newPrefix.contains("..")) {
+                throw new IllegalStateException();
+            }
             generatePrefixedQueryFieldsDeep(childNode, newPrefix);
         }
     }
@@ -390,7 +391,7 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
             );
         } catch (NoSuchFieldException e) {
             throw new IllegalArgumentException("Cannot resolve field " + fieldName + " on class "
-                    + clazz.getSimpleName() + ".  It was defined in @JoinedWithModel on " + entityType.getSimpleName()
+                    + clazz.getSimpleName() + ".  It was defined in @JoinedWithModel or via @ForeignKey on " + entityType.getSimpleName()
                     + " via " + annotationVariablePrefix + "Model and " + annotationVariablePrefix + "FieldName", e);
         }
     }
@@ -437,7 +438,7 @@ public class NewDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityA
                         + ". Hint:  Most likely the @JoinedWithModel is redundant or you might be missing a field."
                 );
             } else {
-                String modelRef = "No backing model)";
+                String modelRef = "No backing model";
                 if (rhsModel != null && rhsModel != Object.class) {
                     modelRef = rhsModel.getSimpleName();
                 }
