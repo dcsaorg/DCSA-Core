@@ -14,6 +14,7 @@ import io.r2dbc.spi.RowMetadata;
 import org.dcsa.core.exception.DatabaseException;
 import org.dcsa.core.extendedrequest.QueryField;
 import org.dcsa.core.query.DBEntityAnalysis;
+import org.dcsa.core.util.ReflectUtility;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -31,7 +32,7 @@ public class RowMapper {
             .setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
                 @Override
                 protected <A extends Annotation> A _findAnnotation(Annotated annotated, Class<A> annoClass) {
-                    if (JsonIgnore.class.equals(annoClass) || JsonProperty.class.equals(annoClass)) {
+                    if (JsonIgnore.class.equals(annoClass)) {
                         return null;
                     }
                     return super._findAnnotation(annotated, annoClass);
@@ -56,7 +57,6 @@ public class RowMapper {
                 }
                 throw exception;
             }
-            String fieldName = modelField.getName();
             Class<?> fieldType = modelField.getType();
 
             Object value;
@@ -103,7 +103,7 @@ public class RowMapper {
                 }
             }
 
-            lastMap.put(fieldName, value);
+            lastMap.put(ReflectUtility.transformFromFieldNameToJsonName(modelField), value);
         }
 
         return objectMap;
