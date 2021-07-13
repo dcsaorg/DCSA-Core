@@ -211,7 +211,7 @@ public class QueryParameterParser<T> {
             }
         } else if (Temporal.class.isAssignableFrom(fieldType)) {
             String dateFormat = queryField.getDatePattern();
-            if (dateFormat != null) {
+            if (dateFormat != null && !dateFormat.equals("")) {
                 throw new GetException("Cannot filter on " + queryField.getJsonName() + ": It uses a custom date pattern");
             }
 
