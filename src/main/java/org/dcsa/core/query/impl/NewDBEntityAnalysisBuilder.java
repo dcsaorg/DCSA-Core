@@ -313,7 +313,7 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
 
         for (QField qField : currentNode.getQueryFields()) {
             Field field = qField.getField();
-            System.out.println(currentNode.getAlias() + field.getName());
+            System.out.println(currentNode.getAlias() + "." + field.getName() + "  --  " + prefix);
 
             QueryField queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, modelType, table, true, prefix);
             registerQueryField(queryField);
