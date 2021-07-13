@@ -10,12 +10,21 @@ import java.util.*;
 
 @RequiredArgsConstructor(staticName = "of")
 public class EntityTreeNode {
+
+    @Getter
+    private final EntityTreeNode parentModelNode;
+
     @Getter
     private final Class<?> modelType;
     private final String alias;
     @Getter
     @Setter
     private String selectName;
+
+    @Getter
+    @Setter
+    private String selectNamePrefix = "";
+
     @Getter
     private final Join.JoinType joinType;
     @Getter

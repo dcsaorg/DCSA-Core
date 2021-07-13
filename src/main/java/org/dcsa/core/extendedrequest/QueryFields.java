@@ -18,14 +18,13 @@ public class QueryFields {
     }
 
     @SneakyThrows(NoSuchFieldException.class)
-    public static QueryField queryFieldFromFieldWithSelectPrefix(Class<?> combinedModelClass, Field combinedModelField, Class<?> originalModelClass, Table table, boolean selectable, String namePrefix) {
+    public static QueryField queryFieldFromFieldWithSelectPrefix(Class<?> combinedModelClass, Field combinedModelField, Class<?> originalModelClass, Table table, boolean selectable, String selectNamePrefix) {
         Class<?> modelClass = combinedModelClass;
         String tableAlias = ReflectUtility.getAliasId(table);
         String columnName;
         Column internalColumn;
         Column selectColumn = null;
-        String prefixedJsonName = namePrefix + ReflectUtility.transformFromFieldNameToJsonName(combinedModelField);
-        System.out.println(prefixedJsonName);
+        String prefixedJsonName = selectNamePrefix + ReflectUtility.transformFromFieldNameToJsonName(combinedModelField);
         if (!combinedModelField.isAnnotationPresent(ModelClass.class)) {
             /* Special-case: Use the primary model when the field does not have a ModelClass */
             modelClass = originalModelClass;
