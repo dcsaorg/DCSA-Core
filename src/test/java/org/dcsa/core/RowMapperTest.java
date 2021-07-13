@@ -199,14 +199,45 @@ public class RowMapperTest {
     @Test
     public void testOrderWithCustomerAndAddresses() {
         OrderWithCustomerAndAddresses orderWithCustomerAndAddresses = new OrderWithCustomerAndAddresses();
+        Address customerAddress = new Address();
+        customerAddress.setAddressId(2L);
+        customerAddress.setAddress("customer street 10");
+        customerAddress.setCityId(11L);
+        Address warehouseAddress = new Address();
+        warehouseAddress.setAddressId(7L);
+        warehouseAddress.setAddress("warehouse street 20");
+        warehouseAddress.setCityId(13L);
+        Customer customer = new Customer();
+        customer.setId(3L);
+        customer.setAddressId(customerAddress.getAddressId());
+        customer.setName("customerName");
+        orderWithCustomerAndAddresses.setId(17L);
         orderWithCustomerAndAddresses.setOrderline("orderLine");
-        orderWithCustomerAndAddresses.setCustomerName("customerName");
-        orderWithCustomerAndAddresses.setWarehouseAddress("warehouseAddress");
+        orderWithCustomerAndAddresses.setReceiverId(customer.getAddressId());
+        orderWithCustomerAndAddresses.setCustomerAddress(customerAddress);
+        orderWithCustomerAndAddresses.setCustomer(customer);
+        orderWithCustomerAndAddresses.setWarehouseAddress(warehouseAddress);
+        orderWithCustomerAndAddresses.setWarehouseAddressId(warehouseAddress.getAddressId());
+        orderWithCustomerAndAddresses.setDeliveryDate(OffsetDateTime.now());
 
         StubRow row = StubRow.of(Map.ofEntries(
-                Map.entry("orderline", "orderLine"),
-                Map.entry("customerName", "customerName"),
-                Map.entry("warehouse", "warehouseAddress")
+                Map.entry("id", orderWithCustomerAndAddresses.getId()),
+                Map.entry("orderline", orderWithCustomerAndAddresses.getOrderline()),
+                Map.entry("receiverId", orderWithCustomerAndAddresses.getReceiverId()),
+                Map.entry("warehouseAddressId", orderWithCustomerAndAddresses.getWarehouseAddressId()),
+                Map.entry("deliveryDate", orderWithCustomerAndAddresses.getDeliveryDate()),
+
+                Map.entry("customer.id", customer.getId()),
+                Map.entry("customer.name", customer.getName()),
+                Map.entry("customer.addressId", customer.getAddressId()),
+
+                Map.entry("customerAddress.addressId", customerAddress.getAddressId()),
+                Map.entry("customerAddress.address", customerAddress.getAddress()),
+                Map.entry("customerAddress.cityId", customerAddress.getCityId()),
+
+                Map.entry("warehouseAddress.addressId", warehouseAddress.getAddressId()),
+                Map.entry("warehouseAddress.address", warehouseAddress.getAddress()),
+                Map.entry("warehouseAddress.cityId", warehouseAddress.getCityId())
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
         RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);

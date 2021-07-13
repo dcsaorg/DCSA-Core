@@ -139,7 +139,7 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
     }
 
     private void generateEntityTree() {
-        rootEntityTreeNode = EntityTreeNode.of(entityType, "", null, null, null);
+        rootEntityTreeNode = EntityTreeNode.of(null, entityType, "", null, null, null);
         loadModelDeep(entityType, rootEntityTreeNode, false);
     }
 
@@ -205,6 +205,7 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
                         Join.JoinType joinType = foreignKey.joinType();
                         String intoJoinAlias = foreignKey.viaJoinAlias();
                         EntityTreeNode intoNode = EntityTreeNode.of(
+                                currentNode,
                                 intoModelType, intoJoinAlias, joinType,
                                 fromField.getName(), foreignKey.foreignFieldName());
                         intoNode.setSelectName(intoFieldName);
@@ -242,7 +243,7 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
             String rhsJoinAlias = getAliasOrTableName(rhsModel, joinAnnotation.rhsJoinAlias());
             String rhsFieldName = joinAnnotation.rhsFieldName();
 
-            EntityTreeNode rhsNode = EntityTreeNode.of(rhsModel, rhsJoinAlias, joinType, lhsFieldName, rhsFieldName);
+            EntityTreeNode rhsNode = EntityTreeNode.of(currentNode, rhsModel, rhsJoinAlias, joinType, lhsFieldName, rhsFieldName);
             if (lhsModel == modelType) {
                 currentNode.addChild(rhsNode);
             } else {
@@ -302,12 +303,13 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
     }
 
     private void generateQueryFields() {
-        generatePrefixedQueryFieldsDeep(rootEntityTreeNode, "");
+        generatePrefixedQueryFieldsDeep(rootEntityTreeNode);
     }
 
-    private void generatePrefixedQueryFieldsDeep(EntityTreeNode currentNode, String prefix) {
+    private void generatePrefixedQueryFieldsDeep(EntityTreeNode currentNode) {
         Class<?> modelType = currentNode.getModelType();
         Table table = getTableFor(currentNode);
+        String prefix = currentNode.getSelectNamePrefix();
 
         for (QField qField : currentNode.getQueryFields()) {
             Field field = qField.getField();
@@ -318,14 +320,23 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
         }
 
         for (EntityTreeNode childNode : currentNode.getChildren()) {
-            String newPrefix = prefix;
+            EntityTreeNode parentModel = childNode.getParentModelNode();
+            if (parentModel == null) {
+                throw new IllegalStateException();
+            }
+            String newPrefix = parentModel.getSelectNamePrefix();
             if (childNode.getSelectName() != null) {
-                newPrefix = prefix + childNode.getSelectName() + ".";
+                if (newPrefix.equals("")) {
+                    newPrefix = childNode.getSelectName() + ".";
+                } else {
+                    newPrefix = newPrefix + childNode.getSelectName() + ".";
+                }
             }
             if (newPrefix.contains("..")) {
                 throw new IllegalStateException();
             }
-            generatePrefixedQueryFieldsDeep(childNode, newPrefix);
+            childNode.setSelectNamePrefix(newPrefix);
+            generatePrefixedQueryFieldsDeep(childNode);
         }
     }
 
