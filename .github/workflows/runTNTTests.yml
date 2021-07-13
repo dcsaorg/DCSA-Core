@@ -39,17 +39,11 @@ jobs:
           repository: dcsaorg/DCSA-TNT
           ref: master
           path: DCSA-TNT
+          submodules: recursive
           token: ${{ secrets.REPO_ACCESS_PAT }}
 
       - name: Build Track & Trace API
         run: cd DCSA-TNT && mvn package -DskipTests -Ddcsa.version=$MAVEN_PROJECT_VERSION -Ddcsa.core.tag=${{ github.head_ref }} -Ddcsa.artifacttype=-SNAPSHOT #Get maven package that was just published
-
-      - name: Checkout IM
-        uses: actions/checkout@v2
-        with:
-          repository: dcsaorg/DCSA-Information-Model
-          ref: master
-          path: DCSA-Information-Model
 
       - name: Run the TNT microservice plus database
         run: cd DCSA-TNT && docker-compose -f docker-compose.yml up -d -V
@@ -58,7 +52,7 @@ jobs:
       - run: echo "SELECT 1;" | docker exec -i -u postgres dcsa_db psql -d dcsa_openapi -f - 2>/dev/null || sleep 5
 
       - name: Load DCSA test data
-        run: cat DCSA-Information-Model/datamodel/testdata.d/*.sql | docker exec -i -u postgres dcsa_db psql -d dcsa_openapi -f -
+        run: cat DCSA-TNT/DCSA-Information-Model/datamodel/testdata.d/*.sql | docker exec -i -u postgres dcsa_db psql -d dcsa_openapi -f -
 
       - name: Checkout dcsaorg/DCSA-API-Validator
         uses: actions/checkout@v2
