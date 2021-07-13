@@ -235,9 +235,9 @@ public class RowMapperTest {
                 Map.entry("customerAddress.address", customerAddress.getAddress()),
                 Map.entry("customerAddress.cityId", customerAddress.getCityId()),
 
-                Map.entry("warehouseAddress.addressId", warehouseAddress.getAddressId()),
-                Map.entry("warehouseAddress.address", warehouseAddress.getAddress()),
-                Map.entry("warehouseAddress.cityId", warehouseAddress.getCityId())
+                Map.entry("warehouse.addressId", warehouseAddress.getAddressId()),
+                Map.entry("warehouse.address", warehouseAddress.getAddress()),
+                Map.entry("warehouse.cityId", warehouseAddress.getCityId())
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
         RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);

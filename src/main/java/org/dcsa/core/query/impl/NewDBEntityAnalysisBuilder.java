@@ -167,7 +167,7 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
                     if (mapEntity != null) {
                         String alias = getAliasOrTableName(field.getType(), mapEntity.joinAlias());
                         EntityTreeNode mappedNode = currentNode.getChild(alias);
-                        mappedNode.setSelectName(field.getName());
+                        mappedNode.setSelectName(ReflectUtility.transformFromFieldNameToJsonName(field));
                         loadModelDeep(field.getType(), mappedNode, skipQueryFields);
                     }
 
