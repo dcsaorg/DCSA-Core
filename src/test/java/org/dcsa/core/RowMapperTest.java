@@ -9,6 +9,7 @@ import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.mock.MockR2dbcDialect;
 import org.dcsa.core.models.Address;
 import org.dcsa.core.models.City;
+import org.dcsa.core.models.Customer;
 import org.dcsa.core.models.combined.*;
 import org.dcsa.core.repository.RowMapper;
 import org.dcsa.core.stub.StubRow;
@@ -37,14 +38,23 @@ public class RowMapperTest {
     @Test
     public void testCustomerWithAddress() {
         CustomerWithAddress customerWithAddress = new CustomerWithAddress();
+        Address address = new Address();
+        address.setAddressId(2L);
+        address.setCityId(3L);
+        address.setAddress("customerAddress");
         customerWithAddress.setId(1L);
         customerWithAddress.setName("customerName");
-        customerWithAddress.setAddress("customerAddress");
+        customerWithAddress.setAddress(address);
+        customerWithAddress.setAddressId(address.getAddressId());
 
         StubRow row = StubRow.of(Map.of(
-                "id", 1L,
-                "name", "customerName",
-                "address", "customerAddress"
+                "id", customerWithAddress.getId(),
+                "name", customerWithAddress.getName(),
+                "addressId", customerWithAddress.getAddressId(),
+                "address.addressId", address.getAddressId(),
+                "address.address", address.getAddress(),
+                "address.cityId", address.getCityId()
+
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
         RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
