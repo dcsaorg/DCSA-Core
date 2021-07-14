@@ -216,13 +216,15 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
     private void loadJoinedWithModelAnnotationsDeep(Class<?> modelType, EntityTreeNode currentNode) {
         JoinedWithModel[] joinAnnotations = modelType.getAnnotationsByType(JoinedWithModel.class);
 
-        Map<String, MapEntity> joinAlias2MapEntity = new HashMap<>();
+        Set<String> mapEntityJoinAliases = new HashSet<>();
         ReflectUtility.visitAllFields(modelType,
                 field -> field.isAnnotationPresent(MapEntity.class),
                 field -> {
                     MapEntity mapEntity = field.getAnnotation(MapEntity.class);
                     String joinAlias = getAliasOrTableName(field.getType(), mapEntity.joinAlias());
-                    joinAlias2MapEntity.putIfAbsent(joinAlias, mapEntity); // TODO: Exception
+                    if (!mapEntityJoinAliases.add(joinAlias)) {
+                        throw new IllegalArgumentException("Join alias " + joinAlias + " used twice for different @MapEntity fields");
+                    }
         });
 
         for (JoinedWithModel joinAnnotation : joinAnnotations) {
@@ -246,7 +248,7 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
                 // Add to previously created rhsNode referenced by alias
                 currentNode.getChild(lhsJoinAlias).addChild(rhsNode);
             }
-            boolean noMapEntityAnnotation = joinAlias2MapEntity.get(rhsJoinAlias) == null;
+            boolean noMapEntityAnnotation = !mapEntityJoinAliases.contains(rhsJoinAlias);
             loadModelDeep(rhsModel, rhsNode, noMapEntityAnnotation);
             checkJoinType(joinType, modelType);
             for (String fieldName : joinAnnotation.filterFields()) {
