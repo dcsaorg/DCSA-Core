@@ -13,7 +13,7 @@ import org.dcsa.core.models.Order;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @PrimaryModel(Order.class)
-@JoinedWithModel(lhsFieldName = "warehouseAddressId", rhsModel = Address.class, rhsFieldName = "addressId")
+@JoinedWithModel(lhsFieldName = "warehouseAddressId", rhsModel = Address.class, rhsFieldName = "addressId", filterFields = {"address"})
 @ToString(callSuper = true)
 public class ExtendedOrder extends Order {
 

@@ -11,7 +11,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Data
 @Table("B_table")
 @JoinedWithModel(lhsFieldName = "cId", rhsModel = C.class, rhsFieldName = "id")
-@JoinedWithModel(lhsFieldName = "eId", lhsModel = C.class, rhsModel = E.class, rhsFieldName = "id", rhsJoinAlias = "e_alias", filterFields = {"name"})
+@JoinedWithModel(lhsFieldName = "eId", lhsModel = C.class, rhsModel = E.class, rhsFieldName = "id", rhsJoinAlias = "e_alias")
 @JoinedWithModel(lhsFieldName = "dId", rhsModel = D.class, rhsFieldName = "id")
 public class B {
     private Long id;
