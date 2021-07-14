@@ -165,7 +165,6 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
                         String alias = getAliasOrTableName(field.getType(), mapEntity.joinAlias());
                         EntityTreeNode mappedNode = currentNode.getChild(alias);
                         mappedNode.setSelectName(ReflectUtility.transformFromFieldNameToJsonName(field));
-                        loadModelDeep(field.getType(), mappedNode, skipQueryFields);
                     }
 
                     if (foreignKey != null) {
@@ -225,6 +224,15 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
     private void loadJoinedWithModelAnnotationsDeep(Class<?> modelType, EntityTreeNode currentNode) {
         JoinedWithModel[] joinAnnotations = modelType.getAnnotationsByType(JoinedWithModel.class);
 
+        Map<String, MapEntity> joinAlias2MapEntity = new HashMap<>();
+        ReflectUtility.visitAllFields(modelType,
+                field -> field.isAnnotationPresent(MapEntity.class),
+                field -> {
+                    MapEntity mapEntity = field.getAnnotation(MapEntity.class);
+                    String joinAlias = getAliasOrTableName(field.getType(), mapEntity.joinAlias());
+                    joinAlias2MapEntity.putIfAbsent(joinAlias, mapEntity); // TODO: Exception
+        });
+
         for (JoinedWithModel joinAnnotation : joinAnnotations) {
             Join.JoinType joinType = joinAnnotation.joinType();
             Class<?> lhsModel = joinAnnotation.lhsModel();
@@ -246,7 +254,8 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
                 // Add to previously created rhsNode referenced by alias
                 currentNode.getChild(lhsJoinAlias).addChild(rhsNode);
             }
-            loadModelDeep(rhsModel, rhsNode, true);
+            boolean noMapEntityAnnotation = joinAlias2MapEntity.get(rhsJoinAlias) == null;
+            loadModelDeep(rhsModel, rhsNode, noMapEntityAnnotation);
             checkJoinType(joinType, modelType);
             for (String fieldName : joinAnnotation.filterFields()) {
                 Field field;
