@@ -6,13 +6,11 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.dcsa.core.model.JoinedWithModel;
 import org.dcsa.core.model.ModelClass;
-import org.dcsa.core.model.PrimaryModel;
 import org.dcsa.core.models.Address;
 import org.dcsa.core.models.Order;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@PrimaryModel(Order.class)
 @JoinedWithModel(lhsFieldName = "warehouseAddressId", rhsModel = Address.class, rhsFieldName = "addressId", filterFields = {"address"})
 @ToString(callSuper = true)
 public class ExtendedOrder extends Order {

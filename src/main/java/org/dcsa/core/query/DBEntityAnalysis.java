@@ -27,8 +27,7 @@ public interface DBEntityAnalysis<T> {
     interface DBEntityAnalysisBuilder<T> {
         /**
          *
-         * @return The primary model class.  This is class referenced in the entity class's {@link org.dcsa.core.model.PrimaryModel}
-         * annotation or the entity itself (the latter is absent).
+         * @return The primary model class.
          */
         Class<?> getPrimaryModelClass();
 

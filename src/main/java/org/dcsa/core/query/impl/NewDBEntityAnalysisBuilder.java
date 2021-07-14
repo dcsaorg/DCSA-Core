@@ -5,7 +5,6 @@ import org.dcsa.core.extendedrequest.*;
 import org.dcsa.core.model.ForeignKey;
 import org.dcsa.core.model.JoinedWithModel;
 import org.dcsa.core.model.MapEntity;
-import org.dcsa.core.model.PrimaryModel;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.annotation.Transient;
@@ -106,14 +105,7 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
     }
 
     public Class<?> getPrimaryModelClass() {
-        PrimaryModel annotation = entityType.getAnnotation(PrimaryModel.class);
-        if (annotation == null) {
-            if (entityType.isAnnotationPresent(org.springframework.data.relational.core.mapping.Table.class)) {
-                return entityType;
-            }
-            throw new IllegalArgumentException("Missing @PrimaryModel or @Table on class " + entityType.getSimpleName());
-        }
-        return annotation.value();
+        return entityType;
     }
 
     private void addNewAlias(Class<?> clazz, String joinAlias, JoinDescriptor joinDescriptor) {
