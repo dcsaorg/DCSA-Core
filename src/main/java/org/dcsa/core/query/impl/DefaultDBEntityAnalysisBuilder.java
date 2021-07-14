@@ -383,11 +383,22 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
         Set<String> joinAliasesForModel;
         String joinAlias = null;
         QueryField queryField;
-        ViaJoinAlias viaJoinAlias = field.getAnnotation(ViaJoinAlias.class);
+        ModelClass modelClass = field.getAnnotation(ModelClass.class);
         if (modelType == null) {
             modelType = entityType;
         }
-        modelClassForField = ReflectUtility.getFieldModelClass(modelType, field);
+        modelClassForField = modelType;
+        if (modelClass != null) {
+            if (!modelClass.value().equals(Object.class)) {
+                modelClassForField = modelClass.value();
+            } else if (modelClass.viaJoinAlias().equals("")) {
+                throw new IllegalStateException("@ModelClass annotation on field "
+                        + field.getName() + " on class " + modelClassForField.getSimpleName()
+                        + " needs either a class (\"value\" field) or a join alias (\"viaJoinAlias\")");
+            } else {
+                joinAlias = modelClass.viaJoinAlias();
+            }
+        }
 
         /* Rewrite the combined model to the primary model class as that is what we used for defining
          * join aliases.
@@ -405,12 +416,7 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
             );
         }
 
-        if (viaJoinAlias != null) {
-            joinAlias = viaJoinAlias.value();
-            if (joinAlias.equals("")) {
-                throw new IllegalStateException("Cannot have empty alias in @ViaJoinAlias annotation on field "
-                        + field.getName() + " on class " + modelClassForField.getSimpleName());
-            }
+        if (joinAlias != null) {
             if (!joinAliasesForModel.contains(joinAlias)) {
                 throw new IllegalArgumentException("Invalid join alias defined in @ViaJoinAlias annotation on field "
                         + field.getName() + " on class " + modelClassForField.getSimpleName()

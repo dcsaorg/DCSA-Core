@@ -8,7 +8,12 @@ import java.lang.reflect.Field;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
+@Deprecated
+/**
+ * @deprecated Not supported any more. Might be fixed in the future.
+ */
 public @interface ModelClass {
-    Class<?> value();
+    Class<?> value() default Object.class;
     String fieldName() default "";
+    String viaJoinAlias() default "";
 }
