@@ -460,9 +460,9 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
                 if (rhsModel != null && rhsModel != Object.class) {
                     modelRef = rhsModel.getSimpleName();
                 }
-                // FIXME: DELETE AFTER TESTING
-//                throw new IllegalArgumentException("Unnecessary join alias \"" + joinDescriptor.getJoinAliasId()
-//                        + "\" from unknown source. Related Model: " + modelRef);
+
+                throw new IllegalArgumentException("Unnecessary join alias \"" + joinDescriptor.getJoinAliasId()
+                        + "\" from unknown source. Related Model: " + modelRef);
             }
         }
 
