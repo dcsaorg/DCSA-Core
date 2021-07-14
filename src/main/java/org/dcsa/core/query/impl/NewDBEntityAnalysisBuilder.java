@@ -92,7 +92,6 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
 
     public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerJoinDescriptor(JoinDescriptor joinDescriptor) {
         String rhsJoinAlias = joinDescriptor.getJoinAliasId();
-        System.out.println(rhsJoinAlias);
         Class<?> rhsModel = joinDescriptor.getRHSModel();
         if (this.joinAlias2Class.isEmpty()) {
             initJoinAliasTable();
@@ -144,7 +143,6 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
     }
 
     private void loadModelDeep(Class<?> modelType, EntityTreeNode currentNode, boolean skipQueryFields) {
-        System.out.println("New model: " + modelType.getSimpleName());
         loadJoinedWithModelAnnotationsDeep(modelType, currentNode);
         loadFieldsDeep(modelType, currentNode, skipQueryFields);
     }
@@ -154,7 +152,6 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
         ReflectUtility.visitAllFields(modelType,
                 field -> !seenFields.contains(field.getName()) && !Modifier.isStatic(field.getModifiers()),
                 field -> {
-                    System.out.println("New field: " + modelType.getSimpleName() +  " : " + field.getName() );
                     seenFields.add(field.getName());
 
                     ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
@@ -324,7 +321,6 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
 
         for (QField qField : currentNode.getQueryFields()) {
             Field field = qField.getField();
-            System.out.println(currentNode.getAlias() + "." + field.getName() + "  --  " + prefix);
 
             QueryField queryField;
             if (qField.isFilterField()) {
