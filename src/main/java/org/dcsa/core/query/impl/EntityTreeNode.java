@@ -39,8 +39,10 @@ public class EntityTreeNode {
 
     public void addChild(EntityTreeNode child) {
         children.add(child);
-        // TODO: Throw exception
-        alias2Child.putIfAbsent(child.getAlias(), child);
+        if (alias2Child.putIfAbsent(child.getAlias(), child) != null) {
+            throw new IllegalArgumentException("Cannot add EntityTreeNode: It uses the prefix " + child.getAlias()
+                    + ", which is already in use");
+        }
     }
 
     public void addQueryField(QField queryField) {

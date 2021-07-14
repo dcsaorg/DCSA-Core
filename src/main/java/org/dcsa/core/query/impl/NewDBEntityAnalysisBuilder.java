@@ -269,7 +269,9 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
 
     private void generateTablesDeep(EntityTreeNode currentNode, String prefix) {
         Table prefixedTable = getTableForModel(currentNode.getModelType(), currentNode.getAlias(), prefix);
-        entityTreeNode2Table.putIfAbsent(currentNode, prefixedTable); // TODO: Exception
+        if (entityTreeNode2Table.putIfAbsent(currentNode, prefixedTable) != null) {
+            throw new IllegalArgumentException("Cannot insert EntityTreeNode twice! (Got prefix: " + prefixedTable + ")");
+        }
 
         String newPrefix = "";
         if (currentNode.getLhsFieldName() != null) {
@@ -488,8 +490,11 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
     }
 
     private Table getTableFor(EntityTreeNode entityTreeNode) {
-        // TODO: Exception
-        return entityTreeNode2Table.get(entityTreeNode);
+        Table table = entityTreeNode2Table.get(entityTreeNode);
+        if (table == null) {
+            throw new IllegalArgumentException("No table for the given EntityTreeNode");
+        }
+        return table;
     }
 
     @Override
