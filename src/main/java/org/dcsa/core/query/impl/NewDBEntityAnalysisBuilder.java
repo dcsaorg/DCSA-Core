@@ -219,8 +219,7 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
                     }
 
                     if (!skipQueryFields) {
-                        QField queryField = QField.of(field);
-                        currentNode.addQueryField(queryField);
+                        currentNode.addQueryField(QField.of(field, false));
                     }
                 }
         );
@@ -252,6 +251,18 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
             }
             loadModelDeep(rhsModel, rhsNode, true);
             checkJoinType(joinType, modelType);
+            for (String fieldName : joinAnnotation.filterFields()) {
+                Field field;
+                try {
+                    field = ReflectUtility.getDeclaredField(rhsModel, fieldName);
+                } catch (NoSuchFieldException e) {
+                    throw new IllegalArgumentException("Invalid @JoinedWithModel on " + entityType.getSimpleName()
+                            + ": The rhsModel " + rhsModel.getSimpleName() + " does not have a field called "
+                            + fieldName + ", but it is listed under filterFields."
+                    );
+                }
+                rhsNode.addQueryField(QField.of(field, true));
+            }
         }
     }
 
@@ -315,7 +326,12 @@ public class NewDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisBuild
             Field field = qField.getField();
             System.out.println(currentNode.getAlias() + "." + field.getName() + "  --  " + prefix);
 
-            QueryField queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, modelType, table, true, prefix);
+            QueryField queryField;
+            if (qField.isFilterField()) {
+                queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, field.getDeclaringClass(), table, true, prefix);
+            } else {
+                queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, modelType, table, true, prefix);
+            }
             registerQueryField(queryField);
         }
 

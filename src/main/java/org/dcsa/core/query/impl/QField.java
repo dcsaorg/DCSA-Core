@@ -9,4 +9,5 @@ import java.lang.reflect.Field;
 @RequiredArgsConstructor(staticName = "of")
 public class QField {
     private final Field field;
+    private final boolean filterField;
 }
