@@ -30,4 +30,8 @@ public class B {
 
     @Transient
     private F f;
+
+    @MapEntity
+    @Transient
+    private D d;
 }

@@ -91,22 +91,26 @@ public class ExtendedRequestTest {
 
     @Test
     public void testA() {
-        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"b.id\", B_table.cId AS \"b.cId\", B_table.dId AS \"b.dId\", B_table.fId_column AS \"b.fId\", bId__cId__e_alias.id AS \"b.e.id\", bId__cId__e_alias.name AS \"b.e.name\", bId__F_table.id AS \"b.f.id\""
+        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"b.id\", B_table.cId AS \"b.cId\", B_table.dId AS \"b.dId\", B_table.fId_column AS \"b.fId\", bId__cId__e_alias.id AS \"b.e.id\", bId__cId__e_alias.name AS \"b.e.name\", bId__D_table.id AS \"b.d.id\", bId__D_table.cId AS \"b.d.cId\", bId__dId__C_table.id AS \"b.d.c.id\", bId__dId__C_table.eId AS \"b.d.c.eId\", bId__F_table.id AS \"b.f.id\""
                 + " FROM A_table"
                 + " JOIN B_table ON A_table.bId = B_table.id"
                 + " JOIN C_table bId__C_table ON B_table.cId = bId__C_table.id"
                 + " JOIN E_table bId__cId__e_alias ON bId__C_table.eId = bId__cId__e_alias.id"
+                + " JOIN D_table bId__D_table ON B_table.dId = bId__D_table.id"
+                + " JOIN C_table bId__dId__C_table ON bId__D_table.cId = bId__dId__C_table.id"
                 + " JOIN F_table bId__F_table ON B_table.fId_column = bId__F_table.id";
         request(A.class, extendedParameters).verify(baseQuery);
     }
 
     @Test
     public void testAWithWhere() {
-        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"b.id\", B_table.cId AS \"b.cId\", B_table.dId AS \"b.dId\", B_table.fId_column AS \"b.fId\", bId__cId__e_alias.id AS \"b.e.id\", bId__cId__e_alias.name AS \"b.e.name\", bId__F_table.id AS \"b.f.id\""
+        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"b.id\", B_table.cId AS \"b.cId\", B_table.dId AS \"b.dId\", B_table.fId_column AS \"b.fId\", bId__cId__e_alias.id AS \"b.e.id\", bId__cId__e_alias.name AS \"b.e.name\", bId__D_table.id AS \"b.d.id\", bId__D_table.cId AS \"b.d.cId\", bId__dId__C_table.id AS \"b.d.c.id\", bId__dId__C_table.eId AS \"b.d.c.eId\", bId__F_table.id AS \"b.f.id\""
                 + " FROM A_table"
                 + " JOIN B_table ON A_table.bId = B_table.id"
                 + " JOIN C_table bId__C_table ON B_table.cId = bId__C_table.id"
                 + " JOIN E_table bId__cId__e_alias ON bId__C_table.eId = bId__cId__e_alias.id"
+                + " JOIN D_table bId__D_table ON B_table.dId = bId__D_table.id"
+                + " JOIN C_table bId__dId__C_table ON bId__D_table.cId = bId__dId__C_table.id"
                 + " JOIN F_table bId__F_table ON B_table.fId_column = bId__F_table.id";
         request(A.class, extendedParameters)
                 .withParam("b.e.name", "a")
