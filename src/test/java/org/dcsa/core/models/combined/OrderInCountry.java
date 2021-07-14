@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.dcsa.core.model.JoinedWithModel;
 import org.dcsa.core.model.ModelClass;
-import org.dcsa.core.model.ViaJoinAlias;
 import org.dcsa.core.models.*;
 
 @Data
@@ -19,17 +18,13 @@ import org.dcsa.core.models.*;
 @JoinedWithModel(lhsModel = City.class, lhsFieldName = "countryId", rhsModel = County.class, rhsFieldName = "id", filterFields = {"countryName"})
 public class OrderInCountry extends Order {
 
-    private String orderline;
-
     @ModelClass(value = Customer.class, fieldName = "name")
     private String customerName;
 
-    @ModelClass(value = Address.class, fieldName = "address")
-    @ViaJoinAlias("customer_address")
+    @ModelClass(fieldName = "address", viaJoinAlias = "customer_address")
     private String customerAddress;
 
-    @ModelClass(value = Address.class, fieldName = "address")
-    @ViaJoinAlias("warehouse_address")
+    @ModelClass(fieldName = "address", viaJoinAlias = "warehouse_address")
     @JsonProperty("warehouse")
     private String warehouseAddress;
 }
