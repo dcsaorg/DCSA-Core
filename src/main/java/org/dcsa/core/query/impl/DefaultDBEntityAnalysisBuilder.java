@@ -294,14 +294,7 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
     }
 
     public Class<?> getPrimaryModelClass() {
-        PrimaryModel annotation = entityType.getAnnotation(PrimaryModel.class);
-        if (annotation == null) {
-            if (entityType.isAnnotationPresent(org.springframework.data.relational.core.mapping.Table.class)) {
-                return entityType;
-            }
-            throw new IllegalArgumentException("Missing @PrimaryModel or @Table on class " + entityType.getSimpleName());
-        }
-        return annotation.value();
+        return entityType;
     }
 
     private void loadJoinsFromAnnotationsOnEntityClass() {
