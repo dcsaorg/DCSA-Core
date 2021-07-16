@@ -171,6 +171,11 @@ public class QueryParameterParser<T> {
             return;
         }
 
+        if (value == null || value.equals("")) {
+            throw new GetException("Cannot use empty value as filter for " + queryField.getJsonName()
+                    + ".");
+        }
+
         if (fieldType.isEnum()) {
             // Return type IS Enum - split a possible list on EnumSplitter (since this is an Enum - no special characters are allowed). If
             // enumSplit value is a "," or a "|" this will work fine
