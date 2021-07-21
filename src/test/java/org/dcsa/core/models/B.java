@@ -10,8 +10,10 @@ import org.springframework.data.relational.core.mapping.Table;
 
 @Data
 @Table("B_table")
-@JoinedWithModel(lhsFieldName = "cId", rhsModel = C.class, rhsFieldName = "id")
-@JoinedWithModel(lhsFieldName = "eId", lhsModel = C.class, rhsModel = E.class, rhsFieldName = "id", rhsJoinAlias = "e_alias")
+@JoinedWithModel(lhsFieldName = "cId", rhsModel = C.class, rhsFieldName = "id", rhsJoinAlias = "c1")
+@JoinedWithModel(lhsJoinAlias = "c1", lhsFieldName = "eId", lhsModel = C.class, rhsModel = E.class, rhsFieldName = "id", rhsJoinAlias = "e1")
+@JoinedWithModel(lhsFieldName = "cId", rhsModel = C.class, rhsFieldName = "id", rhsJoinAlias = "c2")
+@JoinedWithModel(lhsJoinAlias = "c2", lhsFieldName = "eId", lhsModel = C.class, rhsModel = E.class, rhsFieldName = "id", rhsJoinAlias = "e2")
 @JoinedWithModel(lhsFieldName = "dId", rhsModel = D.class, rhsFieldName = "id")
 public class B {
     private Long id;
@@ -20,9 +22,13 @@ public class B {
 
     private Long dId;
 
-    @MapEntity(joinAlias = "e_alias")
+    @MapEntity(joinAlias = "e1")
     @Transient
-    private E e;
+    private E e1;
+
+    @MapEntity(joinAlias = "e2")
+    @Transient
+    private E e2;
 
     @ForeignKey(into="f", foreignFieldName="id")
     @Column("fId_column")

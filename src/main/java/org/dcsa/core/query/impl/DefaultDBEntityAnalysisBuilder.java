@@ -277,9 +277,9 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
         }
 
         String newPrefix = "";
-        if (currentNode.getLhsFieldName() != null) {
+        if (currentNode.getModelType() != entityType) {
             // Avoid "." which causes issues for SQL - we use "__" to make more distinct and less likely clash by accident.
-            newPrefix = prefix + currentNode.getLhsFieldName() + "__";
+            newPrefix = prefixedTable.getReferenceName().getReference() + "__";
         }
 
         for (EntityTreeNode childNode : currentNode.getChildren()) {
@@ -293,14 +293,14 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
 
     private void generatePrefixedJoinsDeep(EntityTreeNode currentNode, String prefix) {
         String newPrefix = "";
-        if (currentNode.getLhsFieldName() != null) {
-            // Avoid "." which causes issues for SQL - we use "__" to make more distinct and less likely clash by accident.
-            newPrefix = prefix + currentNode.getLhsFieldName() + "__";
+        // Avoid "." which causes issues for SQL - we use "__" to make more distinct and less likely clash by accident.
+        Table lhsTable = getTableFor(currentNode);
+        if (currentNode.getModelType() != entityType) {
+            newPrefix = lhsTable.getReferenceName().getReference() + "__";
         }
 
         for (EntityTreeNode childNode : currentNode.getChildren()) {
             // Join current node (lhs) with child node (rhs)
-            Table lhsTable = getTableFor(currentNode);
             String lhsFieldName = getColumnName(currentNode.getModelType(), childNode.getLhsFieldName(), "lhs");
             Column lhsColumn = Column.create(SqlIdentifier.unquoted(lhsFieldName), lhsTable);
             Table rhsTable = getTableFor(childNode);
