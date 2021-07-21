@@ -3,12 +3,15 @@ package org.dcsa.core.security;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
@@ -28,6 +31,9 @@ public class SecurityConfig {
 
     @Value("${auth0.enabled}")
     private boolean securityEnabled;
+
+    @Value("${dcsa.securityConfig.receiveNotificationEndpoint:NONE}")
+    private String receiveNotificationEndpoint;
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
@@ -50,15 +56,32 @@ public class SecurityConfig {
         ServerHttpSecurity.AuthorizeExchangeSpec securitySpec = http.authorizeExchange();
 
         if (securityEnabled) {
-            log.info("Security: auth0 enabled");
-            securitySpec.anyExchange().authenticated()
+            String endpoint = null;
+            if (!receiveNotificationEndpoint.equals("NONE")) {
+                endpoint = receiveNotificationEndpoint.replaceAll("/++$", "") + "/receive/*";
+                securitySpec = securitySpec.pathMatchers(HttpMethod.POST, endpoint)
+                        .permitAll()
+                        .pathMatchers(HttpMethod.HEAD, endpoint)
+                        .permitAll();
+
+                log.info("Security: auth0 enabled - receive endpoint \"" + endpoint + "\"");
+            } else {
+                log.info("Security: auth0 enabled - no receive endpoint");
+            }
+            ServerHttpSecurity security = securitySpec.anyExchange().authenticated()
                     .and()
                     .oauth2ResourceServer()
                     .jwt()
                     .jwtAuthenticationConverter(new JwtAuthenticationConverter())
                     .and()
                     .and()
-                    .cors();
+                    .cors()
+                    .and();
+            if (endpoint != null) {
+                security.csrf().requireCsrfProtectionMatcher(new NegatedServerWebExchangeMatcher(
+                        ServerWebExchangeMatchers.pathMatchers(endpoint)
+                ));
+            }
         } else {
             log.info("Security: disabled - no authentication nor CRSF tokens needed");
             securitySpec.anyExchange().permitAll()
