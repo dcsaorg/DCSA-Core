@@ -65,12 +65,12 @@ public class ExtendedRequestTest {
     public void testCustomerBook() {
         String baseQuery = "SELECT customer_book_table.customer_book_id AS \"id\", customer_book_table.customer_book_name AS \"name\", customer_book_table.customer_id AS \"customerId\","
                 + "      customer_table.customer_id AS \"customer.id\", customer_table.customer_name AS \"customer.name\", customer_table.delivery_address_id AS \"customer.deliveryAddressId\", customer_table.payment_address_id AS \"customer.paymentAddressId\","
-                + "      customerId__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customerId__delivery_address.street_name AS \"customer.deliveryAddress.address\", customerId__delivery_address.city_id AS \"customer.deliveryAddress.cityId\","
-                + "      customerId__payment_address.address_id AS \"customer.paymentAddress.addressId\", customerId__payment_address.street_name AS \"customer.paymentAddress.address\", customerId__payment_address.city_id AS \"customer.paymentAddress.cityId\""
+                + "      customer_table__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customer_table__delivery_address.street_name AS \"customer.deliveryAddress.address\", customer_table__delivery_address.city_id AS \"customer.deliveryAddress.cityId\","
+                + "      customer_table__payment_address.address_id AS \"customer.paymentAddress.addressId\", customer_table__payment_address.street_name AS \"customer.paymentAddress.address\", customer_table__payment_address.city_id AS \"customer.paymentAddress.cityId\""
                 + " FROM customer_book_table"
                 + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
-                + " JOIN address_table customerId__delivery_address ON customer_table.delivery_address_id = customerId__delivery_address.address_id"
-                + " JOIN address_table customerId__payment_address ON customer_table.payment_address_id = customerId__payment_address.address_id";
+                + " JOIN address_table customer_table__delivery_address ON customer_table.delivery_address_id = customer_table__delivery_address.address_id"
+                + " JOIN address_table customer_table__payment_address ON customer_table.payment_address_id = customer_table__payment_address.address_id";
         request(CustomerBook.class, extendedParameters).verify(baseQuery);
     }
 
@@ -79,46 +79,50 @@ public class ExtendedRequestTest {
         String baseQuery = "SELECT customer_book_table.city_id AS \"cityId\", customer_book_table.customer_book_id AS \"id\", customer_book_table.customer_book_name AS \"name\", customer_book_table.customer_id AS \"customerId\","
                 + "     city_table.id AS \"city.id\", city_table.city_name AS \"city.name\", city_table.country_id AS \"city.countryId\","
                 + "     customer_table.customer_id AS \"customer.id\", customer_table.customer_name AS \"customer.name\", customer_table.delivery_address_id AS \"customer.deliveryAddressId\", customer_table.payment_address_id AS \"customer.paymentAddressId\","
-                + "     customerId__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customerId__delivery_address.street_name AS \"customer.deliveryAddress.address\", customerId__delivery_address.city_id AS \"customer.deliveryAddress.cityId\","
-                + "     customerId__payment_address.address_id AS \"customer.paymentAddress.addressId\", customerId__payment_address.street_name AS \"customer.paymentAddress.address\", customerId__payment_address.city_id AS \"customer.paymentAddress.cityId\""
+                + "     customer_table__delivery_address.address_id AS \"customer.deliveryAddress.addressId\", customer_table__delivery_address.street_name AS \"customer.deliveryAddress.address\", customer_table__delivery_address.city_id AS \"customer.deliveryAddress.cityId\","
+                + "     customer_table__payment_address.address_id AS \"customer.paymentAddress.addressId\", customer_table__payment_address.street_name AS \"customer.paymentAddress.address\", customer_table__payment_address.city_id AS \"customer.paymentAddress.cityId\""
                 + " FROM customer_book_table"
                 + " JOIN city_table ON customer_book_table.city_id = city_table.id"
                 + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
-                + " JOIN address_table customerId__delivery_address ON customer_table.delivery_address_id = customerId__delivery_address.address_id"
-                + " JOIN address_table customerId__payment_address ON customer_table.payment_address_id = customerId__payment_address.address_id";
+                + " JOIN address_table customer_table__delivery_address ON customer_table.delivery_address_id = customer_table__delivery_address.address_id"
+                + " JOIN address_table customer_table__payment_address ON customer_table.payment_address_id = customer_table__payment_address.address_id";
         request(CityCustomerBook.class, extendedParameters).verify(baseQuery);
     }
 
     @Test
     public void testA() {
-        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"b.id\", B_table.cId AS \"b.cId\", B_table.dId AS \"b.dId\", B_table.fId_column AS \"b.fId\", bId__cId__e_alias.id AS \"b.e.id\", bId__cId__e_alias.name AS \"b.e.name\", bId__D_table.id AS \"b.d.id\", bId__D_table.cId AS \"b.d.cId\", bId__dId__C_table.id AS \"b.d.c.id\", bId__dId__C_table.eId AS \"b.d.c.eId\", bId__F_table.id AS \"b.f.id\""
+        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"b.id\", B_table.cId AS \"b.cId\", B_table.dId AS \"b.dId\", B_table.fId_column AS \"b.fId\", B_table__c1__e1.id AS \"b.e1.id\", B_table__c1__e1.name AS \"b.e1.name\", B_table__c2__e2.id AS \"b.e2.id\", B_table__c2__e2.name AS \"b.e2.name\", B_table__D_table.id AS \"b.d.id\", B_table__D_table.cId AS \"b.d.cId\", B_table__D_table__C_table.id AS \"b.d.c.id\", B_table__D_table__C_table.eId AS \"b.d.c.eId\", B_table__F_table.id AS \"b.f.id\""
                 + " FROM A_table"
                 + " JOIN B_table ON A_table.bId = B_table.id"
-                + " JOIN C_table bId__C_table ON B_table.cId = bId__C_table.id"
-                + " JOIN E_table bId__cId__e_alias ON bId__C_table.eId = bId__cId__e_alias.id"
-                + " JOIN D_table bId__D_table ON B_table.dId = bId__D_table.id"
-                + " JOIN C_table bId__dId__C_table ON bId__D_table.cId = bId__dId__C_table.id"
-                + " JOIN F_table bId__F_table ON B_table.fId_column = bId__F_table.id";
+                + " JOIN C_table B_table__c1 ON B_table.cId = B_table__c1.id"
+                + " JOIN E_table B_table__c1__e1 ON B_table__c1.eId = B_table__c1__e1.id"
+                + " JOIN C_table B_table__c2 ON B_table.cId = B_table__c2.id"
+                + " JOIN E_table B_table__c2__e2 ON B_table__c2.eId = B_table__c2__e2.id"
+                + " JOIN D_table B_table__D_table ON B_table.dId = B_table__D_table.id"
+                + " JOIN C_table B_table__D_table__C_table ON B_table__D_table.cId = B_table__D_table__C_table.id"
+                + " JOIN F_table B_table__F_table ON B_table.fId_column = B_table__F_table.id";
         request(A.class, extendedParameters).verify(baseQuery);
     }
 
     @Test
     public void testAWithWhere() {
-        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"b.id\", B_table.cId AS \"b.cId\", B_table.dId AS \"b.dId\", B_table.fId_column AS \"b.fId\", bId__cId__e_alias.id AS \"b.e.id\", bId__cId__e_alias.name AS \"b.e.name\", bId__D_table.id AS \"b.d.id\", bId__D_table.cId AS \"b.d.cId\", bId__dId__C_table.id AS \"b.d.c.id\", bId__dId__C_table.eId AS \"b.d.c.eId\", bId__F_table.id AS \"b.f.id\""
+        String baseQuery = "SELECT A_table.id AS \"id\", A_table.bId AS \"bId\", B_table.id AS \"b.id\", B_table.cId AS \"b.cId\", B_table.dId AS \"b.dId\", B_table.fId_column AS \"b.fId\", B_table__c1__e1.id AS \"b.e1.id\", B_table__c1__e1.name AS \"b.e1.name\", B_table__c2__e2.id AS \"b.e2.id\", B_table__c2__e2.name AS \"b.e2.name\", B_table__D_table.id AS \"b.d.id\", B_table__D_table.cId AS \"b.d.cId\", B_table__D_table__C_table.id AS \"b.d.c.id\", B_table__D_table__C_table.eId AS \"b.d.c.eId\", B_table__F_table.id AS \"b.f.id\""
                 + " FROM A_table"
                 + " JOIN B_table ON A_table.bId = B_table.id"
-                + " JOIN C_table bId__C_table ON B_table.cId = bId__C_table.id"
-                + " JOIN E_table bId__cId__e_alias ON bId__C_table.eId = bId__cId__e_alias.id"
-                + " JOIN D_table bId__D_table ON B_table.dId = bId__D_table.id"
-                + " JOIN C_table bId__dId__C_table ON bId__D_table.cId = bId__dId__C_table.id"
-                + " JOIN F_table bId__F_table ON B_table.fId_column = bId__F_table.id";
+                + " JOIN C_table B_table__c1 ON B_table.cId = B_table__c1.id"
+                + " JOIN E_table B_table__c1__e1 ON B_table__c1.eId = B_table__c1__e1.id"
+                + " JOIN C_table B_table__c2 ON B_table.cId = B_table__c2.id"
+                + " JOIN E_table B_table__c2__e2 ON B_table__c2.eId = B_table__c2__e2.id"
+                + " JOIN D_table B_table__D_table ON B_table.dId = B_table__D_table.id"
+                + " JOIN C_table B_table__D_table__C_table ON B_table__D_table.cId = B_table__D_table__C_table.id"
+                + " JOIN F_table B_table__F_table ON B_table.fId_column = B_table__F_table.id";
         request(A.class, extendedParameters)
-                .withParam("b.e.name", "a")
-                .verify(baseQuery + " WHERE bId__cId__e_alias.name = :b.e.name");
+                .withParam("b.e1.name", "a")
+                .verify(baseQuery + " WHERE B_table__c1__e1.name = :b.e1.name");
 
         request(A.class, extendedParameters)
-                .withParam("b.e.name", "a")
-                .verify(baseQuery.replace("SELECT", "SELECT DISTINCT") + " WHERE bId__cId__e_alias.name = :b.e.name",
+                .withParam("b.e1.name", "a")
+                .verify(baseQuery.replace("SELECT", "SELECT DISTINCT") + " WHERE B_table__c1__e1.name = :b.e1.name",
                         req -> req.setSelectDistinct(true));
     }
 
@@ -135,15 +139,15 @@ public class ExtendedRequestTest {
                 + "    customer_table.customer_id AS \"customer.id\","
                 + "    customer_table.customer_name AS \"customer.name\","
                 + "    customer_table.address_id AS \"customer.addressId\","
-                + "    receiverId__customer_address.address_id AS \"customerAddress.addressId\","
-                + "    receiverId__customer_address.street_name AS \"customerAddress.address\","
-                + "    receiverId__customer_address.city_id AS \"customerAddress.cityId\","
+                + "    customer_table__customer_address.address_id AS \"customerAddress.addressId\","
+                + "    customer_table__customer_address.street_name AS \"customerAddress.address\","
+                + "    customer_table__customer_address.city_id AS \"customerAddress.cityId\","
                 + "    warehouse_address.address_id AS \"warehouse.addressId\","
                 + "    warehouse_address.street_name AS \"warehouse.address\","
                 + "    warehouse_address.city_id AS \"warehouse.cityId\""
                 + " FROM order_table"
                 + " JOIN customer_table ON order_table.customer_id = customer_table.address_id"
-                + " JOIN address_table receiverId__customer_address ON customer_table.address_id = receiverId__customer_address.address_id"
+                + " JOIN address_table customer_table__customer_address ON customer_table.address_id = customer_table__customer_address.address_id"
                 + " JOIN address_table warehouse_address ON order_table.address_id = warehouse_address.address_id";
         request(OrderWithCustomerAndAddresses.class, extendedParameters).verify(baseQuery);
 
@@ -167,7 +171,7 @@ public class ExtendedRequestTest {
                 .verify(baseQuery
                         + " WHERE warehouse_address.street_name = :warehouse.address"
                         + " AND customer_table.customer_name = :customer.name"
-                        + " AND receiverId__customer_address.street_name = :customerAddress.address"
+                        + " AND customer_table__customer_address.street_name = :customerAddress.address"
                         + " ORDER BY \"customerAddress\" ASC, \"warehouse\" ASC"
                 );
 
