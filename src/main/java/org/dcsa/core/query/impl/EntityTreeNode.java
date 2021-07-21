@@ -50,17 +50,28 @@ public class EntityTreeNode {
     }
 
     public EntityTreeNode getChild(String alias) {
+        EntityTreeNode result = getChild(alias, true);
+        if (result != null) {
+            return result;
+        }
+        throw new IllegalArgumentException("No child in entity tree " + this.alias + " with alias: " + alias);
+    }
+
+    public EntityTreeNode getChild(String alias, boolean ignoreAliasNotFound) {
         EntityTreeNode result = alias2Child.get(alias);
         if (result != null) {
             return result;
         }
         for (EntityTreeNode child : children) {
-            result = child.getChild(alias);
+            result = child.getChild(alias, ignoreAliasNotFound);
             if (result != null) {
                 return result;
             }
         }
-        throw new IllegalArgumentException("No child in entity tree " + this.alias + " with alias: " + alias);
+        if (!ignoreAliasNotFound) {
+            throw new IllegalArgumentException("No child in entity tree " + this.alias + " with alias: " + alias);
+        }
+        return null;
     }
 
     public String getAlias() {
