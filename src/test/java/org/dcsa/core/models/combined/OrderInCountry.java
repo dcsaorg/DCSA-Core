@@ -1,15 +1,14 @@
 package org.dcsa.core.models.combined;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.dcsa.core.model.JoinedWithModel;
 import org.dcsa.core.model.ModelClass;
-import org.dcsa.core.model.PrimaryModel;
-import org.dcsa.core.model.ViaJoinAlias;
 import org.dcsa.core.models.*;
-import lombok.Data;
 
 @Data
-@PrimaryModel(Order.class)
+@EqualsAndHashCode(callSuper = true)
 @JoinedWithModel(lhsFieldName = "receiverId", rhsModel = Customer.class, rhsFieldName = "addressId")
 @JoinedWithModel(lhsModel = Customer.class, lhsFieldName = "addressId", rhsModel = Address.class, rhsJoinAlias = "customer_address", rhsFieldName = "addressId")
 @JoinedWithModel(lhsFieldName = "warehouseAddressId", rhsModel = Address.class, rhsJoinAlias = "warehouse_address", rhsFieldName = "addressId")
@@ -17,19 +16,15 @@ import lombok.Data;
 /* Joins only present for filtering */
 @JoinedWithModel(lhsJoinAlias = "customer_address", lhsFieldName = "cityId", rhsModel = City.class, rhsFieldName = "id")
 @JoinedWithModel(lhsModel = City.class, lhsFieldName = "countryId", rhsModel = County.class, rhsFieldName = "id", filterFields = {"countryName"})
-public class OrderInCountry {
-
-    private String orderline;
+public class OrderInCountry extends Order {
 
     @ModelClass(value = Customer.class, fieldName = "name")
     private String customerName;
 
-    @ModelClass(value = Address.class, fieldName = "address")
-    @ViaJoinAlias("customer_address")
+    @ModelClass(fieldName = "address", viaJoinAlias = "customer_address")
     private String customerAddress;
 
-    @ModelClass(value = Address.class, fieldName = "address")
-    @ViaJoinAlias("warehouse_address")
+    @ModelClass(fieldName = "address", viaJoinAlias = "warehouse_address")
     @JsonProperty("warehouse")
     private String warehouseAddress;
 }

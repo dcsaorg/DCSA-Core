@@ -29,6 +29,8 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class QueryParameterParser<T> {
 
+    private static final Predicate<String> IGNORE_NONE = (a) -> false;
+
     public static final FilterCondition EMPTY_CONDITION = InlineableFilterCondition.of(TrueCondition.INSTANCE);
 
     protected final ExtendedParameters extendedParameters;
@@ -70,7 +72,7 @@ public class QueryParameterParser<T> {
     }
 
     public void parseQueryParameter(Map<String, List<String>> queryParameters) {
-        parseQueryParameter(queryParameters, (a) -> false);
+        parseQueryParameter(queryParameters, IGNORE_NONE);
     }
 
     public void parseQueryParameter(Map<String, List<String>> queryParameters, Predicate<String> ignoredParameter) {
@@ -169,6 +171,11 @@ public class QueryParameterParser<T> {
             return;
         }
 
+        if (value == null || value.equals("")) {
+            throw new GetException("Cannot use empty value as filter for " + queryField.getJsonName()
+                    + ".");
+        }
+
         if (fieldType.isEnum()) {
             // Return type IS Enum - split a possible list on EnumSplitter (since this is an Enum - no special characters are allowed). If
             // enumSplit value is a "," or a "|" this will work fine
@@ -211,7 +218,7 @@ public class QueryParameterParser<T> {
             }
         } else if (Temporal.class.isAssignableFrom(fieldType)) {
             String dateFormat = queryField.getDatePattern();
-            if (dateFormat != null) {
+            if (dateFormat != null && !dateFormat.equals("")) {
                 throw new GetException("Cannot filter on " + queryField.getJsonName() + ": It uses a custom date pattern");
             }
 

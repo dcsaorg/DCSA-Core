@@ -24,9 +24,13 @@ public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>
         return getService().getModelClass().getSimpleName();
     }
 
-    @GetMapping()
+    protected ExtendedRequest<T> newExtendedRequest() {
+        return new ExtendedRequest<>(extendedParameters, r2dbcDialect, getService().getModelClass());
+    }
+
+    @GetMapping
     public Flux<T> findAll(ServerHttpResponse response, ServerHttpRequest request) {
-        ExtendedRequest<T> extendedRequest = new ExtendedRequest<>(extendedParameters, r2dbcDialect, getService().getModelClass());
+        ExtendedRequest<T> extendedRequest = newExtendedRequest();
         try {
             extendedRequest.parseParameter(request.getQueryParams());
         } catch (GetException getException) {

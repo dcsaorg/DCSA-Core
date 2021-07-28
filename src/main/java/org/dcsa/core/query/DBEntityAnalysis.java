@@ -26,8 +26,7 @@ public interface DBEntityAnalysis<T> {
     interface DBEntityAnalysisBuilder<T> {
         /**
          *
-         * @return The primary model class.  This is class referenced in the entity class's {@link org.dcsa.core.model.PrimaryModel}
-         * annotation or the entity itself (the latter is absent).
+         * @return The primary model class.
          */
         Class<?> getPrimaryModelClass();
 
@@ -47,7 +46,7 @@ public interface DBEntityAnalysis<T> {
 
         /**
          * Field registered via this method are <em>not</em> required to exist on any Java class provided they are
-         * not selectable ({@link QueryField#isSelectable()}.  However, they are required to have unique JSON names,
+         * not selectable ({@link QueryField#isSelectable()}).  However, they are required to have unique JSON names,
          * internal query names and (if selectable) select column names.
          *
          * @param queryField Register the query field.  If {@link QueryField#isSelectable()} returns true, then
@@ -55,6 +54,7 @@ public interface DBEntityAnalysis<T> {
          *                   {@link QueryField#getSelectColumn()} as name).
          */
         DBEntityAnalysisBuilder<T> registerQueryField(QueryField queryField);
+        DBEntityAnalysisBuilder<T> registerQueryFieldAlias(String jsonName, String jsonNameAlias);
 
         DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Class<?> lhsModel, Class<?> rhsModel);
         DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Class<?> lhsModel, Class<?> rhsModel, String rhsJoinAlias);
@@ -91,9 +91,22 @@ public interface DBEntityAnalysis<T> {
 
         DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName);
         DBEntityAnalysisBuilder<T> registerQueryField(SqlIdentifier columnName, String jsonName, Class<?> valueType);
+        DBEntityAnalysisBuilder<T> registerQueryFieldAlias(String jsonName, String jsonNameAlias);
 
-        DBEntityAnalysisWithTableBuilder<T> registerQueryFieldFromFieldThen(String fieldName);
-        DBEntityAnalysisWithTableBuilder<T> registerQueryFieldThen(SqlIdentifier columnName, String jsonName, Class<?> valueType);
+        default DBEntityAnalysisWithTableBuilder<T> registerQueryFieldFromFieldThen(String fieldName) {
+            registerQueryFieldFromField(fieldName);
+            return this;
+        }
+
+        default DBEntityAnalysisWithTableBuilder<T> registerQueryFieldThen(SqlIdentifier columnName, String jsonName, Class<?> valueType) {
+            registerQueryField(columnName, jsonName, valueType);
+            return this;
+        }
+
+        default DBEntityAnalysisWithTableBuilder<T> registerQueryFieldAliasThen(String jsonName, String jsonNameAlias) {
+            registerQueryFieldAlias(jsonName, jsonNameAlias);
+            return this;
+        }
 
     }
 }

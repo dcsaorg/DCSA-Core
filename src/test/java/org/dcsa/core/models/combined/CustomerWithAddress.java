@@ -1,21 +1,17 @@
 package org.dcsa.core.models.combined;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.dcsa.core.model.JoinedWithModel;
-import org.dcsa.core.model.ModelClass;
-import org.dcsa.core.model.PrimaryModel;
+import org.dcsa.core.model.MapEntity;
 import org.dcsa.core.models.Address;
 import org.dcsa.core.models.Customer;
 
 @Data
-@PrimaryModel(Customer.class)
+@EqualsAndHashCode(callSuper = true)
 @JoinedWithModel(lhsFieldName = "addressId", rhsModel = Address.class, rhsFieldName = "addressId")
-public class CustomerWithAddress {
+public class CustomerWithAddress extends Customer {
 
-    private Long id;
-
-    private String name;
-
-    @ModelClass(Address.class)
-    private String address;
+    @MapEntity
+    private Address address;
 }

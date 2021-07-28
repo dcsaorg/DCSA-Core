@@ -1,8 +1,8 @@
 package org.dcsa.core.service.impl;
 
 import org.dcsa.core.exception.NotFoundException;
-import org.dcsa.core.service.BaseService;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -22,6 +22,7 @@ public abstract class BaseRepositoryBackedServiceImpl<R extends R2dbcRepository<
                 .switchIfEmpty(Mono.error(new NotFoundException("No " + getType() + " was found with id: " + id)));
     }
 
+    @Transactional
     @Override
     public Mono<T> create(T t) {
         return Mono.just(t)
@@ -35,6 +36,7 @@ public abstract class BaseRepositoryBackedServiceImpl<R extends R2dbcRepository<
                 .flatMap(getRepository()::save);
     }
 
+    @Transactional
     @Override
     public Mono<T> update(final T update) {
         return findById(getIdOfEntity(update))
@@ -42,6 +44,7 @@ public abstract class BaseRepositoryBackedServiceImpl<R extends R2dbcRepository<
                 .flatMap(this::save);
     }
 
+    @Transactional
     @Override
     public Mono<Void> deleteById(I id) {
         return this.findById(id)
@@ -49,6 +52,7 @@ public abstract class BaseRepositoryBackedServiceImpl<R extends R2dbcRepository<
                 .flatMap(getRepository()::delete);
     }
 
+    @Transactional
     @Override
     public Mono<Void> delete(T t) {
         return findById(getIdOfEntity(t))
