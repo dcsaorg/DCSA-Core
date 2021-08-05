@@ -108,8 +108,7 @@ public class ExtendedParameters {
     // Set a list of reserved parameters that the extended base controller should ignore
     // This can be changed in Application.yaml fil to "expand,show" by writing:
     // pagination:
-    //   config:
-    //     currentPageName: expand,show
+    //   reservedParameters: expand,show
     @Value( "${pagination.reservedParameters:#{null}}" )
     private String reservedParameters;
 
