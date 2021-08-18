@@ -451,7 +451,7 @@ public class ExtendedRequest<T> {
         if (encryptionKey != null) {
             parameters = encrypt(encryptionKey, parameters);
         }
-        return getExtendedParameters().getPaginationCursorName() + CURSOR_SPLIT + Base64.getUrlEncoder().encodeToString(parameters);
+        return getExtendedParameters().getPaginationCursorName() + CURSOR_SPLIT + Base64.getUrlEncoder().withoutPadding().encodeToString(parameters);
     }
 
     @RequiredArgsConstructor(staticName = "of")
