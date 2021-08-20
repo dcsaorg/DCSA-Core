@@ -36,11 +36,13 @@ public class EnumSubsetValidator implements ConstraintValidator<EnumSubset, Obje
               ? Arrays.stream(((String) types).split(","))
               : Stream.of((String) types);
       return enumStream.allMatch(e -> Arrays.asList(subsetTypes).contains(e));
+    } else if (types instanceof List) {
+      List<? extends Enum> enumList = (List<? extends Enum>) types;
+      return enumList.stream()
+          .map(Enum::name)
+          .allMatch(e -> Arrays.asList(subsetTypes).contains(e));
     } else if (types instanceof Enum) {
       return Arrays.asList(subsetTypes).contains(((Enum) types).name());
-    } else if (types instanceof List) {
-      return ((List<? extends Enum>) types)
-          .stream().map(Enum::name).allMatch(e -> Arrays.asList(subsetTypes).contains(e));
     } else {
       throw new NotImplementedException("type not implemented:" + types.getClass().getTypeName());
     }
