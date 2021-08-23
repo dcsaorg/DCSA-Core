@@ -54,6 +54,7 @@ public class SecurityConfig {
         */
 
         ServerHttpSecurity.AuthorizeExchangeSpec securitySpec = http.authorizeExchange();
+        securitySpec.pathMatchers(HttpMethod.GET,"/actuator/health").permitAll();
 
         if (securityEnabled) {
             String endpoint = null;
@@ -82,6 +83,7 @@ public class SecurityConfig {
                         ServerWebExchangeMatchers.pathMatchers(endpoint)
                 ));
             }
+
         } else {
             log.info("Security: disabled - no authentication nor CRSF tokens needed");
             securitySpec.anyExchange().permitAll()
