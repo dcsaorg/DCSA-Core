@@ -7,18 +7,19 @@ public class ValidationUtils {
      *
      * @param vesselIMONumber the number (as a string) to verify
      *
-     * @return true if the vessel IMO Number is valid otherwise false
      */
-    public static boolean validateVesselIMONumber(String vesselIMONumber) throws IllegalArgumentException {
+    public static void validateVesselIMONumber(String vesselIMONumber) throws IllegalArgumentException {
         if (vesselIMONumber != null && vesselIMONumber.length() == 7) {
             int sum = 0;
             for (int i = 0; i < 6; i++) {
-                sum += (7 - i) * Character.getNumericValue(vesselIMONumber.charAt(i));
+                char c = vesselIMONumber.charAt(i);
+                if (c < '0' || c > '9') {
+                    throw new IllegalArgumentException("Invalid Vessel IMO Number. It must consist entirely of digits");
+                }
+                sum += (7 - i) * Character.getNumericValue(c);
             }
             String s = String.valueOf(sum);
-            if (vesselIMONumber.charAt(vesselIMONumber.length() - 1) == s.charAt(s.length() - 1)) {
-                return true;
-            } else {
+            if (vesselIMONumber.charAt(vesselIMONumber.length() - 1) != s.charAt(s.length() - 1)) {
                 throw new IllegalArgumentException("Invalid Vessel IMO Number. IMO number does not pass checksum - expected value: " +  s.charAt(s.length() - 1) + " but found: " + vesselIMONumber.charAt(vesselIMONumber.length() - 1));
             }
         } else {
