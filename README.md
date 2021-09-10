@@ -9,7 +9,7 @@ It is packaged as a jar, and uploaded to GitHub packages, to be downloaded via M
 To build manually, run:
 -----------------------------------------
 ```
-mvn package
+mvn clean install
 ```
 
 # How to use DCSA Core packages
