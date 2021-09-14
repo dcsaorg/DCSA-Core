@@ -32,7 +32,7 @@ public class SecurityConfig {
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
     private String issuer;
 
-    @Value("${dcsa.securityConfig.jwt.audience}")
+    @Value("${dcsa.securityConfig.jwt.audience:localhost}")
     private String audience;
 
     @Value("${dcsa.securityConfig.jwt.claim.name:}")
@@ -41,7 +41,7 @@ public class SecurityConfig {
     @Value("${dcsa.securityConfig.jwt.claim.value:}")
     private String claimValue;
 
-    @Value("${dcsa.securityConfig.auth.enabled}")
+    @Value("${dcsa.securityConfig.auth.enabled:false}")
     private boolean securityEnabled;
 
     @Value("${dcsa.securityConfig.csrf.enabled:false}")
