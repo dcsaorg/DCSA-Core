@@ -2,6 +2,7 @@ package org.dcsa.core.security;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -16,17 +17,13 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
-import java.util.StringJoiner;
-import java.util.stream.Collectors;
 
-/**
- * Configures our application with Spring Security to restrict access to our API endpoints.
- */
+/** Configures our application with Spring Security to restrict access to our API endpoints. */
 @Slf4j
 @EnableWebFluxSecurity
+@ConditionalOnExpression(
+    "${dcsa.securityConfig.auth.enabled:false} && T(org.apache.commons.lang3.StringUtils).isNotEmpty('${spring.security.oauth2.resourceserver.jwt.issuer-uri:}')")
 public class SecurityConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
@@ -85,6 +82,7 @@ public class SecurityConfig {
             } else {
                 log.info("Security: No receive receive endpoint");
             }
+            log.info("Security: JWT issuer-uri: {}", issuer);
             log.info("Security: JWT audience required: " + audience);
             if (!claimName.equals("") && !claimValue.equals("")) {
                 String values = String.join(", ", claimValue);
