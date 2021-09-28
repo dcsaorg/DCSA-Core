@@ -19,12 +19,15 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.Set;
 
-/**
- * Configures our application with Spring Security to restrict access to our API endpoints.
- */
+/** Configures our application with Spring Security to restrict access to our API endpoints. */
 @Slf4j
 @EnableWebFluxSecurity
+@ConditionalOnExpression(
+    "${dcsa.securityConfig.auth.enabled:false} && T(org.apache.commons.lang3.StringUtils).isNotEmpty('${spring.security.oauth2.resourceserver.jwt.issuer-uri:}')")
 public class SecurityConfig {
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
+    private String issuer;
 
     @Value("${dcsa.securityConfig.jwt.audience:localhost}")
     private String audience;
@@ -79,6 +82,7 @@ public class SecurityConfig {
             } else {
                 log.info("Security: No receive receive endpoint");
             }
+            log.info("Security: JWT issuer-uri: {}", issuer);
             log.info("Security: JWT audience required: " + audience);
             if (!claimName.equals("") && !claimValue.equals("")) {
                 String values = String.join(", ", claimValue);
@@ -119,8 +123,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @ConditionalOnExpression("T(org.apache.commons.lang3.StringUtils).isNotEmpty('${spring.security.oauth2.resourceserver.jwt.issuer-uri:}')")
-    ReactiveJwtDecoder jwtDecoder(@Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuer) {
+    ReactiveJwtDecoder jwtDecoder() {
         /*
         By default, Spring Security does not validate the "aud" claim of the token, to ensure that this token is
         indeed intended for our app. Adding our own validator is easy to do:
