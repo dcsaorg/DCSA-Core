@@ -34,7 +34,7 @@ public class SecurityConfig {
 
   @Bean
   public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-    return http.httpBasic().disable().build();
+    return http.httpBasic().disable().csrf().disable().build();
   }
 
   @EventListener(ApplicationStartedEvent.class)
