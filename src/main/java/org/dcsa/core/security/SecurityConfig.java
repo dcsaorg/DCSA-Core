@@ -1,6 +1,7 @@
 package org.dcsa.core.security;
 
 import lombok.extern.slf4j.Slf4j;
+import org.dcsa.core.model.enums.ClaimShape;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
@@ -38,6 +39,9 @@ public class SecurityConfig {
     @Value("${dcsa.securityConfig.jwt.claim.value:}")
     private String claimValue;
 
+    @Value("${dcsa.securityConfig.jwt.claim.shape:STRING}")
+    private ClaimShape claimShape;
+
     @Value("${dcsa.securityConfig.auth.enabled:false}")
     private boolean securityEnabled;
 
@@ -71,6 +75,7 @@ public class SecurityConfig {
         if (securityEnabled) {
             String endpoint = null;
             log.info("Security: auth enabled (dcsa.securityConfig.auth.enabled)");
+            log.info("Security: JWT with Issuer URI: " + issuer);
             if (!receiveNotificationEndpoint.equals("NONE")) {
                 endpoint = receiveNotificationEndpoint.replaceAll("/++$", "") + "/receive/*";
                 securitySpec = securitySpec.pathMatchers(HttpMethod.POST, endpoint)
@@ -86,10 +91,11 @@ public class SecurityConfig {
             log.info("Security: JWT audience required: " + audience);
             if (!claimName.equals("") && !claimValue.equals("")) {
                 String values = String.join(", ", claimValue);
-                log.info("Security: JWT claims must have claim \"" + claimName + "\" containing one of: " + values);
-                log.info("Security: JWT claims can be controlled via dcsa.securityConfig.jwt.claim.{name,value}");
+                log.info("Security: JWT claims must have claim \"{}\" (shape: {}) containing one of: {}",
+                        claimName, claimShape, values);
+                log.info("Security: JWT claims can be controlled via dcsa.securityConfig.jwt.claim.{name,value,shape}");
             } else {
-                log.info("Security: No claim requirements for JWT tokens (dcsa.securityConfig.jwt.claim.{name,value})");
+                log.info("Security: No claim requirements for JWT tokens (dcsa.securityConfig.jwt.claim.{name,value,shape})");
             }
             ServerHttpSecurity security = securitySpec.anyExchange().authenticated()
                     .and()
@@ -133,7 +139,7 @@ public class SecurityConfig {
                 ReactiveJwtDecoders.fromOidcIssuerLocation(issuer);
 
         OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(audience);
-        OAuth2TokenValidator<Jwt> jwtValidator = ClaimsOneOfValueValidator.of(claimName, Set.of(claimValue));
+        OAuth2TokenValidator<Jwt> jwtValidator = ClaimsOneOfValueValidator.of(claimName, Set.of(claimValue), claimShape);
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuer);
         OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator,
                 jwtValidator, new JwtTimestampValidator());
