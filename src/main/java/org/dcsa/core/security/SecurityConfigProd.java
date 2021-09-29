@@ -1,10 +1,14 @@
 package org.dcsa.core.security;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.dcsa.core.model.enums.ClaimShape;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -26,10 +30,10 @@ import java.util.Set;
 @EnableWebFluxSecurity
 public class SecurityConfigProd {
 
-    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
+    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}")
     private String issuer;
 
-    @Value("${dcsa.securityConfig.jwt.audience:localhost}")
+    @Value("${dcsa.securityConfig.jwt.audience:NONE}")
     private String audience;
 
     @Value("${dcsa.securityConfig.jwt.claim.name:}")
@@ -40,9 +44,6 @@ public class SecurityConfigProd {
 
     @Value("${dcsa.securityConfig.jwt.claim.shape:STRING}")
     private ClaimShape claimShape;
-
-    @Value("${dcsa.securityConfig.auth.enabled:false}")
-    private boolean securityEnabled;
 
     @Value("${dcsa.securityConfig.csrf.enabled:false}")
     private boolean csrfEnabled;
@@ -71,63 +72,60 @@ public class SecurityConfigProd {
         ServerHttpSecurity.AuthorizeExchangeSpec securitySpec = http.authorizeExchange();
         securitySpec.pathMatchers(HttpMethod.GET,"/actuator/health").permitAll();
 
-        if (securityEnabled) {
-            String endpoint = null;
-            log.info("Security: auth enabled (dcsa.securityConfig.auth.enabled)");
-            log.info("Security: JWT with Issuer URI: " + issuer);
-            if (!receiveNotificationEndpoint.equals("NONE")) {
-                endpoint = receiveNotificationEndpoint.replaceAll("/++$", "") + "/receive/*";
-                securitySpec = securitySpec.pathMatchers(HttpMethod.POST, endpoint)
-                        .permitAll()
-                        .pathMatchers(HttpMethod.HEAD, endpoint)
-                        .permitAll();
+        String endpoint = null;
+        log.info("Security: auth enabled (dcsa.securityConfig.auth.enabled)");
+        log.info("Security: JWT with Issuer URI: " + issuer);
+        if (!receiveNotificationEndpoint.equals("NONE")) {
+            endpoint = receiveNotificationEndpoint.replaceAll("/++$", "") + "/receive/*";
+            securitySpec = securitySpec.pathMatchers(HttpMethod.POST, endpoint)
+                    .permitAll()
+                    .pathMatchers(HttpMethod.HEAD, endpoint)
+                    .permitAll();
 
-                log.info("Security: receive endpoint \"" + endpoint + "\"");
-            } else {
-                log.info("Security: No receive receive endpoint");
-            }
-            log.info("Security: JWT issuer-uri: {}", issuer);
-            log.info("Security: JWT audience required: " + audience);
-            if (!claimName.equals("") && !claimValue.equals("")) {
-                String values = String.join(", ", claimValue);
-                log.info("Security: JWT claims must have claim \"{}\" (shape: {}) containing one of: {}",
-                        claimName, claimShape, values);
-                log.info("Security: JWT claims can be controlled via dcsa.securityConfig.jwt.claim.{name,value,shape}");
-            } else {
-                log.info("Security: No claim requirements for JWT tokens (dcsa.securityConfig.jwt.claim.{name,value,shape})");
-            }
-            ServerHttpSecurity security = securitySpec.anyExchange().authenticated()
-                    .and()
-                    .oauth2ResourceServer()
-                    .jwt()
-                    .jwtAuthenticationConverter(new JwtAuthenticationConverter())
-                    .and()
-                    .and()
-                    .cors()
-                    .and();
-            if (endpoint != null) {
-                security.csrf().requireCsrfProtectionMatcher(new NegatedServerWebExchangeMatcher(
-                        ServerWebExchangeMatchers.pathMatchers(endpoint)
-                ));
-            }
-            if (csrfEnabled) {
-                log.info("Security: CSRF tokens required (dcsa.securityConfig.csrf.enabled)");
-            } else {
-                security.csrf().disable();
-                log.info("Security: CSRF tokens disabled (dcsa.securityConfig.csrf.enabled)");
-            }
+            log.info("Security: receive endpoint \"" + endpoint + "\"");
         } else {
-            log.info("Security: disabled - no authentication nor CSRF tokens needed (dcsa.securityConfig.{auth,csrf}.enabled)");
-            securitySpec.anyExchange().permitAll()
-            .and()
-                    .csrf().disable();
+            log.info("Security: No receive receive endpoint");
         }
+        log.info("Security: JWT issuer-uri: {}", issuer);
+        log.info("Security: JWT audience required: " + audience);
+        if (!claimName.equals("") && !claimValue.equals("")) {
+            String values = String.join(", ", claimValue);
+            log.info("Security: JWT claims must have claim \"{}\" (shape: {}) containing one of: {}",
+                    claimName, claimShape, values);
+            log.info("Security: JWT claims can be controlled via dcsa.securityConfig.jwt.claim.{name,value,shape}");
+        } else {
+            log.info("Security: No claim requirements for JWT tokens (dcsa.securityConfig.jwt.claim.{name,value,shape})");
+        }
+
+        ServerHttpSecurity security = securitySpec.anyExchange().authenticated()
+                .and();
+
+        if(StringUtils.isNotEmpty(issuer)){
+            security.oauth2ResourceServer().jwt()
+                    .jwtAuthenticationConverter(new JwtAuthenticationConverter()).and();
+        }
+
+        security.cors();
+
+        if (endpoint != null) {
+            security.csrf().requireCsrfProtectionMatcher(new NegatedServerWebExchangeMatcher(
+                    ServerWebExchangeMatchers.pathMatchers(endpoint)
+            ));
+        }
+        if (csrfEnabled) {
+            log.info("Security: CSRF tokens required (dcsa.securityConfig.csrf.enabled)");
+        } else {
+            security.csrf().disable();
+            log.info("Security: CSRF tokens disabled (dcsa.securityConfig.csrf.enabled)");
+        }
+
         return securitySpec
                 .and()
                 .build();
     }
 
     @Bean
+    @ConditionalOnExpression("T(org.apache.commons.lang3.StringUtils).isNotEmpty('${spring.security.oauth2.resourceserver.jwt.issuer-uri:}')")
     ReactiveJwtDecoder jwtDecoder() {
         /*
         By default, Spring Security does not validate the "aud" claim of the token, to ensure that this token is
@@ -145,5 +143,12 @@ public class SecurityConfigProd {
 
         jwtDecoder.setJwtValidator(withAudience);
         return jwtDecoder;
+    }
+
+    @EventListener(ApplicationStartedEvent.class)
+    @ConditionalOnExpression("T(org.apache.commons.lang3.StringUtils).isEmpty('${spring.security.oauth2.resourceserver.jwt.issuer-uri:}')")
+    void securityLogConfiguration() {
+        log.info(
+                "JWT is disabled as `spring.security.oauth2.resourceserver.jwt.issuer-uri` is missing.");
     }
 }
