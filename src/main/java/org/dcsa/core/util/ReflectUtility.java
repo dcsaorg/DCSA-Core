@@ -212,6 +212,9 @@ public class ReflectUtility {
     public static String transformFromJsonNameToFieldName(Class<?> clazz, String jsonName) throws NoSuchFieldException {
         String fieldName = null;
         for (Field field: clazz.getDeclaredFields()) {
+            if (field.isSynthetic()) {
+                continue;
+            }
             JsonProperty jsonProperty = field.getAnnotation(JsonProperty.class);
             if (jsonProperty != null) {
                 if (jsonProperty.value().equals(jsonName)) {
@@ -255,7 +258,7 @@ public class ReflectUtility {
      */
     private static void getFieldNamesOfType(Class<?> clazz, Class<?> type, List<String> fieldNames) {
         for (Field field: clazz.getDeclaredFields()) {
-            if (field.getType() == type) {
+            if (!field.isSynthetic() && field.getType() == type) {
                 fieldNames.add(field.getName());
             }
         }
@@ -345,7 +348,7 @@ public class ReflectUtility {
         }
         while (currentClass != Object.class) {
             for (Field f : currentClass.getDeclaredFields()) {
-                if (!seenFields.contains(f.getName()) && matching.test(f)) {
+                if (!f.isSynthetic() && !seenFields.contains(f.getName()) && matching.test(f)) {
                     seenFields.add(f.getName());
                     fieldConsumer.accept(f);
                 }
