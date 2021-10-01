@@ -36,6 +36,9 @@ public class MappingUtils {
         Set<String> seenFields = new HashSet<>();
         while (currentClass != Object.class) {
             for (Field field : currentClass.getDeclaredFields()) {
+                if (field.isSynthetic()) {
+                    continue;
+                }
                 String fieldName = field.getName();
                 Object value;
                 /* skip fields that have already been seen in a subclass */
