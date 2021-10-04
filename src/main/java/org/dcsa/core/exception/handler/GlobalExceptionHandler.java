@@ -19,13 +19,11 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(DCSAException.class)
   public void handleDCSAExceptions(DCSAException dcsaEx) {
-    if (log.isDebugEnabled()) {
-      log.debug(
-          "{} ({}) - {}",
-          this.getClass().getSimpleName(),
-          dcsaEx.getClass().getSimpleName(),
-          dcsaEx.getMessage());
-    }
+    log.debug(
+        "{} ({}) - {}",
+        this.getClass().getSimpleName(),
+        dcsaEx.getClass().getSimpleName(),
+        dcsaEx.getMessage());
     logExceptionTraceIfEnabled(dcsaEx);
     throw dcsaEx;
   }
@@ -33,9 +31,7 @@ public class GlobalExceptionHandler {
   @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "Invalid input.")
   @ExceptionHandler(ConstraintViolationException.class)
   public void badRequest(ConstraintViolationException cvex) {
-    if (log.isDebugEnabled()) {
-      log.debug("Input error : {}", cvex.getConstraintViolations());
-    }
+    log.debug("Input error : {}", cvex.getConstraintViolations());
     logExceptionTraceIfEnabled(cvex);
   }
 
@@ -45,36 +41,28 @@ public class GlobalExceptionHandler {
       // The error with code 22001 is thrown when trying to insert a value that is too long for the
       // column
       if (ex.getSql().startsWith("INSERT INTO")) {
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "{} insert into error! - {}",
-              this.getClass().getSimpleName(),
-              ex.getR2dbcException().getMessage());
-        }
+        log.debug(
+            "{} insert into error! - {}",
+            this.getClass().getSimpleName(),
+            ex.getR2dbcException().getMessage());
         throw new CreateException("Trying to insert a string value that is too long");
       } else {
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "{} update error! - {}",
-              this.getClass().getSimpleName(),
-              ex.getR2dbcException().getMessage());
-        }
+        log.debug(
+            "{} update error! - {}",
+            this.getClass().getSimpleName(),
+            ex.getR2dbcException().getMessage());
         throw new UpdateException("Trying to update a string value that is too long");
       }
     } else if ("42804".equals(ex.getR2dbcException().getSqlState())) {
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "{} database error! - {}",
-            this.getClass().getSimpleName(),
-            ex.getR2dbcException().getMessage());
-      }
+      log.debug(
+          "{} database error! - {}",
+          this.getClass().getSimpleName(),
+          ex.getR2dbcException().getMessage());
       throw new DatabaseException(
           "Internal mismatch between backEnd and database - please see log");
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug("{} R2dbcException!", this.getClass().getSimpleName());
-        logExceptionTraceIfEnabled(ex);
-      }
+      log.debug("{} R2dbcException!", this.getClass().getSimpleName());
+      logExceptionTraceIfEnabled(ex);
       throw new DatabaseException("Internal error with database operation - please see log");
     }
   }
@@ -103,12 +91,10 @@ public class GlobalExceptionHandler {
   @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
   @ExceptionHandler(Exception.class)
   public void handleAllExceptions(Exception ex) {
-    if (log.isDebugEnabled()) {
-      log.debug(
-          "{} error! caused by : {}",
-          this.getClass().getSimpleName(),
-          null != ex.getLocalizedMessage() ? ex.getLocalizedMessage() : ex.getMessage());
-    }
+    log.debug(
+        "{} error! caused by : {}",
+        this.getClass().getSimpleName(),
+        null != ex.getLocalizedMessage() ? ex.getLocalizedMessage() : ex.getMessage());
     logExceptionTraceIfEnabled(ex);
   }
 
