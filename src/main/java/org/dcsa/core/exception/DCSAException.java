@@ -2,7 +2,7 @@ package org.dcsa.core.exception;
 
 /**
  * This class is intended to be used as a super class for dcsa created custom exceptions.
- * We then use this to handle custom exceptions is GlobalExceptionHandler. *
+ * We then use this to handle custom exceptions in GlobalExceptionHandler. *
  */
 public class DCSAException extends RuntimeException {
 

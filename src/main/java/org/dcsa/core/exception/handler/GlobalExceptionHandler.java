@@ -9,7 +9,7 @@ import org.springframework.r2dbc.BadSqlGrammarException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.server.ServerWebInputException;
+
 import javax.validation.ConstraintViolationException;
 
 @Slf4j
@@ -22,15 +22,16 @@ public class GlobalExceptionHandler {
         "{} ({}) - {}",
         this.getClass().getSimpleName(),
         dcsaEx.getClass().getSimpleName(),
-        dcsaEx.getMessage(),
-        dcsaEx);
+        dcsaEx.getMessage());
+    logExceptionTraceIfEnabled(dcsaEx);
     throw dcsaEx;
   }
 
   @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "Invalid input.")
   @ExceptionHandler(ConstraintViolationException.class)
   public void badRequest(ConstraintViolationException cvex) {
-    log.error("Input error : {}", cvex.getConstraintViolations(), cvex);
+    log.error("Input error : {}", cvex.getConstraintViolations());
+    logExceptionTraceIfEnabled(cvex);
   }
 
   @ExceptionHandler(BadSqlGrammarException.class)
@@ -64,17 +65,6 @@ public class GlobalExceptionHandler {
     }
   }
 
-  @ExceptionHandler(ServerWebInputException.class)
-  public void handle(ServerWebInputException ex) {
-    if (ex.getMessage() != null && ex.getMessage().contains("Invalid UUID string:")) {
-      log.warn("Invalid UUID string");
-      throw new InvalidParameterException("Input was not a valid UUID format");
-    } else {
-      log.error(this.getClass().getSimpleName());
-      throw ex;
-    }
-  }
-
   // Spring's default handler for unknown JSON properties is useless for telling the user
   // what they did wrong.  Unwrap the inner UnrecognizedPropertyException, which has a
   // considerably better message.
@@ -91,5 +81,12 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(Exception.class)
   public void handleAllExceptions(Exception ex) {
     log.error("{} error!", this.getClass().getSimpleName(), ex);
+    logExceptionTraceIfEnabled(ex);
+  }
+
+  private void logExceptionTraceIfEnabled(Exception ex) {
+    if (log.isTraceEnabled()) {
+      log.trace("Verbose error : ", ex);
+    }
   }
 }
