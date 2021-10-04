@@ -9,6 +9,7 @@ import org.springframework.r2dbc.BadSqlGrammarException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ServerWebInputException;
 
 import javax.validation.ConstraintViolationException;
 
@@ -62,6 +63,15 @@ public class GlobalExceptionHandler {
     } else {
       log.error(this.getClass().getSimpleName() + " R2dbcException!", ex);
       throw new DatabaseException("Internal error with database operation - please see log");
+    }
+  }
+
+  @ExceptionHandler(ServerWebInputException.class)
+  public void handle(ServerWebInputException ex) {
+    if (ex.getMessage() != null && ex.getMessage().contains("Invalid UUID string:")) {
+      throw new InvalidParameterException("Input was not a valid UUID format");
+    } else {
+      throw ex;
     }
   }
 
