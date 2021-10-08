@@ -1,6 +1,8 @@
 package org.dcsa.core.security;
 
 
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.model.enums.ClaimShape;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -8,8 +10,10 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Validates that the JWT token contains the intended audience in its claims.
@@ -20,6 +24,8 @@ public class ClaimsOneOfValueValidator implements OAuth2TokenValidator<Jwt> {
     private final String claimName;
     private final Set<String> oneOf;
     private final ClaimShape claimShape;
+    @Getter(lazy = true, value = AccessLevel.PROTECTED)
+    private final Set<String> oneOfScope = oneOf.stream().map(s -> "clients/" + s).collect(Collectors.toUnmodifiableSet());
 
     private OAuth2TokenValidatorResult missingClaim() {
         return OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "The required claim " + claimName + " is missing", null));
@@ -39,11 +45,13 @@ public class ClaimsOneOfValueValidator implements OAuth2TokenValidator<Jwt> {
             // No requirements, then we accept
             return OAuth2TokenValidatorResult.success();
         }
-        if (!jwt.containsClaim(claimName)) {
+        if (!jwt.containsClaim(claimName) && !jwt.containsClaim("scope")) {
             return missingClaim();
         }
         List<String> claimValues;
+        String scope;
         try {
+            scope = jwt.getClaimAsString("scope");
             switch (claimShape) {
                 case STRING:
                     claimValues = List.of(jwt.getClaimAsString(claimName));
@@ -59,10 +67,16 @@ public class ClaimsOneOfValueValidator implements OAuth2TokenValidator<Jwt> {
             // match the "X" type implied.
             return wrongClaimShape();
         }
-        for (String value : claimValues) {
-            if (oneOf.contains(value)) {
-                return OAuth2TokenValidatorResult.success();
+        if (claimValues != null) {
+            for (String value : claimValues) {
+                if (oneOf.contains(value)) {
+                    return OAuth2TokenValidatorResult.success();
+                }
             }
+        }
+        // TODO: This should be configurable separately
+        if (scope != null && getOneOfScope().contains(scope)) {
+            return OAuth2TokenValidatorResult.success();
         }
         return notMatchingExpectedClaimValue();
     }
