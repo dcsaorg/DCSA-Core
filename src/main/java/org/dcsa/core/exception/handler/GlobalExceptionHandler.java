@@ -92,10 +92,10 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<?> handleAllExceptions(Exception ex) {
-    log.warn("Unhandled exception", ex);
     if (ex instanceof ResponseStatusException) {
       return ResponseEntity.status(((ResponseStatusException) ex).getStatus()).build();
     } else {
+      log.warn("Unhandled exception", ex);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
   }
