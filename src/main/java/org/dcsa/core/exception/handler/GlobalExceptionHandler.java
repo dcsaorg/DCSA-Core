@@ -5,10 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.dcsa.core.exception.*;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.r2dbc.BadSqlGrammarException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebInputException;
 
 import javax.validation.ConstraintViolationException;
@@ -88,10 +90,14 @@ public class GlobalExceptionHandler {
     throw new InputParsingException(ce.getLocalizedMessage(), ce);
   }
 
-  @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
   @ExceptionHandler(Exception.class)
-  public void handleAllExceptions(Exception ex) {
+  public ResponseEntity<?> handleAllExceptions(Exception ex) {
     log.warn("Unhandled exception", ex);
+    if (ex instanceof ResponseStatusException) {
+      return ResponseEntity.status(((ResponseStatusException) ex).getStatus()).build();
+    } else {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
   }
 
   private void logExceptionTraceIfEnabled(Exception ex) {
