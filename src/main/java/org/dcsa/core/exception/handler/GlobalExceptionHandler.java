@@ -91,11 +91,7 @@ public class GlobalExceptionHandler {
   @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
   @ExceptionHandler(Exception.class)
   public void handleAllExceptions(Exception ex) {
-    log.debug(
-        "{} error! caused by : {}",
-        this.getClass().getSimpleName(),
-        null != ex.getLocalizedMessage() ? ex.getLocalizedMessage() : ex.getMessage());
-    logExceptionTraceIfEnabled(ex);
+    log.warn("Unhandled exception", ex);
   }
 
   private void logExceptionTraceIfEnabled(Exception ex) {
