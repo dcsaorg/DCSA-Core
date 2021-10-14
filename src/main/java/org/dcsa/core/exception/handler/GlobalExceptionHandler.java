@@ -56,16 +56,10 @@ public class GlobalExceptionHandler {
         throw new UpdateException("Trying to update a string value that is too long");
       }
     } else if ("42804".equals(ex.getR2dbcException().getSqlState())) {
-      log.debug(
-          "{} database error! - {}",
-          this.getClass().getSimpleName(),
-          ex.getR2dbcException().getMessage());
       throw new DatabaseException(
-          "Internal mismatch between backEnd and database - please see log");
+          "Internal mismatch between backEnd and database - please see log", ex);
     } else {
-      log.debug("{} R2dbcException!", this.getClass().getSimpleName());
-      logExceptionTraceIfEnabled(ex);
-      throw new DatabaseException("Internal error with database operation - please see log");
+      throw new DatabaseException("Internal error with database operation - please see log", ex);
     }
   }
 
