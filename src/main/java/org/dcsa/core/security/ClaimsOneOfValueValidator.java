@@ -4,20 +4,23 @@ package org.dcsa.core.security;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dcsa.core.model.enums.ClaimShape;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * Validates that the JWT token contains the intended audience in its claims.
  */
+@Slf4j
 @RequiredArgsConstructor(staticName = "of")
 public class ClaimsOneOfValueValidator implements OAuth2TokenValidator<Jwt> {
 
@@ -75,9 +78,18 @@ public class ClaimsOneOfValueValidator implements OAuth2TokenValidator<Jwt> {
             }
         }
         // TODO: This should be configurable separately
-        if (scope != null && getOneOfScope().contains(scope)) {
+        if (scope != null && scopesList.apply(scope).stream().anyMatch(sc -> getOneOfScope().contains(sc))) {
             return OAuth2TokenValidatorResult.success();
         }
         return notMatchingExpectedClaimValue();
     }
+
+  private final Function<String, Set<String>> scopesList =
+      scope -> {
+        if (scope.contains(" ")) {
+          return Arrays.stream(scope.split(" ")).collect(Collectors.toSet());
+        } else {
+          return Set.of(scope);
+        }
+      };
 }
