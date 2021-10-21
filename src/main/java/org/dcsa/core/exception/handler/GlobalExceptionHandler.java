@@ -3,9 +3,12 @@ package org.dcsa.core.exception.handler;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import lombok.extern.slf4j.Slf4j;
 import org.dcsa.core.exception.*;
+import org.dcsa.core.model.transferobjects.ConcreteRequestErrorMessageTO;
+import org.dcsa.core.model.transferobjects.RequestFailureTO;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.r2dbc.BadSqlGrammarException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -14,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebInputException;
 
 import javax.validation.ConstraintViolationException;
+import java.util.List;
 
 @Slf4j
 @RestControllerAdvice
@@ -47,29 +51,47 @@ public class GlobalExceptionHandler {
             "{} insert into error! - {}",
             this.getClass().getSimpleName(),
             ex.getR2dbcException().getMessage());
-        throw new CreateException("Trying to insert a string value that is too long");
+        throw ConcreteRequestErrorMessageException.invalidParameter("Trying to insert a string value that is too long");
       } else {
         log.debug(
             "{} update error! - {}",
             this.getClass().getSimpleName(),
             ex.getR2dbcException().getMessage());
-        throw new UpdateException("Trying to update a string value that is too long");
+        throw ConcreteRequestErrorMessageException.invalidParameter("Trying to update a string value that is too long");
       }
     } else if ("42804".equals(ex.getR2dbcException().getSqlState())) {
-      throw new DatabaseException(
+      throw ConcreteRequestErrorMessageException.internalServerError(
           "Internal mismatch between backEnd and database - please see log", ex);
     } else {
-      throw new DatabaseException("Internal error with database operation - please see log", ex);
+      throw ConcreteRequestErrorMessageException.internalServerError(
+              "Internal error with database operation - please see log", ex);
     }
   }
 
   @ExceptionHandler(ServerWebInputException.class)
   public void handle(ServerWebInputException ex) {
     if (ex.getMessage() != null && ex.getMessage().contains("Invalid UUID string:")) {
-      throw new InvalidParameterException("Input was not a valid UUID format");
+      throw ConcreteRequestErrorMessageException.invalidParameter("Input was not a valid UUID format", ex);
     } else {
       throw ex;
     }
+  }
+
+  @ExceptionHandler(ConcreteRequestErrorMessageException.class)
+  public ResponseEntity<RequestFailureTO> handle(ServerHttpRequest serverHttpRequest, ConcreteRequestErrorMessageException ex) {
+    ResponseStatus responseStatusAnnotation = ex.getClass().getAnnotation(ResponseStatus.class);
+    HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+    ConcreteRequestErrorMessageTO errorEntity = ex.asConcreteRequestMessage();
+    if (responseStatusAnnotation != null) {
+      httpStatus = responseStatusAnnotation.value();
+    }
+    RequestFailureTO failureTO = new RequestFailureTO(
+            serverHttpRequest.getMethodValue(),
+            serverHttpRequest.getURI().toString(),
+            List.of(errorEntity),
+            httpStatus
+    );
+    return new ResponseEntity<>(failureTO, httpStatus);
   }
 
   // Spring's default handler for unknown JSON properties is useless for telling the user
@@ -79,9 +101,9 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(DecodingException.class)
   public void handleJsonDecodeException(DecodingException ce) {
     if (ce.getCause() instanceof UnrecognizedPropertyException) {
-      throw new InputParsingException(ce.getCause().getLocalizedMessage(), ce);
+      throw ConcreteRequestErrorMessageException.invalidInput(ce.getCause().getLocalizedMessage(), ce);
     }
-    throw new InputParsingException(ce.getLocalizedMessage(), ce);
+    throw ConcreteRequestErrorMessageException.invalidInput(ce.getLocalizedMessage(), ce);
   }
 
   @ExceptionHandler(Exception.class)

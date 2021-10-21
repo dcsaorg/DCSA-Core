@@ -1,11 +1,9 @@
 package org.dcsa.core.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import org.dcsa.core.exception.CreateException;
-import org.dcsa.core.exception.DeleteException;
-import org.dcsa.core.exception.UpdateException;
 import org.dcsa.core.service.BaseService;
 import org.springframework.http.HttpStatus;
+import org.dcsa.core.exception.*;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -63,14 +61,14 @@ public abstract class BaseController<S extends BaseService<T, I>, T, I> {
     // Error handling
 
     public Mono<Void> deleteMonoError() {
-        return Mono.error(new DeleteException("No Id provided in " + getType() + " object"));
+        return Mono.error(ConcreteRequestErrorMessageException.invalidParameter(getType(), null, "No Id provided in " + getType() + " object"));
     }
 
     public Mono<T> updateMonoError() {
-        return Mono.error(new UpdateException("Id in url does not match id in body"));
+        return Mono.error(ConcreteRequestErrorMessageException.invalidParameter("Id in url does not match id in body"));
     }
 
     public Mono<T> createMonoError() {
-        return Mono.error(new CreateException("Id not allowed when creating a new " + getType()));
+        return Mono.error(ConcreteRequestErrorMessageException.invalidParameter(getType(), null, "Id not allowed when creating a new " + getType()));
     }
 }
