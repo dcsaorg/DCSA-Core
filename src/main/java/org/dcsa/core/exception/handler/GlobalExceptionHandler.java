@@ -23,6 +23,23 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  @ExceptionHandler(ConcreteRequestErrorMessageException.class)
+  public ResponseEntity<RequestFailureTO> handle(ServerHttpRequest serverHttpRequest, ConcreteRequestErrorMessageException ex) {
+    ResponseStatus responseStatusAnnotation = ex.getClass().getAnnotation(ResponseStatus.class);
+    HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+    ConcreteRequestErrorMessageTO errorEntity = ex.asConcreteRequestMessage();
+    if (responseStatusAnnotation != null) {
+      httpStatus = responseStatusAnnotation.value();
+    }
+    RequestFailureTO failureTO = new RequestFailureTO(
+            serverHttpRequest.getMethodValue(),
+            serverHttpRequest.getURI().toString(),
+            List.of(errorEntity),
+            httpStatus
+    );
+    return new ResponseEntity<>(failureTO, httpStatus);
+  }
+
   @ExceptionHandler(DCSAException.class)
   public void handleDCSAExceptions(DCSAException dcsaEx) {
     log.debug(
@@ -75,23 +92,6 @@ public class GlobalExceptionHandler {
     } else {
       throw ex;
     }
-  }
-
-  @ExceptionHandler(ConcreteRequestErrorMessageException.class)
-  public ResponseEntity<RequestFailureTO> handle(ServerHttpRequest serverHttpRequest, ConcreteRequestErrorMessageException ex) {
-    ResponseStatus responseStatusAnnotation = ex.getClass().getAnnotation(ResponseStatus.class);
-    HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-    ConcreteRequestErrorMessageTO errorEntity = ex.asConcreteRequestMessage();
-    if (responseStatusAnnotation != null) {
-      httpStatus = responseStatusAnnotation.value();
-    }
-    RequestFailureTO failureTO = new RequestFailureTO(
-            serverHttpRequest.getMethodValue(),
-            serverHttpRequest.getURI().toString(),
-            List.of(errorEntity),
-            httpStatus
-    );
-    return new ResponseEntity<>(failureTO, httpStatus);
   }
 
   // Spring's default handler for unknown JSON properties is useless for telling the user
