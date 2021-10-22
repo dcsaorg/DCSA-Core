@@ -1,6 +1,9 @@
 name: Publish SNAPSHOT on PR
 
 on:
+  push:
+    branches:
+      - dev-ovs-notifications
   pull_request:
     branches: [ master ]
 
