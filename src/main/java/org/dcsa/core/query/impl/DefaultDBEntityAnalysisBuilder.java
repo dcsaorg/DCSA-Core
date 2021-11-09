@@ -50,10 +50,15 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
     }
 
     public JoinDescriptor getJoinDescriptor(Class<?> modelClass) {
-        Set<String> aliases = model2Aliases.get(modelClass);
+        Set<String> aliases;
+        if (this.joinAlias2Class.isEmpty()) {
+            initJoinAliasTable();
+        }
+        aliases = model2Aliases.get(modelClass);
 
-        if (aliases.size() != 1) {
-            if (aliases.isEmpty()) {
+
+        if (aliases == null || aliases.size() != 1) {
+            if (aliases == null || aliases.isEmpty()) {
                 throw new IllegalArgumentException("No join registered with model " + modelClass.getSimpleName());
             }
             String aliasNames = aliases.stream().sorted().collect(Collectors.joining(", "));
