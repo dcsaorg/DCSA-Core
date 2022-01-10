@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
     }
 
     ConcreteRequestErrorMessageTO errorEntity =
-        new ConcreteRequestErrorMessageTO("internal_error", dcsaEx.getMessage());
+        new ConcreteRequestErrorMessageTO(httpStatus.getReasonPhrase(), dcsaEx.getMessage());
 
     RequestFailureTO failureTO =
         new RequestFailureTO(
@@ -73,7 +73,7 @@ public class GlobalExceptionHandler {
     return new ResponseEntity<>(failureTO, httpStatus);
   }
 
-  @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "invalid_input.")
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "invalidInput")
   @ExceptionHandler(ConstraintViolationException.class)
   public void badRequest(ConstraintViolationException cvex) {
     log.debug("Input error : {}", cvex.getConstraintViolations());
