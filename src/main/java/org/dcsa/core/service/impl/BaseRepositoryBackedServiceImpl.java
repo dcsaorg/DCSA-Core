@@ -1,5 +1,6 @@
 package org.dcsa.core.service.impl;
 
+import org.dcsa.core.exception.ConcreteRequestErrorMessageException;
 import org.dcsa.core.exception.NotFoundException;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,7 @@ public abstract class BaseRepositoryBackedServiceImpl<R extends R2dbcRepository<
     @Override
     public Mono<T> findById(final I id) {
         return getRepository().findById(id)
-                .switchIfEmpty(Mono.error(new NotFoundException("No " + getType() + " was found with id: " + id)));
+                .switchIfEmpty(Mono.error(ConcreteRequestErrorMessageException.notFound("No " + getType() + " was found with id: " + id)));
     }
 
     @Transactional
