@@ -30,7 +30,7 @@ jobs:
         run: mvn -B -X deploy -DskipTests -Dsha1=-${{ github.head_ref }} -Dchangelist=-SNAPSHOT
 
       - name: set mvn version variable
-        run: echo "MAVEN_PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)- " >> $GITHUB_ENV
+        run: echo "MAVEN_PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -Dchangelist='')- " >> $GITHUB_ENV
       - run: echo $MAVEN_PROJECT_VERSION
 
       - name: Checkout dcsaorg/DCSA-TNT
