@@ -10,13 +10,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.temporal.Temporal;
 
-/**
- * Validator for Enumeration subsets. Works both for queryParameters (where the value to validate is
- * a string) and for Enum defined fields (where the value to validate is an Enum)
- *
- * <p>If the value is a string - then this class supports that the string can be comma separated in
- * order to validate a set of values
- */
 public class DateRangeValidator implements ConstraintValidator<DateRange, Object> {
 
   private String startFieldName;
