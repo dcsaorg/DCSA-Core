@@ -82,12 +82,26 @@ public class ReflectUtility {
      * @return the method corresponding to fieldName with valueFieldTypes as arguments
      */
     public static Method getSetterMethodFromName(Class<?> clazz, String fieldName, Class<?>... valueFieldTypes) {
+        return getAccessorFromName(clazz, "set", fieldName, valueFieldTypes);
+    }
+
+    /**
+     * Finds the getter method on clazz corresponding to the name fieldName with the arguments valueFieldTypes
+     * @param clazz the class to investigate
+     * @param fieldName the name of the field to find a getter method for
+     * @return the method corresponding to fieldName with valueFieldTypes as arguments
+     */
+    public static Method getGetterMethodFromName(Class<?> clazz, String fieldName) {
+        return getAccessorFromName(clazz, "get", fieldName);
+    }
+
+    private static Method getAccessorFromName(Class<?> clazz, String prefix, String fieldName, Class<?> ... valueFieldTypes) {
         try {
             // Try the raw field name as a method call
             return getMethod(clazz, fieldName, valueFieldTypes);
         } catch (Exception exception) {
             String capitalizedFieldName = capitalize(fieldName);
-            return getMethod(clazz, "set" + capitalizedFieldName, valueFieldTypes);
+            return getMethod(clazz, prefix + capitalizedFieldName, valueFieldTypes);
         }
     }
 
@@ -95,7 +109,7 @@ public class ReflectUtility {
      * Investigate if a class contains a method be the name methodName with arguments corresponding to valueFieldTypes.
      * The method must be public.
      * Throws a MethodNotFoundException if the method requested is not public or does not exist
-     * @param clazz the class to invistigate
+     * @param clazz the class to investigate
      * @param methodName name of the method to return
      * @param valueFieldTypes arguments for the method to return
      * @return the public method corresponding to methodName and with the arguments containing valueFieldTypes
