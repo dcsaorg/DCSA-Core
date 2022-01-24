@@ -8,6 +8,15 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * Validates that two fields on the entity is a valid date range
+ *
+ * Concretely, this can be used to validate that:
+ * <ul>
+ *     <li>the start date is before or (optionally) equal to the end date</li>
+ *     <li>(optionally) at least start date <i>OR</i> end date is given. Combine with @{@link javax.validation.constraints.NotNull} as needed</li>
+ * </ul>
+ */
 @Target({TYPE})
 @Retention(RUNTIME)
 @Documented
