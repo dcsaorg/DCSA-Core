@@ -1,6 +1,7 @@
 package org.dcsa.core.validator;
 
 import javax.validation.Constraint;
+import javax.validation.Payload;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -22,6 +23,12 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 @Constraint(validatedBy = DateRangeValidator.class)
 public @interface DateRange {
+
+    String message() default "must contain a valid date range in the fields {startField} and {endField}";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
 
     /**
      * Name of the field that defines the start of the range
