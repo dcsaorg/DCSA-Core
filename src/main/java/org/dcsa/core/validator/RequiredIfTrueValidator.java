@@ -12,19 +12,17 @@ public class RequiredIfTrueValidator implements ConstraintValidator<RequiredIfTr
 
   private String isFieldReferenceRequired;
   private String fieldReference;
-  private boolean allowNull = false;
 
   @Override
   public void initialize(RequiredIfTrue constraintAnnotation) {
     this.isFieldReferenceRequired = constraintAnnotation.isFieldReferenceRequired();
     this.fieldReference = constraintAnnotation.fieldReference();
-    this.allowNull = constraintAnnotation.allowNull();
   }
 
   @Override
   public boolean isValid(Object entity, ConstraintValidatorContext constraintValidatorContext) {
     if (null == entity) {
-      return allowNull;
+      return false;
     }
 
     return isValidImpl(entity, constraintValidatorContext);
