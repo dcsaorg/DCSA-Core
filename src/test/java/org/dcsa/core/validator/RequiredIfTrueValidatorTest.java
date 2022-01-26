@@ -13,9 +13,6 @@ import java.time.LocalDate;
 @ExtendWith(MockitoExtension.class)
 public class RequiredIfTrueValidatorTest {
 
-    private final LocalDate DATE_19900101 = LocalDate.of(1990, 1, 1);
-    private final LocalDate DATE_20200101 = LocalDate.of(2020, 1, 1);
-
     @Mock
     private ConstraintValidatorContext constraintValidatorContext;
 
