@@ -14,15 +14,14 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * Validates that if one boolean field is set to true then another field of an arbitrary type is not
  * null
  *
- * <p>Example of usage:
+ * <p>Example of usage:</p>
  *
  * <ul>
- *   <li>@RequiredIfTrue(isFieldReferenceRequired = "nameOfBooleanFieldVariable", fieldReference = "nameOfReferenceFieldVariable")
- *       public class className {
- *           private Boolean nameOfBooleanFieldVariable;
- *
- *           private String nameOfReferenceFieldVariable;
- *       }
+ *   <li><p>@RequiredIfTrue(isFieldReferenceRequired = "nameOfBooleanFieldVariable", fieldReference = "nameOfReferenceFieldVariable")</p>
+ *       <p>public class className {</p>
+ *       <p>  private Boolean nameOfBooleanFieldVariable;</p>
+ *       <p>  private String nameOfReferenceFieldVariable;</p>
+ *       <p>}</p>
  *   </li>
  * </ul>
  */
