@@ -10,6 +10,17 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * Validates that if one boolean field is set to true then another field of an arbitrary type is not
+ * null
+ *
+ * <p>Example of usage:
+ *
+ * <ul>
+ *   <li>@RequiredIfTrue(isFieldReferenceRequired = "nameOfBooleanFieldVariable", fieldReference =
+ *       "nameOfReferenceFieldVariable")
+ * </ul>
+ */
 @Repeatable(RequiredIfTrue.List.class)
 @Target({TYPE_USE})
 @Retention(RUNTIME)
@@ -17,20 +28,23 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Constraint(validatedBy = RequiredIfTrueValidator.class)
 public @interface RequiredIfTrue {
 
-    String isFieldReferenceRequired();
+  /** Name of the boolean field that determines whether the referenced field is required */
+  String isFieldReferenceRequired();
 
-    String fieldReference();
+  /** Name of the field referenced by the boolean field */
+  String fieldReference();
 
-    String message() default "if {isFieldReferenceRequired} is true then {fieldReference} cannot be null";
+  String message() default
+      "if {isFieldReferenceRequired} is true then {fieldReference} cannot be null";
 
-    Class<?>[] groups() default {};
+  Class<?>[] groups() default {};
 
-    Class<? extends Payload>[] payload() default {};
+  Class<? extends Payload>[] payload() default {};
 
-    @Target({TYPE_USE})
-    @Retention(RUNTIME)
-    @Documented
-    @interface List {
-        RequiredIfTrue[] value();
-    }
+  @Target({TYPE_USE})
+  @Retention(RUNTIME)
+  @Documented
+  @interface List {
+    RequiredIfTrue[] value();
+  }
 }
