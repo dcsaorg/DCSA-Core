@@ -17,8 +17,13 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * <p>Example of usage:
  *
  * <ul>
- *   <li>@RequiredIfTrue(isFieldReferenceRequired = "nameOfBooleanFieldVariable", fieldReference =
- *       "nameOfReferenceFieldVariable")
+ *   <li>@RequiredIfTrue(isFieldReferenceRequired = "nameOfBooleanFieldVariable", fieldReference = "nameOfReferenceFieldVariable")
+ *       public class className {
+ *           private Boolean nameOfBooleanFieldVariable;
+ *
+ *           private String nameOfReferenceFieldVariable;
+ *       }
+ *   </li>
  * </ul>
  */
 @Repeatable(RequiredIfTrue.List.class)
