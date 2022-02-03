@@ -11,8 +11,10 @@ import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Validates that if one boolean field is set to true then another field of an arbitrary type is not
- * null
+ * <p><b>Class-level annotation only.</b></p>
+ *
+ * <p>Validates that if one boolean field is set to true then another field of an arbitrary type is not
+ * null.</p>
  *
  * <p>Example of usage:</p>
  *
