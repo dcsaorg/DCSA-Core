@@ -21,7 +21,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RowMapper {
+class RowMapper {
     private static final Integer DATABASE_INTERVAL_NATIVE_TYPE = 1186;
 
     private final ObjectMapper objectMapper = new ObjectMapper()

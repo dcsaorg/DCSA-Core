@@ -3,7 +3,6 @@ package org.dcsa.core.query.impl;
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.extendedrequest.JoinDescriptor;
 import org.dcsa.core.extendedrequest.QueryFields;
-import org.dcsa.core.extendedrequest.SimpleJoinDescriptor;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.sql.Column;
