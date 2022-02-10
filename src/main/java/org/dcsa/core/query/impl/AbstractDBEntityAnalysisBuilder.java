@@ -179,14 +179,12 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
                         "Model class (RHS side missing). Please use join/chainJoin with a Class parameter if you need this feature.");
             }
             try {
-                lhsColumnName = ReflectUtility.transformFromFieldNameToColumnName(lhsModel, lhsFieldName,
-                        builder.getPrimaryModelClass() == lhsModel
-                );
+                lhsColumnName = ReflectUtility.transformFromFieldNameToColumnName(lhsModel, lhsFieldName);
             } catch (NoSuchFieldException e) {
                 throw new IllegalArgumentException("Unknown field \"" + lhsFieldName + "\" on model " + lhsModel.getSimpleName() + " (khs)");
             }
             try {
-                rhsColumnName = ReflectUtility.transformFromFieldNameToColumnName(rhsModel, rhsFieldName, false);
+                rhsColumnName = ReflectUtility.transformFromFieldNameToColumnName(rhsModel, rhsFieldName);
             } catch (NoSuchFieldException e) {
                 throw new IllegalArgumentException("Unknown field \"" + rhsFieldName + "\" on model " + rhsModel.getSimpleName() + " (rhs)");
             }

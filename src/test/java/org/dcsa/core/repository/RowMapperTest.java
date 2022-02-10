@@ -252,15 +252,13 @@ public class RowMapperTest {
         extendedOrder.setReceiverId(2L);
         extendedOrder.setWarehouseAddressId(3L);
         extendedOrder.setDeliveryDate(OffsetDateTime.parse("2021-05-18T15:20:30+01:00"));
-        extendedOrder.setWarehouseAddress("warehouseAddress");
 
         StubRow row = StubRow.of(Map.ofEntries(
                 Map.entry("id", 1L),
                 Map.entry("orderline", "orderLine"),
                 Map.entry("receiverId", 2L),
                 Map.entry("warehouseAddressId", 3L),
-                Map.entry("deliveryDate", OffsetDateTime.parse("2021-05-18T15:20:30+01:00")),
-                Map.entry("warehouse", "warehouseAddress")
+                Map.entry("deliveryDate", OffsetDateTime.parse("2021-05-18T15:20:30+01:00"))
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
         RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
