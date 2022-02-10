@@ -180,66 +180,6 @@ public class ExtendedRequestTest {
                 .verify(baseQuery + " WHERE order_table.delivery_date >= :deliveryDate");
     }
 
-    @Disabled("@ModelClass needs to be fixed")
-    @Test
-    public void testOrderByCountry() {
-        String baseQueryNoExtraJoins =
-                "SELECT order_table.orderline AS \"orderline\", customer_table.customer_name AS \"customerName\", customer_address.street_name AS \"customerAddress\", warehouse_address.street_name AS \"warehouse\""
-                + " FROM order_table"
-                + " JOIN customer_table ON order_table.customer_id = customer_table.address_id"
-                + " JOIN address_table customer_address ON customer_table.address_id = customer_address.address_id"
-                + " JOIN address_table warehouse_address ON order_table.address_id = warehouse_address.address_id";
-        String extraJoins = " JOIN city_table ON customer_address.city_id = city_table.id"
-                +  " JOIN country_table ON city_table.country_id = country_table.id";
-        request(OrderInCountry.class, extendedParameters).verify(baseQueryNoExtraJoins);
-
-        request(OrderInCountry.class, extendedParameters)
-                .withParam("countryName", "dk")
-                .verify(baseQueryNoExtraJoins + extraJoins + " WHERE country_table.country_name = :countryName");
-    }
-
-    @Disabled("@ModelClass needs to be fixed")
-    @Test
-    public void testOrderWithEverything() {
-        String baseQueryNoExtraJoins =
-                "SELECT customer_table.customer_name AS \"customerName\", customer_address.street_name AS \"customerAddress\", warehouse_address.street_name AS \"warehouse\", order_table.order_id AS \"id\", order_table.orderline AS \"orderline\", order_table.customer_id AS \"receiverId\", order_table.address_id AS \"warehouseAddressId\", order_table.delivery_date AS \"deliveryDate\""
-                        + " FROM order_table"
-                        + " JOIN customer_table ON order_table.customer_id = customer_table.address_id"
-                        + " JOIN address_table customer_address ON customer_table.address_id = customer_address.address_id"
-                        + " JOIN address_table warehouse_address ON order_table.address_id = warehouse_address.address_id";
-        String extraJoins = " JOIN city_table ON customer_address.city_id = city_table.id"
-                +  " JOIN country_table ON city_table.country_id = country_table.id";
-        request(OrderWithEverything.class, extendedParameters).verify(baseQueryNoExtraJoins);
-
-        request(OrderWithEverything.class, extendedParameters)
-                .withParam("countryName", "dk")
-                .verify(baseQueryNoExtraJoins + extraJoins + " WHERE country_table.country_name = :countryName");
-    }
-
-    @Disabled("@ModelClass needs to be fixed")
-    @Test
-    public void testExtendedOrder() {
-        String query =
-                "SELECT address_table.street_name AS \"warehouse\", order_table.order_id AS \"id\", order_table.orderline AS \"orderline\", order_table.customer_id AS \"receiverId\", order_table.address_id AS \"warehouseAddressId\", order_table.delivery_date AS \"deliveryDate\""
-                        + " FROM order_table"
-                        + " JOIN address_table ON order_table.address_id = address_table.address_id";
-        request(ExtendedOrder.class, extendedParameters).verify(query);
-
-        request(ExtendedOrder.class, extendedParameters)
-                .withParam("deliveryDate[gte]", "2021-01-01T00:00:00Z")
-                .verify(query + " WHERE order_table.delivery_date >= :deliveryDate");
-    }
-
-    @Disabled("@ModelClass needs to be fixed")
-    @Test
-    public void testExtendedOrderDistinct() {
-        String query =
-                "SELECT DISTINCT address_table.street_name AS \"warehouse\", order_table.order_id AS \"id\", order_table.orderline AS \"orderline\", order_table.customer_id AS \"receiverId\", order_table.address_id AS \"warehouseAddressId\", order_table.delivery_date AS \"deliveryDate\""
-                        + " FROM order_table"
-                        + " JOIN address_table ON order_table.address_id = address_table.address_id";
-        request(ExtendedOrder.class, extendedParameters).verify(query, req -> req.setSelectDistinct(true));
-    }
-
     @Test
     public void testQueryBySubclassExtendedRequest() {
         String baseQueryNoExtraJoins =

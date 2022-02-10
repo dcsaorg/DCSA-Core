@@ -398,9 +398,7 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
         try {
             return ReflectUtility.transformFromFieldNameToColumnName(
                     clazz,
-                    fieldName,
-                    /* We do not expect any ModelClass here, as it is not a field from the combined model */
-                    false
+                    fieldName
             );
         } catch (NoSuchFieldException e) {
             throw new IllegalArgumentException("Cannot resolve field " + fieldName + " on class "

@@ -1,7 +1,6 @@
 package org.dcsa.core.extendedrequest;
 
 import lombok.*;
-import org.dcsa.core.model.ModelClass;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.sql.Aliased;
 import org.springframework.data.relational.core.sql.Column;
@@ -25,10 +24,6 @@ public class QueryFields {
         Column internalColumn;
         Column selectColumn = null;
         String prefixedJsonName = selectNamePrefix + ReflectUtility.transformFromFieldNameToJsonName(combinedModelField);
-        if (!combinedModelField.isAnnotationPresent(ModelClass.class)) {
-            /* Special-case: Use the primary model when the field does not have a ModelClass */
-            modelClass = originalModelClass;
-        }
         columnName = ReflectUtility.transformFromFieldNameToColumnName(modelClass, combinedModelField.getName());
         internalColumn = table.column(SqlIdentifier.unquoted(columnName));
         if (selectable) {
