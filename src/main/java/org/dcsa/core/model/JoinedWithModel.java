@@ -64,7 +64,7 @@ import java.lang.annotation.*;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Repeatable(ModelJoins.class)
+@Repeatable(JoinedWithModel.List.class)
 public @interface JoinedWithModel {
     /* Model to join with (right hand side) */
     Class<?> rhsModel();
@@ -88,4 +88,11 @@ public @interface JoinedWithModel {
     Join.JoinType joinType() default Join.JoinType.JOIN;
 
     String[] filterFields() default {};
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @interface List {
+        JoinedWithModel[] value() default {};
+
+    }
 }
