@@ -1,4 +1,4 @@
-package org.dcsa.core;
+package org.dcsa.core.repository;
 
 import io.r2dbc.spi.ColumnMetadata;
 import io.r2dbc.spi.Row;
@@ -11,7 +11,6 @@ import org.dcsa.core.models.Address;
 import org.dcsa.core.models.City;
 import org.dcsa.core.models.Customer;
 import org.dcsa.core.models.combined.*;
-import org.dcsa.core.repository.RowMapper;
 import org.dcsa.core.stub.StubRow;
 import org.dcsa.core.stub.StubRowMetadata;
 import org.junit.jupiter.api.Assertions;
