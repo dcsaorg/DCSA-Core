@@ -45,7 +45,7 @@ import java.lang.annotation.*;
  *     private InnerModel innerModel;
  * }
  *
- * @Table("intermedate")
+ * @Table("intermediate")
  * class Intermediate {
  *     @Id
  *     private String id;
