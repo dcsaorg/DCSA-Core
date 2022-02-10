@@ -5,8 +5,11 @@ public class ValidationUtils {
     /**
      * Validate if a Vessel IMO Number is correct according to "Structure" defined here: https://en.wikipedia.org/wiki/IMO_number
      *
-     * @param vesselIMONumber the number (as a string) to verify
+     * If you need this for validation of a string field containing a Vessel IMO number, you
+     * probably want {@link org.dcsa.core.validator.ValidVesselIMONumber} instead.
      *
+     * @param vesselIMONumber the number (as a string) to verify
+     * @see org.dcsa.core.validator.ValidVesselIMONumber
      */
     public static void validateVesselIMONumber(String vesselIMONumber) throws IllegalArgumentException {
         if (vesselIMONumber != null && vesselIMONumber.length() == 7) {
