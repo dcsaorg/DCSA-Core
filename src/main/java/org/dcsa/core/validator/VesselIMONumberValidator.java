@@ -3,7 +3,7 @@ package org.dcsa.core.validator;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-public class VesselIMONumberValidator implements ConstraintValidator<ValidVesselIMONumber, String> {
+public final class VesselIMONumberValidator implements ConstraintValidator<ValidVesselIMONumber, String> {
 
   private boolean allowNull = false;
 
