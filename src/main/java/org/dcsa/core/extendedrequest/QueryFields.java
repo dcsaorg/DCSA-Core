@@ -24,7 +24,7 @@ public class QueryFields {
         Column internalColumn;
         Column selectColumn = null;
         String prefixedJsonName = selectNamePrefix + ReflectUtility.transformFromFieldNameToJsonName(combinedModelField);
-        columnName = ReflectUtility.transformFromFieldNameToColumnName(modelClass, combinedModelField.getName());
+        columnName = ReflectUtility.transformFromFieldNameToColumnName(originalModelClass, combinedModelField.getName());
         internalColumn = table.column(SqlIdentifier.unquoted(columnName));
         if (selectable) {
             selectColumn = internalColumn.as(SqlIdentifier.quoted(prefixedJsonName));
