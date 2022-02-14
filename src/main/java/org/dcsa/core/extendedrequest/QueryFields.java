@@ -12,25 +12,23 @@ import java.util.Objects;
 
 public class QueryFields {
 
-    public static QueryField queryFieldFromField(Class<?> combinedModelClass, Field combinedModelField, Class<?> originalModelClass, Table table, boolean selectable) {
-        return queryFieldFromFieldWithSelectPrefix(combinedModelClass, combinedModelField, originalModelClass, table, selectable, "");
+    public static QueryField queryFieldFromField(Field modelField, Table table, boolean selectable) {
+        return queryFieldFromFieldWithSelectPrefix(modelField, table, selectable, "");
     }
 
-    @SneakyThrows(NoSuchFieldException.class)
-    public static QueryField queryFieldFromFieldWithSelectPrefix(Class<?> combinedModelClass, Field combinedModelField, Class<?> originalModelClass, Table table, boolean selectable, String selectNamePrefix) {
-        Class<?> modelClass = combinedModelClass;
+    public static QueryField queryFieldFromFieldWithSelectPrefix(Field modelField, Table table, boolean selectable, String selectNamePrefix) {
         String tableAlias = ReflectUtility.getAliasId(table);
         String columnName;
         Column internalColumn;
         Column selectColumn = null;
-        String prefixedJsonName = selectNamePrefix + ReflectUtility.transformFromFieldNameToJsonName(combinedModelField);
-        columnName = ReflectUtility.transformFromFieldNameToColumnName(originalModelClass, combinedModelField.getName());
+        String prefixedJsonName = selectNamePrefix + ReflectUtility.transformFromFieldNameToJsonName(modelField);
+        columnName = ReflectUtility.transformFromFieldToColumnName(modelField);
         internalColumn = table.column(SqlIdentifier.unquoted(columnName));
         if (selectable) {
             selectColumn = internalColumn.as(SqlIdentifier.quoted(prefixedJsonName));
         }
         return FieldBackedQueryField.of(
-                combinedModelField,
+                modelField,
                 internalColumn,
                 selectColumn,
                 tableAlias,

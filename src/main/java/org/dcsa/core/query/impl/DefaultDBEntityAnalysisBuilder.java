@@ -334,9 +334,9 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
 
             QueryField queryField;
             if (qField.isFilterField()) {
-                queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, field.getDeclaringClass(), table, true, prefix);
+                queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(field, table, true, prefix);
             } else {
-                queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, modelType, table, true, prefix);
+                queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(field, table, true, prefix);
             }
             registerQueryField(queryField);
         }
