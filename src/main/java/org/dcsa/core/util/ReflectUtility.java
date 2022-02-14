@@ -133,12 +133,21 @@ public class ReflectUtility {
      */
     public static String transformFromFieldNameToColumnName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
         Field field = getDeclaredField(clazz, fieldName);
-        // Check if this field is declared on another class
+        return transformFromFieldToColumnName(field);
+    }
+
+    /**
+     * Transforms a field to a column name that can be used by a database query. If no @Column annotation exists
+     * then the field name is used.
+     *
+     * @return the database column name corresponding to fieldName
+     */
+    public static String transformFromFieldToColumnName(Field field) {
         Column column = field.getDeclaredAnnotation(Column.class);
         if (column != null) {
             return column.value();
         } else {
-            return fieldName;
+            return field.getName();
         }
     }
 

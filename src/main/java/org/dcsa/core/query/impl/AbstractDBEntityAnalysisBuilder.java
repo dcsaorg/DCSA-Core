@@ -252,9 +252,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
                         + fieldName + "\"");
             }
             return builder.registerQueryField(QueryFields.queryFieldFromField(
-                    builder.getPrimaryModelClass(),
                     field,
-                    lhsModel,
                     lhsTable,
                     false
             ));
