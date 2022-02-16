@@ -11,7 +11,7 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import reactor.core.publisher.Flux;
 
-public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>, T, I> extends BaseController<S, T, I> {
+public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>, T, I> {
 
     @Autowired
     private ExtendedParameters extendedParameters;
@@ -19,10 +19,7 @@ public abstract class ExtendedBaseController<S extends ExtendedBaseService<T, I>
     @Autowired
     protected R2dbcDialect r2dbcDialect;
 
-    @Override
-    public String getType() {
-        return getService().getModelClass().getSimpleName();
-    }
+    protected abstract S getService();
 
     protected ExtendedRequest<T> newExtendedRequest() {
         return new ExtendedRequest<>(extendedParameters, r2dbcDialect, getService().getModelClass());

@@ -11,7 +11,6 @@ import reactor.core.publisher.Mono;
 
 public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> implements ExtendedRepository<T, I> {
     private final DatabaseClient databaseClient;
-    private final MappingRelationalEntityInformation<T, I> mappingRelationalEntityInformation;
     private final RowMapper rowMapper = new RowMapper();
 
     public ExtendedRepositoryImpl(MappingRelationalEntityInformation<T, I> mappingRelationalEntityInformation,
@@ -19,12 +18,6 @@ public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> im
                                   MappingR2dbcConverter mappingR2dbcConverter) {
         super(mappingRelationalEntityInformation, r2dbcEntityTemplate, mappingR2dbcConverter);
         this.databaseClient = r2dbcEntityTemplate.getDatabaseClient();
-        this.mappingRelationalEntityInformation = mappingRelationalEntityInformation;
-    }
-
-    /* internal */
-    public I getIdOfEntity(T entity) {
-        return mappingRelationalEntityInformation.getId(entity);
     }
 
     public Mono<Integer> countAllExtended(final ExtendedRequest<T> extendedRequest) {
