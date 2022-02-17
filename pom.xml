@@ -19,7 +19,7 @@
 
 	<properties>
 		<java.version>11</java.version>
-		<revision>0.8.27</revision>
+		<revision>0.8.28</revision>
 		<apache.commons.version>3.12.0</apache.commons.version>
 		<apache.commons.codec.version>1.15</apache.commons.codec.version>
 		<sha1/>
@@ -138,26 +138,6 @@
 			</plugin>
 		</plugins>
 	</build>
-
-	<repositories>
-		<repository>
-			<id>spring-milestones</id>
-			<name>Spring Milestones</name>
-			<url>https://repo.spring.io/milestone</url>
-		</repository>
-		<repository>
-			<id>spring-libs-milestone</id>
-			<name>Spring Milestone Maven Repository</name>
-			<url>https://oss.jfrog.org/artifactory/oss-snapshot-local/</url>
-		</repository>
-	</repositories>
-	<pluginRepositories>
-		<pluginRepository>
-			<id>spring-milestones</id>
-			<name>Spring Milestones</name>
-			<url>https://repo.spring.io/milestone</url>
-		</pluginRepository>
-	</pluginRepositories>
 
 	<distributionManagement>
 		<repository>
