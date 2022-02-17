@@ -23,12 +23,20 @@ public class MappingUtils {
      */
     public static final int SQL_LIST_BUFFER_SIZE = 70;
 
+    /**
+     * Use Mappers instead.
+     */
+    @Deprecated
     public static <C, S extends C, T extends C> T instanceFrom(S source, Supplier<T> targetConstructor, Class<C> clazz) {
         T target = targetConstructor.get();
         copyFields(source, target, clazz);
         return target;
     }
 
+    /**
+     * Use Mappers instead.
+     */
+    @Deprecated
     @SneakyThrows({InvocationTargetException.class, IllegalAccessException.class})
     public static <C, S extends C, T extends C> void copyFields(S source, T target, Class<C> clazz) {
         /* Only clone the abstract fields that we know they share */

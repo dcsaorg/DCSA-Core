@@ -3,7 +3,6 @@ package org.dcsa.core.query.impl;
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.extendedrequest.JoinDescriptor;
 import org.dcsa.core.extendedrequest.QueryFields;
-import org.dcsa.core.extendedrequest.SimpleJoinDescriptor;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.sql.Column;
@@ -180,14 +179,12 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
                         "Model class (RHS side missing). Please use join/chainJoin with a Class parameter if you need this feature.");
             }
             try {
-                lhsColumnName = ReflectUtility.transformFromFieldNameToColumnName(lhsModel, lhsFieldName,
-                        builder.getPrimaryModelClass() == lhsModel
-                );
+                lhsColumnName = ReflectUtility.transformFromFieldNameToColumnName(lhsModel, lhsFieldName);
             } catch (NoSuchFieldException e) {
                 throw new IllegalArgumentException("Unknown field \"" + lhsFieldName + "\" on model " + lhsModel.getSimpleName() + " (khs)");
             }
             try {
-                rhsColumnName = ReflectUtility.transformFromFieldNameToColumnName(rhsModel, rhsFieldName, false);
+                rhsColumnName = ReflectUtility.transformFromFieldNameToColumnName(rhsModel, rhsFieldName);
             } catch (NoSuchFieldException e) {
                 throw new IllegalArgumentException("Unknown field \"" + rhsFieldName + "\" on model " + rhsModel.getSimpleName() + " (rhs)");
             }
@@ -255,9 +252,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
                         + fieldName + "\"");
             }
             return builder.registerQueryField(QueryFields.queryFieldFromField(
-                    builder.getPrimaryModelClass(),
                     field,
-                    lhsModel,
                     lhsTable,
                     false
             ));

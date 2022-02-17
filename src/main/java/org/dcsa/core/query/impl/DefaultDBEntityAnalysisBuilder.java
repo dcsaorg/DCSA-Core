@@ -334,9 +334,9 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
 
             QueryField queryField;
             if (qField.isFilterField()) {
-                queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, field.getDeclaringClass(), table, true, prefix);
+                queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(field, table, true, prefix);
             } else {
-                queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(modelType, field, modelType, table, true, prefix);
+                queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(field, table, true, prefix);
             }
             registerQueryField(queryField);
         }
@@ -398,9 +398,7 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
         try {
             return ReflectUtility.transformFromFieldNameToColumnName(
                     clazz,
-                    fieldName,
-                    /* We do not expect any ModelClass here, as it is not a field from the combined model */
-                    false
+                    fieldName
             );
         } catch (NoSuchFieldException e) {
             throw new IllegalArgumentException("Cannot resolve field " + fieldName + " on class "

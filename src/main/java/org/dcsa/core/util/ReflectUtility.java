@@ -3,7 +3,6 @@ package org.dcsa.core.util;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.dcsa.core.exception.GetException;
-import org.dcsa.core.model.ModelClass;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.relational.core.sql.Aliased;
@@ -147,36 +146,22 @@ public class ReflectUtility {
      * @throws NoSuchFieldException if fieldName does not exist on clazz
      */
     public static String transformFromFieldNameToColumnName(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        return transformFromFieldNameToColumnName(clazz, fieldName, true);
+        Field field = getDeclaredField(clazz, fieldName);
+        return transformFromFieldToColumnName(field);
     }
 
     /**
-     * Transforms a field name to a column name that can be used by a database query. If no @Column annotation exists
-     * then fieldName is used. If no match on clazz it will try the super class until Object.class is reached
+     * Transforms a field to a column name that can be used by a database query. If no @Column annotation exists
+     * then the field name is used.
      *
-     * @param clazz the Class
-     * @param fieldName the name to convert
-     * @param preferModelClassName If true and a {@link ModelClass} annotation exists on the field, then resolve the
-     *                             column name by looking at the {@link ModelClass}.
      * @return the database column name corresponding to fieldName
-     * @throws NoSuchFieldException if fieldName does not exist on clazz
      */
-    public static String transformFromFieldNameToColumnName(Class<?> clazz, String fieldName, boolean preferModelClassName) throws NoSuchFieldException {
-        Field field = getDeclaredField(clazz, fieldName);
-        // Check if this field is declared on another class
-        ModelClass modelClass = field.getDeclaredAnnotation(ModelClass.class);
-        if (preferModelClassName && modelClass != null) {
-            if (modelClass.fieldName().length() > 0) {
-                fieldName = modelClass.fieldName();
-            }
-            return transformFromFieldNameToColumnName(modelClass.value(), fieldName, true);
+    public static String transformFromFieldToColumnName(Field field) {
+        Column column = field.getDeclaredAnnotation(Column.class);
+        if (column != null) {
+            return column.value();
         } else {
-            Column column = field.getDeclaredAnnotation(Column.class);
-            if (column != null) {
-                return column.value();
-            } else {
-                return fieldName;
-            }
+            return field.getName();
         }
     }
 
@@ -281,24 +266,6 @@ public class ReflectUtility {
         clazz = clazz.getSuperclass();
         if (clazz != Object.class) {
             getFieldNamesOfType(clazz, type, fieldNames);
-        }
-    }
-
-
-    /**
-     * Gets the original class corresponding to a field provided on a ModelClass annotation. This
-     * is used when combined modelClasses are in use.
-     *
-     * @param clazz the class to investigate
-     * @param field the field from the class clazz
-     * @return the original class of the fieldName
-     */
-    public static Class<?> getFieldModelClass(Class<?> clazz, Field field) {
-        ModelClass modelClass = field.getAnnotation(ModelClass.class);
-        if (modelClass != null) {
-            return modelClass.value();
-        } else {
-            return clazz;
         }
     }
 

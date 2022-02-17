@@ -1,12 +1,9 @@
 package org.dcsa.core.validator;
 
-import org.dcsa.core.util.ValidationUtils;
-
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
-import java.util.regex.Pattern;
 
-public class VesselIMONumberValidator implements ConstraintValidator<ValidVesselIMONumber, String> {
+public final class VesselIMONumberValidator implements ConstraintValidator<ValidVesselIMONumber, String> {
 
   private boolean allowNull = false;
 
@@ -26,11 +23,20 @@ public class VesselIMONumberValidator implements ConstraintValidator<ValidVessel
       return false;
     }
 
-    try {
-      ValidationUtils.validateVesselIMONumber(value);
-    } catch (IllegalArgumentException e) {
-      return false;
+    return validateIMOCheckSum(value);
+  }
+
+  private boolean validateIMOCheckSum(String vesselIMONumber) {
+    int sum = 0;
+    assert vesselIMONumber.length() == 7;
+    for (int i = 0; i < 6; i++) {
+      char c = vesselIMONumber.charAt(i);
+      if (c < '0' || c > '9') {
+        return false;
+      }
+      sum += (7 - i) * Character.getNumericValue(c);
     }
-    return true;
+    String s = String.valueOf(sum);
+    return vesselIMONumber.charAt(vesselIMONumber.length() - 1) != s.charAt(s.length() - 1);
   }
 }

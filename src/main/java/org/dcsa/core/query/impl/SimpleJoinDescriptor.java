@@ -1,12 +1,13 @@
-package org.dcsa.core.extendedrequest;
+package org.dcsa.core.query.impl;
 
 import lombok.Data;
 import lombok.NonNull;
+import org.dcsa.core.extendedrequest.JoinDescriptor;
 import org.springframework.data.relational.core.sql.Column;
 import org.springframework.data.relational.core.sql.Join;
 
 @Data(staticConstructor = "of")
-public class SimpleJoinDescriptor implements JoinDescriptor {
+class SimpleJoinDescriptor implements JoinDescriptor {
 
     @NonNull
     private final Join.JoinType joinType;

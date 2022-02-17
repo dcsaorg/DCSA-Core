@@ -10,6 +10,5 @@ import reactor.core.publisher.Mono;
 public interface ExtendedRepository<T, I> extends R2dbcRepository<T, I> {
     Mono<Integer> countAllExtended(final ExtendedRequest<T> extendedRequest);
     Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest);
-    /* internal */ I getIdOfEntity(T entity);
 
 }

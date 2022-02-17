@@ -1,7 +1,6 @@
 package org.dcsa.core.extendedrequest;
 
 import lombok.*;
-import org.dcsa.core.model.ModelClass;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.sql.Aliased;
 import org.springframework.data.relational.core.sql.Column;
@@ -13,29 +12,23 @@ import java.util.Objects;
 
 public class QueryFields {
 
-    public static QueryField queryFieldFromField(Class<?> combinedModelClass, Field combinedModelField, Class<?> originalModelClass, Table table, boolean selectable) {
-        return queryFieldFromFieldWithSelectPrefix(combinedModelClass, combinedModelField, originalModelClass, table, selectable, "");
+    public static QueryField queryFieldFromField(Field modelField, Table table, boolean selectable) {
+        return queryFieldFromFieldWithSelectPrefix(modelField, table, selectable, "");
     }
 
-    @SneakyThrows(NoSuchFieldException.class)
-    public static QueryField queryFieldFromFieldWithSelectPrefix(Class<?> combinedModelClass, Field combinedModelField, Class<?> originalModelClass, Table table, boolean selectable, String selectNamePrefix) {
-        Class<?> modelClass = combinedModelClass;
+    public static QueryField queryFieldFromFieldWithSelectPrefix(Field modelField, Table table, boolean selectable, String selectNamePrefix) {
         String tableAlias = ReflectUtility.getAliasId(table);
         String columnName;
         Column internalColumn;
         Column selectColumn = null;
-        String prefixedJsonName = selectNamePrefix + ReflectUtility.transformFromFieldNameToJsonName(combinedModelField);
-        if (!combinedModelField.isAnnotationPresent(ModelClass.class)) {
-            /* Special-case: Use the primary model when the field does not have a ModelClass */
-            modelClass = originalModelClass;
-        }
-        columnName = ReflectUtility.transformFromFieldNameToColumnName(modelClass, combinedModelField.getName());
+        String prefixedJsonName = selectNamePrefix + ReflectUtility.transformFromFieldNameToJsonName(modelField);
+        columnName = ReflectUtility.transformFromFieldToColumnName(modelField);
         internalColumn = table.column(SqlIdentifier.unquoted(columnName));
         if (selectable) {
             selectColumn = internalColumn.as(SqlIdentifier.quoted(prefixedJsonName));
         }
         return FieldBackedQueryField.of(
-                combinedModelField,
+                modelField,
                 internalColumn,
                 selectColumn,
                 tableAlias,

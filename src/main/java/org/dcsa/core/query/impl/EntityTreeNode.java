@@ -9,7 +9,7 @@ import org.springframework.data.relational.core.sql.Join;
 import java.util.*;
 
 @RequiredArgsConstructor(staticName = "of")
-public class EntityTreeNode {
+class EntityTreeNode {
 
     @Getter
     private final EntityTreeNode parentModelNode;

@@ -7,7 +7,7 @@ import java.lang.reflect.Field;
 
 @Data
 @RequiredArgsConstructor(staticName = "of")
-public class QField {
+class QField {
     private final Field field;
     private final boolean filterField;
 }
