@@ -1,9 +1,9 @@
-package org.dcsa.core.mock;
+package org.dcsa.core.extendedrequest.testsupport;
 
 import org.springframework.r2dbc.core.binding.BindMarker;
 import org.springframework.r2dbc.core.binding.BindMarkers;
 
-public class MockBindMarkers implements BindMarkers {
+class MockBindMarkers implements BindMarkers {
 
     private int counter = 1;
 
