@@ -6,7 +6,7 @@ import io.r2dbc.spi.RowMetadata;
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.extendedrequest.ExtendedParameters;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
-import org.dcsa.core.mock.MockR2dbcDialect;
+import org.dcsa.core.extendedrequest.testsupport.MockR2dbcDialect;
 import org.dcsa.core.models.Address;
 import org.dcsa.core.models.City;
 import org.dcsa.core.models.Customer;

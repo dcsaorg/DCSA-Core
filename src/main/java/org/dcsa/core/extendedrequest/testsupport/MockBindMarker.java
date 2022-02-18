@@ -1,4 +1,4 @@
-package org.dcsa.core.mock;
+package org.dcsa.core.extendedrequest.testsupport;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -6,7 +6,7 @@ import org.springframework.r2dbc.core.binding.BindMarker;
 import org.springframework.r2dbc.core.binding.BindTarget;
 
 @RequiredArgsConstructor(staticName = "of")
-public class MockBindMarker implements BindMarker {
+class MockBindMarker implements BindMarker {
 
     @Getter
     private final String placeholder;
