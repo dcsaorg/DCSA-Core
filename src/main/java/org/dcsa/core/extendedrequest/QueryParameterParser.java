@@ -84,25 +84,14 @@ public class QueryParameterParser<T> {
             if (ignoredParameter.test(parameterKey)) {
                 continue;
             }
-            if (parameterKey.endsWith("]") && extendedParameters.getQueryParameterAttributeHandling() == QueryParameterAttributeHandling.PARAMETER_NAME_ARRAY_NOTATION) {
-                String[] parts = parameterKey.split("\\[", 2);
-                if (parts.length == 2) {
-                    jsonName = parts[0];
-                    if (ignoredParameter.test(jsonName)) {
-                        continue;
-                    }
-                    fieldAttribute = parts[1].substring(0, parts[1].length() - 1);
+            String separator = extendedParameters.getQueryParameterAttributeSeparator();
+            int index = parameterKey.indexOf(separator);
+            if (index > -1) {
+                jsonName = parameterKey.substring(0, index);
+                if (ignoredParameter.test(jsonName)) {
+                    continue;
                 }
-            } else if (extendedParameters.getQueryParameterAttributeHandling() == QueryParameterAttributeHandling.PARAMETER_NAME_SUFFIX) {
-                String separator = extendedParameters.getQueryParameterAttributeSeparator();
-                int index = parameterKey.indexOf(separator);
-                if (index > -1) {
-                    jsonName = parameterKey.substring(0, index);
-                    if (ignoredParameter.test(jsonName)) {
-                        continue;
-                    }
-                    fieldAttribute = parameterKey.substring(index + separator.length());
-                }
+                fieldAttribute = parameterKey.substring(index + separator.length());
             }
             if (values.isEmpty()) {
                 throw new IllegalArgumentException("No values provided for " + parameterKey);
@@ -111,22 +100,9 @@ public class QueryParameterParser<T> {
                 throw new GetException("Cannot have " + parameterKey + " twice: Feature is not implemented");
             }
 
-            parseSingleValueQueryParameter(jsonName, fieldAttribute, values.get(0));
+            parseSingleValueQueryParameter(getQueryFieldFromJSONName(jsonName), fieldAttribute, values.get(0));
             parsedParameters.computeIfAbsent(parameterKey, ignored -> new ArrayList<>()).addAll(values);
         }
-    }
-
-    protected void parseSingleValueQueryParameter(String jsonName, String fieldAttribute, String value) {
-        String valueAttribute = null;
-        if (extendedParameters.getQueryParameterAttributeHandling() == QueryParameterAttributeHandling.PARAMETER_VALUE_PREFIX) {
-            String separator = extendedParameters.getQueryParameterAttributeSeparator();
-            int index = value.indexOf(separator);
-            if (index > -1) {
-                valueAttribute = value.substring(0, index);
-                value = value.substring(index + separator.length());
-            }
-        }
-        parseSingleValueQueryParameter(getQueryFieldFromJSONName(jsonName), fieldAttribute, valueAttribute, value);
     }
 
     protected Expression bindValue(QueryField queryField, Object value) {
@@ -155,19 +131,18 @@ public class QueryParameterParser<T> {
         return false;
     }
 
-    protected void parseSingleValueQueryParameter(QueryField queryField, String fieldAttribute, String valueAttribute, String value) {
+    protected void parseSingleValueQueryParameter(QueryField queryField, String fieldAttribute, String value) {
         Class<?> fieldType = queryField.getType();
         ComparisonType comparisonType = ComparisonType.EQ;
-        String attribute = valueAttribute != null ? valueAttribute : fieldAttribute;
         Object parsed;
-        if (attribute != null) {
+        if (fieldAttribute != null) {
             try {
-                comparisonType = ComparisonType.valueOf(attribute.toUpperCase());
+                comparisonType = ComparisonType.valueOf(fieldAttribute.toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new GetException("Attribute (operator) " + attribute + " is invalid for " + queryField.getJsonName());
+                throw new GetException("Attribute (operator) " + fieldAttribute + " is invalid for " + queryField.getJsonName());
             }
         }
-        if (handleIsNullQuery(queryField, attribute, comparisonType, value)) {
+        if (handleIsNullQuery(queryField, fieldAttribute, comparisonType, value)) {
             return;
         }
 
@@ -184,7 +159,7 @@ public class QueryParameterParser<T> {
                 comparisonType = ComparisonType.EQ;
             }
             if (comparisonType.isRequiredOrdering()) {
-                throw new GetException("Cannot use attribute (operator) " + attribute + " on " + queryField.getJsonName()
+                throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": It does not have an ordering but the operator needs ordering");
             }
             if (enumList.length == 1) {
@@ -201,13 +176,13 @@ public class QueryParameterParser<T> {
             parsed = value;
         } else if (UUID.class.equals(fieldType)) {
             if (comparisonType.isRequiredOrdering()) {
-                throw new GetException("Cannot use attribute (operator) " + attribute + " on " + queryField.getJsonName()
+                throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": It does not have an ordering but the operator needs ordering");
             }
-            if (attribute == null) {
+            if (fieldAttribute == null) {
                 comparisonType = ComparisonType.EQ;
             } else if (comparisonType != ComparisonType.EQ) {
-                throw new GetException("Cannot use attribute (operator) " + attribute + " on " + queryField.getJsonName()
+                throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": UUID values can only be used with strictly equal");
             }
             try {
