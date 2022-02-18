@@ -136,29 +136,6 @@ public class ExtendedParameters {
     @Value( "${enum.split:,}" )
     private String enumSplit;
 
-    // Choose how query parameter attributes are handled.  Options include:
-    //
-    // * NO_ATTRIBUTES                 - There are no attributes at all.
-    // * PARAMETER_NAME_ARRAY_NOTATION - The attribute is in the query parameter
-    //                                   name a la "name[attribute]=value"
-    // * PARAMETER_NAME_SUFFIX         - The attribute is in the query parameter
-    //                                   name a la "name:attribute=value".
-    // * PARAMETER_VALUE_PREFIX        - The attribute is a prefix of the value
-    //                                   a la "name=attribute:value".
-    //
-    // Note that attributes are parsed from the decoded parameter name or value.
-    //
-    // Attributes can be used to alter how a query parameter is interpreted and
-    // is often used for operators a la "x >= y"-operations.  However, the
-    // application can implement its own attributes.
-    //
-    // This can be changed in application.yaml file by writing:
-    // search:
-    //   queryParameterAttributeHandling: PARAMETER_VALUE_PREFIX
-    @Value("${search.queryParameterAttributeHandling:PARAMETER_NAME_SUFFIX}")
-    @Getter
-    private QueryParameterAttributeHandling queryParameterAttributeHandling;
-
     // Choose the separator for attributes embedded in the query parameters.
     // The separator is applied on the decoded value.  Whether it is used
     // for the name or the value is determined by
