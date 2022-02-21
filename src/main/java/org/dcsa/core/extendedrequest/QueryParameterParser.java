@@ -257,7 +257,7 @@ public class QueryParameterParser<T> {
         return queryField;
     }
 
-    private static FilterCondition isubstr(Expression lhs, Expression rhsOrig) {
+    static FilterCondition isubstr(Expression lhs, Expression rhsOrig) {
         Expression rhs = surroundWithWildCards(rhsOrig);
         return r2dbcDialect -> {
             if (r2dbcDialect instanceof PostgresDialect) {
@@ -267,7 +267,7 @@ public class QueryParameterParser<T> {
         };
     }
 
-    private static FilterCondition iequal(Expression lhs, Expression rhs) {
+    static FilterCondition iequal(Expression lhs, Expression rhs) {
         return InlineableFilterCondition.of(Conditions.isEqual(Functions.upper(lhs), Functions.upper(rhs)));
     }
 
@@ -279,76 +279,7 @@ public class QueryParameterParser<T> {
         return SimpleFunction.create("CONCAT", params);
     }
 
-    @Getter
-    @RequiredArgsConstructor
-    protected enum ComparisonType {
-        GT(true, Conditions::isGreater),
-        GTE(true, Conditions::isGreaterOrEqualTo),
-        EQ(false, Conditions::isEqual),
-        LTE(true, Conditions::isLessOrEqualTo),
-        LT(true, Conditions::isLess),
-        NEQ(false, Conditions::isNotEqual),
-        SUBSTR(false, Conditions::like),
-        IEQ(false, true, QueryParameterParser::iequal),
-        ISUBSTR(false, true, QueryParameterParser::isubstr),
-        ;
-
-        private final boolean requiredOrdering;
-        private final boolean convertToString;
-        private final BiFunction<Expression, Expression, FilterCondition> singleValueConverter;
-
-        ComparisonType(boolean requiredOrdering, BiFunction<Expression, Expression, Condition> conditionBiFunction) {
-            this(requiredOrdering, false, (lhs, rhs) -> InlineableFilterCondition.of(conditionBiFunction.apply(lhs, rhs)));
-        }
-
-        public Expression defaultFieldConversion(QueryField queryField) {
-            boolean needsCast = convertToString;
-            if (needsCast) {
-                Class<?> valueType = queryField.getType();
-                if (valueType.isEnum() || String.class.equals(valueType)) {
-                    needsCast = false;
-                }
-            }
-            if (needsCast) {
-                Column aliased = queryField.getInternalQueryColumn().as(SqlIdentifier.unquoted("VARCHAR"));
-                return SimpleFunction.create("CAST", Collections.singletonList(aliased));
-            }
-            return queryField.getInternalQueryColumn();
-        }
-
-        public FilterCondition singleNonNullValueCondition(QueryField queryField, Expression expression) {
-            return singleNonNullValueCondition(defaultFieldConversion(queryField), expression);
-        }
-
-        public FilterCondition singleNonNullValueCondition(Expression field, Expression expression) {
-            return singleValueConverter.apply(field, expression);
-        }
-
-        public FilterCondition multiValueCondition(QueryField queryField, List<Expression> expressions) {
-            return multiValueCondition(defaultFieldConversion(queryField), expressions);
-        }
-
-        public FilterCondition multiValueCondition(Expression field, List<Expression> expressions) {
-            if (expressions.isEmpty()) {
-                throw new IllegalArgumentException("Right-hand side expression list must be non-empty");
-            }
-            if (expressions.size() == 1) {
-                return singleNonNullValueCondition(field, expressions.get(0));
-            } else if (this == EQ || this == NEQ) {
-                if (this == EQ) {
-                    return InlineableFilterCondition.of(Conditions.in(field, expressions));
-                }
-                return InlineableFilterCondition.of(Conditions.notIn(field, expressions));
-            } else {
-                return andAllFilters(
-                        expressions.stream().map(e -> singleValueConverter.apply(field, e)).collect(Collectors.toList()),
-                        true
-                );
-            }
-        }
-    }
-
-    private static FilterCondition andAllFilters(List<FilterCondition> filters, boolean nestOnMultiple) {
+    static FilterCondition andAllFilters(List<FilterCondition> filters, boolean nestOnMultiple) {
         if (filters.isEmpty()) {
             return EMPTY_CONDITION;
         }
@@ -382,7 +313,7 @@ public class QueryParameterParser<T> {
     }
 
     @RequiredArgsConstructor(staticName = "of")
-    private static class InlineableFilterCondition implements FilterCondition {
+    static class InlineableFilterCondition implements FilterCondition {
         private final Condition condition;
 
         public Condition computeCondition(R2dbcDialect r2dbcDialect) {
