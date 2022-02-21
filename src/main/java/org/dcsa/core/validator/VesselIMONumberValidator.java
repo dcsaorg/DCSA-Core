@@ -37,6 +37,6 @@ public final class VesselIMONumberValidator implements ConstraintValidator<Valid
       sum += (7 - i) * Character.getNumericValue(c);
     }
     String s = String.valueOf(sum);
-    return vesselIMONumber.charAt(vesselIMONumber.length() - 1) != s.charAt(s.length() - 1);
+    return vesselIMONumber.charAt(vesselIMONumber.length() - 1) == s.charAt(s.length() - 1);
   }
 }
