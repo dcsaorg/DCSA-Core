@@ -26,7 +26,7 @@ public final class VesselIMONumberValidator implements ConstraintValidator<Valid
     return validateIMOCheckSum(value);
   }
 
-  private boolean validateIMOCheckSum(String vesselIMONumber) {
+  private static boolean validateIMOCheckSum(String vesselIMONumber) {
     int sum = 0;
     assert vesselIMONumber.length() == 7;
     for (int i = 0; i < 6; i++) {
@@ -37,6 +37,6 @@ public final class VesselIMONumberValidator implements ConstraintValidator<Valid
       sum += (7 - i) * Character.getNumericValue(c);
     }
     String s = String.valueOf(sum);
-    return vesselIMONumber.charAt(vesselIMONumber.length() - 1) != s.charAt(s.length() - 1);
+    return vesselIMONumber.charAt(vesselIMONumber.length() - 1) == s.charAt(s.length() - 1);
   }
 }
