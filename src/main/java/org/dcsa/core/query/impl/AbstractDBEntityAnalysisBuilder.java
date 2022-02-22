@@ -2,6 +2,7 @@ package org.dcsa.core.query.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.extendedrequest.JoinDescriptor;
+import org.dcsa.core.extendedrequest.QueryFieldConditionGenerator;
 import org.dcsa.core.extendedrequest.QueryFields;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
@@ -239,7 +240,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
             return builder.registerQueryFieldAlias(jsonName, jsonNameAlias);
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName) {
+        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName, QueryFieldConditionGenerator conditionGenerator) {
             Field field;
             if (lhsModel == null) {
                 throw new UnsupportedOperationException("Cannot use field based field registration as there is no model"
@@ -251,16 +252,18 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
                 throw new IllegalArgumentException("The model " + lhsModel.getSimpleName() + " does not have a field \""
                         + fieldName + "\"");
             }
-            return builder.registerQueryField(QueryFields.queryFieldFromField(
+            return builder.registerQueryField(QueryFields.queryFieldFromFieldWithSelectPrefix(
                     field,
                     lhsTable,
-                    false
+                    false,
+                    "",
+                    conditionGenerator
             ));
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryField(SqlIdentifier columnName, String jsonName, Class<?> valueType) {
+        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryField(SqlIdentifier columnName, String jsonName, Class<?> valueType, QueryFieldConditionGenerator conditionGenerator) {
             Column column = Column.create(columnName, lhsTable);
-            return builder.registerQueryField(QueryFields.nonSelectableQueryField(column, jsonName, valueType));
+            return builder.registerQueryField(QueryFields.nonSelectableQueryField(column, jsonName, valueType, conditionGenerator));
         }
 
     }

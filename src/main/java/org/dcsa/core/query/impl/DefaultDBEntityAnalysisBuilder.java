@@ -325,7 +325,6 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
     }
 
     private void generatePrefixedQueryFieldsDeep(EntityTreeNode currentNode) {
-        Class<?> modelType = currentNode.getModelType();
         Table table = getTableFor(currentNode);
         String prefix = currentNode.getSelectNamePrefix();
 

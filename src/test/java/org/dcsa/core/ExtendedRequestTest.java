@@ -178,7 +178,14 @@ public class ExtendedRequestTest {
 
         verifierFor(requestConstructor)
                 .withParam("cn", "dk")
+                // Special-case, the underlying generator (ComparisonType.EQ) collapses an "IN" into "="
+                // when there is a single item (but it could just as well have used "IN" here).
                 .verify(baseQueryNoExtraJoins + extraJoins + " WHERE c.country_name = :cn");
+
+        verifierFor(requestConstructor)
+                .withParam("cn", "dk,en,de")
+                // The repeated ":cn" matches each value being provided.
+                .verify(baseQueryNoExtraJoins + extraJoins + " WHERE c.country_name IN (:cn, :cn, :cn)");
     }
 
 }
