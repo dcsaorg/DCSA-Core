@@ -2,6 +2,7 @@ package org.dcsa.core.query;
 
 import org.dcsa.core.extendedrequest.JoinDescriptor;
 import org.dcsa.core.extendedrequest.QueryField;
+import org.dcsa.core.extendedrequest.QueryFieldConditionGenerator;
 import org.dcsa.core.extendedrequest.TableAndJoins;
 import org.dcsa.core.query.impl.DefaultDBEntityAnalysisBuilder;
 import org.springframework.data.relational.core.sql.Column;
@@ -89,8 +90,14 @@ public interface DBEntityAnalysis<T> {
         DBEntityAnalysisJoinBuilder<T> chainJoin(Join.JoinType joinType, Class<?> rhsModel, String rhsJoinAlias);
         DBEntityAnalysisJoinBuilder<T> chainJoin(Join.JoinType joinType, Table rhsTable);
 
-        DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName);
-        DBEntityAnalysisBuilder<T> registerQueryField(SqlIdentifier columnName, String jsonName, Class<?> valueType);
+        default DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName) {
+            return this.registerQueryFieldFromField(fieldName, null);
+        }
+        DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName, QueryFieldConditionGenerator conditionGenerator);
+        default DBEntityAnalysisBuilder<T> registerQueryField(SqlIdentifier columnName, String jsonName, Class<?> valueType) {
+            return this.registerQueryField(columnName, jsonName, valueType, null);
+        }
+        DBEntityAnalysisBuilder<T> registerQueryField(SqlIdentifier columnName, String jsonName, Class<?> valueType, QueryFieldConditionGenerator conditionGenerator);
         DBEntityAnalysisBuilder<T> registerQueryFieldAlias(String jsonName, String jsonNameAlias);
 
         default DBEntityAnalysisWithTableBuilder<T> registerQueryFieldFromFieldThen(String fieldName) {
@@ -100,6 +107,16 @@ public interface DBEntityAnalysis<T> {
 
         default DBEntityAnalysisWithTableBuilder<T> registerQueryFieldThen(SqlIdentifier columnName, String jsonName, Class<?> valueType) {
             registerQueryField(columnName, jsonName, valueType);
+            return this;
+        }
+
+        default DBEntityAnalysisWithTableBuilder<T> registerQueryFieldFromFieldThen(String fieldName, QueryFieldConditionGenerator conditionGenerator) {
+            registerQueryFieldFromField(fieldName, conditionGenerator);
+            return this;
+        }
+
+        default DBEntityAnalysisWithTableBuilder<T> registerQueryFieldThen(SqlIdentifier columnName, String jsonName, Class<?> valueType, QueryFieldConditionGenerator conditionGenerator) {
+            registerQueryField(columnName, jsonName, valueType, conditionGenerator);
             return this;
         }
 

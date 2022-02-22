@@ -21,7 +21,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.Temporal;
 import java.util.*;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,7 +80,7 @@ public class QueryParameterParser<T> {
             final String parameterKey = queryParameter.getKey();
             List<String> values = queryParameter.getValue();
             String jsonName = parameterKey;
-            String fieldAttribute = null;
+            String fieldAttribute;
             if (ignoredParameter.test(parameterKey)) {
                 continue;
             }
@@ -92,17 +92,36 @@ public class QueryParameterParser<T> {
                     continue;
                 }
                 fieldAttribute = parameterKey.substring(index + separator.length());
+            } else {
+                fieldAttribute = null;
             }
             if (values.isEmpty()) {
                 throw new IllegalArgumentException("No values provided for " + parameterKey);
             }
-            if (values.size() != 1) {
-                throw new GetException("Cannot have " + parameterKey + " twice: Feature is not implemented");
-            }
 
-            parseSingleValueQueryParameter(getQueryFieldFromJSONName(jsonName), fieldAttribute, values.get(0));
+            QueryField queryField = getQueryFieldFromJSONName(jsonName);
+            ComparisonType comparisonType = parseComparisonType(queryField, fieldAttribute);
+            Function<String, Expression> value2BindVariable = v -> this.bindQueryParameterValue(queryField, comparisonType, fieldAttribute, v);
+            FilterCondition filterCondition = queryField.generateCondition(
+                    comparisonType,
+                    fieldAttribute,
+                    values,
+                    value2BindVariable);
+            if (filterCondition != null) {
+                filters.add(filterCondition);
+            } else {
+                if (values.size() != 1) {
+                    throw new GetException("Cannot have " + parameterKey + " twice: Feature is not implemented");
+                }
+                parseSingleValueQueryParameter(queryField, comparisonType, fieldAttribute, values.get(0));
+            }
             parsedParameters.computeIfAbsent(parameterKey, ignored -> new ArrayList<>()).addAll(values);
         }
+    }
+
+    protected Expression bindQueryParameterValue(QueryField queryField, ComparisonType comparisonType, String fieldAttribute, String value) {
+        Object parsedValue = parseValue(queryField, comparisonType, fieldAttribute, value);
+        return bindValue(queryField, parsedValue);
     }
 
     protected Expression bindValue(QueryField queryField, Object value) {
@@ -131,17 +150,20 @@ public class QueryParameterParser<T> {
         return false;
     }
 
-    protected void parseSingleValueQueryParameter(QueryField queryField, String fieldAttribute, String value) {
-        Class<?> fieldType = queryField.getType();
-        ComparisonType comparisonType = ComparisonType.EQ;
-        Object parsed;
+    protected ComparisonType parseComparisonType(QueryField queryField, String fieldAttribute) {
         if (fieldAttribute != null) {
             try {
-                comparisonType = ComparisonType.valueOf(fieldAttribute.toUpperCase());
+                return ComparisonType.valueOf(fieldAttribute.toUpperCase());
             } catch (IllegalArgumentException e) {
                 throw new GetException("Attribute (operator) " + fieldAttribute + " is invalid for " + queryField.getJsonName());
             }
         }
+        return ComparisonType.EQ;
+    }
+
+    protected void parseSingleValueQueryParameter(QueryField queryField, ComparisonType comparisonType, String fieldAttribute, String value) {
+        Class<?> fieldType = queryField.getType();
+
         if (handleIsNullQuery(queryField, fieldAttribute, comparisonType, value)) {
             return;
         }
@@ -171,17 +193,24 @@ public class QueryParameterParser<T> {
             }
             return;
         }
+        Object parsed = parseValue(queryField, comparisonType, fieldAttribute, value);
+        filters.add(comparisonType.singleNonNullValueCondition(queryField, bindValue(queryField, parsed)));
+    }
 
-        if (String.class.equals(fieldType)) {
+    protected Object parseValue(QueryField queryField, ComparisonType comparisonType, String fieldAttribute, String value) {
+        Class<?> fieldType = queryField.getType();
+        Object parsed;
+
+        if (String.class.equals(fieldType) || fieldType.isEnum()) {
+            // Enums are basically handled as strings as far as values are concerned if we get here.  Though there is
+            // a special-case with comma handling but that is handled before getting here.
             parsed = value;
         } else if (UUID.class.equals(fieldType)) {
             if (comparisonType.isRequiredOrdering()) {
                 throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": It does not have an ordering but the operator needs ordering");
             }
-            if (fieldAttribute == null) {
-                comparisonType = ComparisonType.EQ;
-            } else if (comparisonType != ComparisonType.EQ) {
+            if (comparisonType != ComparisonType.EQ) {
                 throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": UUID values can only be used with strictly equal");
             }
@@ -233,7 +262,7 @@ public class QueryParameterParser<T> {
         } else {
             throw new GetException("Type on filter (" + queryField.getJsonName() + ") not recognized: " + fieldType.getSimpleName());
         }
-        filters.add(comparisonType.singleNonNullValueCondition(queryField, bindValue(queryField, parsed)));
+        return parsed;
     }
 
     protected QueryField getQueryFieldFromJSONName(String jsonName) {
