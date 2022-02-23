@@ -32,14 +32,8 @@ enum ComparisonType {
     }
 
     public Expression defaultFieldConversion(QueryField queryField) {
-        boolean needsCast = convertToString;
-        if (needsCast) {
-            Class<?> valueType = queryField.getType();
-            if (valueType.isEnum() || String.class.equals(valueType)) {
-                needsCast = false;
-            }
-        }
-        if (needsCast) {
+        Class<?> valueType = queryField.getType();
+        if (convertToString && !(valueType.isEnum() || String.class.equals(valueType))) {
             Column aliased = queryField.getInternalQueryColumn().as(SqlIdentifier.unquoted("VARCHAR"));
             return SimpleFunction.create("CAST", Collections.singletonList(aliased));
         }
