@@ -1,5 +1,7 @@
 package org.dcsa.core.exception.handler;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import lombok.extern.slf4j.Slf4j;
 import org.dcsa.core.exception.ConcreteRequestErrorMessageException;
@@ -18,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebInputException;
 
 import javax.validation.ConstraintViolationException;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Slf4j
@@ -117,6 +121,8 @@ public class GlobalExceptionHandler {
     if (ex.getMessage() != null && ex.getMessage().contains("Invalid UUID string:")) {
       throw ConcreteRequestErrorMessageException.invalidParameter(
           "Input was not a valid UUID format", ex);
+    } else if (ex.getCause() instanceof DecodingException) {
+      throw handleDecodingExceptionImpl((DecodingException)ex.getCause());
     } else {
       throw ex; // This thrown exception will be handled by ConstraintViolationException exception
                 // handler.
@@ -129,11 +135,38 @@ public class GlobalExceptionHandler {
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(DecodingException.class)
   public void handleJsonDecodeException(DecodingException ce) {
-    if (ce.getCause() instanceof UnrecognizedPropertyException) {
-      throw ConcreteRequestErrorMessageException.invalidInput(
-          ce.getCause().getLocalizedMessage(), ce);
+    throw handleDecodingExceptionImpl(ce);
+  }
+
+  private DecodingException handleDecodingExceptionImpl(DecodingException ce) {
+    String attributeReference = "";
+    if (ce.getCause() instanceof JsonMappingException) {
+      attributeReference = ((JsonMappingException) ce.getCause()).getPathReference();
+      // Remove leading java package name (Timestamp["foo"] looks better than org.dcsa.jit.model.Timestamp["foo"])
+      attributeReference = attributeReference.replaceFirst("^([a-zA-Z0-9]+[.])*+", "");
+      attributeReference = " The error is associated with the attribute " + attributeReference + ".";
     }
-    throw ConcreteRequestErrorMessageException.invalidInput(ce.getLocalizedMessage(), ce);
+    if (ce.getCause() instanceof UnrecognizedPropertyException) {
+      // Unwrap one layer of exception message (the outer message is "useless")
+      throw ConcreteRequestErrorMessageException.invalidInput(
+          ce.getCause().getLocalizedMessage() + attributeReference, ce);
+    }
+
+    if (ce.getCause() instanceof InvalidFormatException) {
+      InvalidFormatException ife = (InvalidFormatException)ce.getCause();
+      // Per type messages where it makes sense to provide custom messages
+      if (OffsetDateTime.class.isAssignableFrom(ife.getTargetType())) {
+        throw ConcreteRequestErrorMessageException.invalidInput("Invalid format for date time field. The value \""
+                + ife.getValue() + "\" cannot be parsed via the patterns \"YYYY-MM-DD'T'HH:MM:SS+ZZZZ\" " +
+                "or \"YYYY-MM-DD'T'HH:MM:SS'Z'\". Please check the input." + attributeReference, ce);
+      }
+      if (LocalDate.class.isAssignableFrom(ife.getTargetType())) {
+        throw ConcreteRequestErrorMessageException.invalidInput("Invalid format for date field. The value \""
+                + ife.getValue() + "\" cannot be parsed via the pattern \"YYYY-MM-DD\". Please check the input."
+                + attributeReference, ce);
+      }
+    }
+    throw ConcreteRequestErrorMessageException.invalidInput(ce.getLocalizedMessage() + attributeReference, ce);
   }
 
   @ExceptionHandler(Exception.class)
