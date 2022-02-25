@@ -36,12 +36,12 @@ class RowMapper {
                 @Override
                 protected <A extends Annotation> A _findAnnotation(
                     Annotated annotated, Class<A> annoClass) {
-                  if (JsonIgnore.class.equals(annoClass) || JsonProperty.class.equals(annoClass)) {
+                  if (JsonIgnore.class.equals(annoClass)) {
                     return null;
                   }
                   A annotation = super._findAnnotation(annotated, annoClass);
 
-                  if (JsonProperty.class.equals(annoClass) && ((JsonProperty) annotation).access() != JsonProperty.Access.AUTO) {
+                  if (annotation != null && JsonProperty.class.equals(annoClass)) {
                     annotation = MappingUtils.jsonPropertyAutoMapper(annotation);
                   }
                   return annotation;

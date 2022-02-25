@@ -82,48 +82,46 @@ public class MappingUtils {
     return ReflectUtility.getMethod(clazz, "get" + capitalizedFieldName);
   }
 
+  @SuppressWarnings("unchecked")
   public static <A extends Annotation> A jsonPropertyAutoMapper(A annotation) {
     JsonProperty real = (JsonProperty) annotation;
-    @SuppressWarnings("unchecked")
-    A delegate =
-        (A)
-            new JsonProperty() {
-              @Override
-              public String value() {
-                return real.value();
-              }
+    return (A)
+        new JsonProperty() {
+          @Override
+          public String value() {
+            return real.value();
+          }
 
-              @Override
-              public String namespace() {
-                return real.namespace();
-              }
+          @Override
+          public String namespace() {
+            return real.namespace();
+          }
 
-              @Override
-              public boolean required() {
-                return false; // Do not force something to mandatory from the DB just
-                // because it is mandatory in the JSON
-              }
+          @Override
+          public boolean required() {
+            return false; // Do not force something to mandatory from the DB just
+            // because it is mandatory in the JSON
+          }
 
-              @Override
-              public int index() {
-                return real.index();
-              }
+          @Override
+          public int index() {
+            return real.index();
+          }
 
-              @Override
-              public String defaultValue() {
-                return real.defaultValue();
-              }
+          @Override
+          public String defaultValue() {
+            return real.defaultValue();
+          }
 
-              @Override
-              public Access access() {
-                return Access.AUTO; // We always map into that field even if it is read only
-              }
+          @Override
+          public Access access() {
+            return Access.AUTO; // We always map into that field even if it is read only
+          }
 
-              @Override
-              public Class<? extends Annotation> annotationType() {
-                return real.annotationType();
-              }
-            };
-    return delegate;
+          @Override
+          public Class<? extends Annotation> annotationType() {
+            return real.annotationType();
+          }
+        };
   }
 }
