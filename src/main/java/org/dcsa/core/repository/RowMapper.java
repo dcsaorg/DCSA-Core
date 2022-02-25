@@ -14,6 +14,7 @@ import io.r2dbc.spi.RowMetadata;
 import org.dcsa.core.exception.DatabaseException;
 import org.dcsa.core.extendedrequest.QueryField;
 import org.dcsa.core.query.DBEntityAnalysis;
+import org.dcsa.core.util.MappingUtils;
 import org.dcsa.core.util.ReflectUtility;
 
 import java.lang.annotation.Annotation;
@@ -24,20 +25,28 @@ import java.util.Map;
 class RowMapper {
     private static final Integer DATABASE_INTERVAL_NATIVE_TYPE = 1186;
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule()) // Needed to process time objects.
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
-            .enable(SerializationFeature.WRITE_DATES_WITH_ZONE_ID)
-            .setAnnotationIntrospector(new JacksonAnnotationIntrospector() {
+  private final ObjectMapper objectMapper =
+      new ObjectMapper()
+          .registerModule(new JavaTimeModule()) // Needed to process time objects.
+          .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+          .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
+          .enable(SerializationFeature.WRITE_DATES_WITH_ZONE_ID)
+          .setAnnotationIntrospector(
+              new JacksonAnnotationIntrospector() {
                 @Override
-                protected <A extends Annotation> A _findAnnotation(Annotated annotated, Class<A> annoClass) {
-                    if (JsonIgnore.class.equals(annoClass)) {
-                        return null;
-                    }
-                    return super._findAnnotation(annotated, annoClass);
+                protected <A extends Annotation> A _findAnnotation(
+                    Annotated annotated, Class<A> annoClass) {
+                  if (JsonIgnore.class.equals(annoClass) || JsonProperty.class.equals(annoClass)) {
+                    return null;
+                  }
+                  A annotation = super._findAnnotation(annotated, annoClass);
+
+                  if (JsonProperty.class.equals(annoClass) && ((JsonProperty) annotation).access() != JsonProperty.Access.AUTO) {
+                    annotation = MappingUtils.doStuff(annotation);
+                  }
+                  return annotation;
                 }
-            });
+              });
 
     public <T> T mapRow(Row row, RowMetadata metadata, DBEntityAnalysis<T> dbEntityAnalysis, Class<T> modelClass, boolean ignoreUnknownProperties) {
         Map<String, Object> objectMap = objectMapFromRow(row, metadata, dbEntityAnalysis, ignoreUnknownProperties);
