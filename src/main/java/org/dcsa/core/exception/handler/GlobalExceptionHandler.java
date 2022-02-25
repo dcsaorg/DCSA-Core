@@ -9,6 +9,7 @@ import org.dcsa.core.exception.DCSAException;
 import org.dcsa.core.model.transferobjects.ConcreteRequestErrorMessageTO;
 import org.dcsa.core.model.transferobjects.RequestFailureTO;
 import org.springframework.core.codec.DecodingException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -87,8 +88,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(BadSqlGrammarException.class)
-  public ResponseEntity<RequestFailureTO> handle(
-      ServerHttpRequest serverHttpRequest, BadSqlGrammarException ex) {
+  public ResponseEntity<RequestFailureTO> handle(BadSqlGrammarException ex) {
     if ("22001".equals(ex.getR2dbcException().getSqlState())) {
       // The error with code 22001 is thrown when trying to insert a value that is too long for the
       // column
@@ -168,6 +168,14 @@ public class GlobalExceptionHandler {
     }
     throw ConcreteRequestErrorMessageException.invalidInput(ce.getLocalizedMessage() + attributeReference, ce);
   }
+
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<?> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+    // For when the database catches an inconsistency.  They are not the best of error messages
+    // but we should ensure they at least have the proper HTTP code.
+    throw ConcreteRequestErrorMessageException.conflict(ex.getLocalizedMessage(), ex);
+  }
+
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<?> handleAllExceptions(Exception ex) {
