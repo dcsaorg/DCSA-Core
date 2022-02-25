@@ -42,7 +42,7 @@ class RowMapper {
                   A annotation = super._findAnnotation(annotated, annoClass);
 
                   if (JsonProperty.class.equals(annoClass) && ((JsonProperty) annotation).access() != JsonProperty.Access.AUTO) {
-                    annotation = MappingUtils.doStuff(annotation);
+                    annotation = MappingUtils.jsonPropertyAutoMapper(annotation);
                   }
                   return annotation;
                 }

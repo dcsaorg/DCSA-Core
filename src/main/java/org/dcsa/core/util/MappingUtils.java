@@ -82,7 +82,7 @@ public class MappingUtils {
     return ReflectUtility.getMethod(clazz, "get" + capitalizedFieldName);
   }
 
-  public static <A extends Annotation> A doStuff(A annotation) {
+  public static <A extends Annotation> A jsonPropertyAutoMapper(A annotation) {
     JsonProperty real = (JsonProperty) annotation;
     @SuppressWarnings("unchecked")
     A delegate =
