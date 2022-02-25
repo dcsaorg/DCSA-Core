@@ -5,6 +5,12 @@ The repository contains functionality shared among different applications, i.e. 
 It is packaged as a jar, and uploaded to GitHub packages, to be downloaded via Maven
 
 
+Code standard
+-------------------------------------
+We use [Google Java Style](https://google.github.io/styleguide/javaguide.html), when using
+IntelliJ it is recommended to download and activate the
+[google-java-format plugin](https://github.com/google/google-java-format).
+
 
 To build manually, run:
 -----------------------------------------
@@ -18,17 +24,17 @@ To use Github Packages, Github Authentication must be set up, even if the packag
 This is done like this:
 
 To do this, follow these steps:
- 
-##Creating a Github Personal Access Token 
+
+##Creating a Github Personal Access Token
 Go to https://github.com/settings/tokens and click "Generate new token"
 Write a note for the token, for example "MAVEN_PACKAGES_PAT"
-Select read:packages, delete:packages, and write:packages. 
+Select read:packages, delete:packages, and write:packages.
 Click Generate Token
 Copy the token, we will need it soon. If you leave this page without copying the token, you will need to generate a new one
 Note: Treat this token as you would treat any password.
- 
-## Setting up settings.xml 
- 
+
+## Setting up settings.xml
+
 1. Go to your maven directory. Default directory on Windows is C:\Users\USERNAME\.m2 . If you don't have this directory, you may need to install Maven first.
 2. Create a file called "settings.xml"
 3. Paste the following into the file:
@@ -73,6 +79,6 @@ Note: Treat this token as you would treat any password.
   </servers>
 </settings>
 ```
- 
+
     4. Replace YOUR_GITHUB_NAME with your Github name, and replace YOUR_PERSONAL_ACCESS_TOKEN with the token generated earlier
     5. Save the file. You should now be able to use dcsa Github packages in your projects
