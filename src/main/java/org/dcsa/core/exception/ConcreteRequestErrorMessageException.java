@@ -74,6 +74,10 @@ public abstract class ConcreteRequestErrorMessageException extends DCSAException
         return new InternalServerErrorException("internalError", null, message, cause);
     }
 
+    public static ConcreteRequestErrorMessageException conflict(String message, Throwable cause) {
+        return new ConflictException("conflict", null, message, cause);
+    }
+
     @Data
     private static class AttributeReference {
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
