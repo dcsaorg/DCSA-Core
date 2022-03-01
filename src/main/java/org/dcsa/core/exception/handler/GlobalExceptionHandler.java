@@ -155,9 +155,10 @@ public class GlobalExceptionHandler {
     } else if (ex.getCause() instanceof ConstraintViolationException) {
       return badRequest(serverHttpRequest, (ConstraintViolationException) ex.getCause());
     } else {
+//      throw ex;
       return handleConcreteRequestErrorMessageException(
           serverHttpRequest,
-          ConcreteRequestErrorMessageException.internalServerError(ex.getMessage()));
+          ConcreteRequestErrorMessageException.invalidInput(ex.getMessage(), ex));
     }
   }
 
