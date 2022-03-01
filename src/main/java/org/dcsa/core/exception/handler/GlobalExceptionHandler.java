@@ -17,7 +17,6 @@ import org.springframework.r2dbc.BadSqlGrammarException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebInputException;
 
 import javax.validation.ConstraintViolationException;
@@ -82,7 +81,6 @@ public class GlobalExceptionHandler {
     return new ResponseEntity<>(failureTO, httpStatus);
   }
 
-  @ResponseStatus(value = HttpStatus.BAD_REQUEST, reason = "invalidInput")
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseEntity<RequestFailureTO> badRequest(
       ServerHttpRequest serverHttpRequest, ConstraintViolationException cvex) {
@@ -166,7 +164,6 @@ public class GlobalExceptionHandler {
   // Spring's default handler for unknown JSON properties is useless for telling the user
   // what they did wrong.  Unwrap the inner UnrecognizedPropertyException, which has a
   // considerably better message.
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(DecodingException.class)
   public ResponseEntity<RequestFailureTO> handleJsonDecodeException(
       ServerHttpRequest serverHttpRequest, DecodingException ce) {
@@ -227,14 +224,10 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<?> handleAllExceptions(ServerHttpRequest serverHttpRequest, Exception ex) {
-    if (ex instanceof ResponseStatusException) {
-      return handleConcreteRequestErrorMessageException(
-          serverHttpRequest,
-          ConcreteRequestErrorMessageException.internalServerError(ex.getMessage(), ex));
-    } else {
-      log.warn("Unhandled exception", ex);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
+    log.warn("Unhandled exception", ex);
+    return handleConcreteRequestErrorMessageException(
+        serverHttpRequest,
+        ConcreteRequestErrorMessageException.internalServerError(ex.getMessage(), ex));
   }
 
   private void logExceptionTraceIfEnabled(Exception ex) {
