@@ -374,12 +374,12 @@ class GlobalExceptionHandlerTest {
           .uri("/test")
           .exchange()
           .expectStatus()
-          .is5xxServerError()
+          .isBadRequest()
           .expectBody()
           .jsonPath("$.httpMethod")
           .isEqualTo("GET")
           .jsonPath("$.errors[0].reason")
-          .isEqualTo("internalError");
+          .isEqualTo("invalidInput");
     }
   }
 
