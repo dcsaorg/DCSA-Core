@@ -21,7 +21,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.Temporal;
 import java.util.*;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,53 +80,48 @@ public class QueryParameterParser<T> {
             final String parameterKey = queryParameter.getKey();
             List<String> values = queryParameter.getValue();
             String jsonName = parameterKey;
-            String fieldAttribute = null;
+            String fieldAttribute;
             if (ignoredParameter.test(parameterKey)) {
                 continue;
             }
-            if (parameterKey.endsWith("]") && extendedParameters.getQueryParameterAttributeHandling() == QueryParameterAttributeHandling.PARAMETER_NAME_ARRAY_NOTATION) {
-                String[] parts = parameterKey.split("\\[", 2);
-                if (parts.length == 2) {
-                    jsonName = parts[0];
-                    if (ignoredParameter.test(jsonName)) {
-                        continue;
-                    }
-                    fieldAttribute = parts[1].substring(0, parts[1].length() - 1);
+            String separator = extendedParameters.getQueryParameterAttributeSeparator();
+            int index = parameterKey.indexOf(separator);
+            if (index > -1) {
+                jsonName = parameterKey.substring(0, index);
+                if (ignoredParameter.test(jsonName)) {
+                    continue;
                 }
-            } else if (extendedParameters.getQueryParameterAttributeHandling() == QueryParameterAttributeHandling.PARAMETER_NAME_SUFFIX) {
-                String separator = extendedParameters.getQueryParameterAttributeSeparator();
-                int index = parameterKey.indexOf(separator);
-                if (index > -1) {
-                    jsonName = parameterKey.substring(0, index);
-                    if (ignoredParameter.test(jsonName)) {
-                        continue;
-                    }
-                    fieldAttribute = parameterKey.substring(index + separator.length());
-                }
+                fieldAttribute = parameterKey.substring(index + separator.length());
+            } else {
+                fieldAttribute = null;
             }
             if (values.isEmpty()) {
                 throw new IllegalArgumentException("No values provided for " + parameterKey);
             }
-            if (values.size() != 1) {
-                throw new GetException("Cannot have " + parameterKey + " twice: Feature is not implemented");
-            }
 
-            parseSingleValueQueryParameter(jsonName, fieldAttribute, values.get(0));
+            QueryField queryField = getQueryFieldFromJSONName(jsonName);
+            ComparisonType comparisonType = parseComparisonType(queryField, fieldAttribute);
+            Function<String, Expression> value2BindVariable = v -> this.bindQueryParameterValue(queryField, comparisonType, fieldAttribute, v);
+            FilterCondition filterCondition = queryField.generateCondition(
+                    comparisonType,
+                    fieldAttribute,
+                    values,
+                    value2BindVariable);
+            if (filterCondition != null) {
+                filters.add(filterCondition);
+            } else {
+                if (values.size() != 1) {
+                    throw new GetException("Cannot have " + parameterKey + " twice: Feature is not implemented");
+                }
+                parseSingleValueQueryParameter(queryField, comparisonType, fieldAttribute, values.get(0));
+            }
             parsedParameters.computeIfAbsent(parameterKey, ignored -> new ArrayList<>()).addAll(values);
         }
     }
 
-    protected void parseSingleValueQueryParameter(String jsonName, String fieldAttribute, String value) {
-        String valueAttribute = null;
-        if (extendedParameters.getQueryParameterAttributeHandling() == QueryParameterAttributeHandling.PARAMETER_VALUE_PREFIX) {
-            String separator = extendedParameters.getQueryParameterAttributeSeparator();
-            int index = value.indexOf(separator);
-            if (index > -1) {
-                valueAttribute = value.substring(0, index);
-                value = value.substring(index + separator.length());
-            }
-        }
-        parseSingleValueQueryParameter(getQueryFieldFromJSONName(jsonName), fieldAttribute, valueAttribute, value);
+    protected Expression bindQueryParameterValue(QueryField queryField, ComparisonType comparisonType, String fieldAttribute, String value) {
+        Object parsedValue = parseValue(queryField, comparisonType, fieldAttribute, value);
+        return bindValue(queryField, parsedValue);
     }
 
     protected Expression bindValue(QueryField queryField, Object value) {
@@ -155,19 +150,21 @@ public class QueryParameterParser<T> {
         return false;
     }
 
-    protected void parseSingleValueQueryParameter(QueryField queryField, String fieldAttribute, String valueAttribute, String value) {
-        Class<?> fieldType = queryField.getType();
-        ComparisonType comparisonType = ComparisonType.EQ;
-        String attribute = valueAttribute != null ? valueAttribute : fieldAttribute;
-        Object parsed;
-        if (attribute != null) {
+    protected ComparisonType parseComparisonType(QueryField queryField, String fieldAttribute) {
+        if (fieldAttribute != null) {
             try {
-                comparisonType = ComparisonType.valueOf(attribute.toUpperCase());
+                return ComparisonType.valueOf(fieldAttribute.toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new GetException("Attribute (operator) " + attribute + " is invalid for " + queryField.getJsonName());
+                throw new GetException("Attribute (operator) " + fieldAttribute + " is invalid for " + queryField.getJsonName());
             }
         }
-        if (handleIsNullQuery(queryField, attribute, comparisonType, value)) {
+        return ComparisonType.EQ;
+    }
+
+    protected void parseSingleValueQueryParameter(QueryField queryField, ComparisonType comparisonType, String fieldAttribute, String value) {
+        Class<?> fieldType = queryField.getType();
+
+        if (handleIsNullQuery(queryField, fieldAttribute, comparisonType, value)) {
             return;
         }
 
@@ -184,7 +181,7 @@ public class QueryParameterParser<T> {
                 comparisonType = ComparisonType.EQ;
             }
             if (comparisonType.isRequiredOrdering()) {
-                throw new GetException("Cannot use attribute (operator) " + attribute + " on " + queryField.getJsonName()
+                throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": It does not have an ordering but the operator needs ordering");
             }
             if (enumList.length == 1) {
@@ -196,18 +193,25 @@ public class QueryParameterParser<T> {
             }
             return;
         }
+        Object parsed = parseValue(queryField, comparisonType, fieldAttribute, value);
+        filters.add(comparisonType.singleNonNullValueCondition(queryField, bindValue(queryField, parsed)));
+    }
 
-        if (String.class.equals(fieldType)) {
+    protected Object parseValue(QueryField queryField, ComparisonType comparisonType, String fieldAttribute, String value) {
+        Class<?> fieldType = queryField.getType();
+        Object parsed;
+
+        if (String.class.equals(fieldType) || fieldType.isEnum()) {
+            // Enums are basically handled as strings as far as values are concerned if we get here.  Though there is
+            // a special-case with comma handling but that is handled before getting here.
             parsed = value;
         } else if (UUID.class.equals(fieldType)) {
             if (comparisonType.isRequiredOrdering()) {
-                throw new GetException("Cannot use attribute (operator) " + attribute + " on " + queryField.getJsonName()
+                throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": It does not have an ordering but the operator needs ordering");
             }
-            if (attribute == null) {
-                comparisonType = ComparisonType.EQ;
-            } else if (comparisonType != ComparisonType.EQ) {
-                throw new GetException("Cannot use attribute (operator) " + attribute + " on " + queryField.getJsonName()
+            if (comparisonType != ComparisonType.EQ) {
+                throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": UUID values can only be used with strictly equal");
             }
             try {
@@ -258,7 +262,7 @@ public class QueryParameterParser<T> {
         } else {
             throw new GetException("Type on filter (" + queryField.getJsonName() + ") not recognized: " + fieldType.getSimpleName());
         }
-        filters.add(comparisonType.singleNonNullValueCondition(queryField, bindValue(queryField, parsed)));
+        return parsed;
     }
 
     protected QueryField getQueryFieldFromJSONName(String jsonName) {
@@ -282,7 +286,7 @@ public class QueryParameterParser<T> {
         return queryField;
     }
 
-    private static FilterCondition isubstr(Expression lhs, Expression rhsOrig) {
+    static FilterCondition isubstr(Expression lhs, Expression rhsOrig) {
         Expression rhs = surroundWithWildCards(rhsOrig);
         return r2dbcDialect -> {
             if (r2dbcDialect instanceof PostgresDialect) {
@@ -292,7 +296,7 @@ public class QueryParameterParser<T> {
         };
     }
 
-    private static FilterCondition iequal(Expression lhs, Expression rhs) {
+    static FilterCondition iequal(Expression lhs, Expression rhs) {
         return InlineableFilterCondition.of(Conditions.isEqual(Functions.upper(lhs), Functions.upper(rhs)));
     }
 
@@ -304,76 +308,7 @@ public class QueryParameterParser<T> {
         return SimpleFunction.create("CONCAT", params);
     }
 
-    @Getter
-    @RequiredArgsConstructor
-    protected enum ComparisonType {
-        GT(true, Conditions::isGreater),
-        GTE(true, Conditions::isGreaterOrEqualTo),
-        EQ(false, Conditions::isEqual),
-        LTE(true, Conditions::isLessOrEqualTo),
-        LT(true, Conditions::isLess),
-        NEQ(false, Conditions::isNotEqual),
-        SUBSTR(false, Conditions::like),
-        IEQ(false, true, QueryParameterParser::iequal),
-        ISUBSTR(false, true, QueryParameterParser::isubstr),
-        ;
-
-        private final boolean requiredOrdering;
-        private final boolean convertToString;
-        private final BiFunction<Expression, Expression, FilterCondition> singleValueConverter;
-
-        ComparisonType(boolean requiredOrdering, BiFunction<Expression, Expression, Condition> conditionBiFunction) {
-            this(requiredOrdering, false, (lhs, rhs) -> InlineableFilterCondition.of(conditionBiFunction.apply(lhs, rhs)));
-        }
-
-        public Expression defaultFieldConversion(QueryField queryField) {
-            boolean needsCast = convertToString;
-            if (needsCast) {
-                Class<?> valueType = queryField.getType();
-                if (valueType.isEnum() || String.class.equals(valueType)) {
-                    needsCast = false;
-                }
-            }
-            if (needsCast) {
-                Column aliased = queryField.getInternalQueryColumn().as(SqlIdentifier.unquoted("VARCHAR"));
-                return SimpleFunction.create("CAST", Collections.singletonList(aliased));
-            }
-            return queryField.getInternalQueryColumn();
-        }
-
-        public FilterCondition singleNonNullValueCondition(QueryField queryField, Expression expression) {
-            return singleNonNullValueCondition(defaultFieldConversion(queryField), expression);
-        }
-
-        public FilterCondition singleNonNullValueCondition(Expression field, Expression expression) {
-            return singleValueConverter.apply(field, expression);
-        }
-
-        public FilterCondition multiValueCondition(QueryField queryField, List<Expression> expressions) {
-            return multiValueCondition(defaultFieldConversion(queryField), expressions);
-        }
-
-        public FilterCondition multiValueCondition(Expression field, List<Expression> expressions) {
-            if (expressions.isEmpty()) {
-                throw new IllegalArgumentException("Right-hand side expression list must be non-empty");
-            }
-            if (expressions.size() == 1) {
-                return singleNonNullValueCondition(field, expressions.get(0));
-            } else if (this == EQ || this == NEQ) {
-                if (this == EQ) {
-                    return InlineableFilterCondition.of(Conditions.in(field, expressions));
-                }
-                return InlineableFilterCondition.of(Conditions.notIn(field, expressions));
-            } else {
-                return andAllFilters(
-                        expressions.stream().map(e -> singleValueConverter.apply(field, e)).collect(Collectors.toList()),
-                        true
-                );
-            }
-        }
-    }
-
-    private static FilterCondition andAllFilters(List<FilterCondition> filters, boolean nestOnMultiple) {
+    static FilterCondition andAllFilters(List<FilterCondition> filters, boolean nestOnMultiple) {
         if (filters.isEmpty()) {
             return EMPTY_CONDITION;
         }
@@ -407,7 +342,7 @@ public class QueryParameterParser<T> {
     }
 
     @RequiredArgsConstructor(staticName = "of")
-    private static class InlineableFilterCondition implements FilterCondition {
+    static class InlineableFilterCondition implements FilterCondition {
         private final Condition condition;
 
         public Condition computeCondition(R2dbcDialect r2dbcDialect) {

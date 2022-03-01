@@ -1,22 +1,24 @@
 package org.dcsa.core.extendedrequest;
 
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NonNull;
 import org.dcsa.core.util.ReflectUtility;
-import org.springframework.data.relational.core.sql.Aliased;
-import org.springframework.data.relational.core.sql.Column;
-import org.springframework.data.relational.core.sql.SqlIdentifier;
-import org.springframework.data.relational.core.sql.Table;
+import org.springframework.data.relational.core.sql.*;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 public class QueryFields {
 
-    public static QueryField queryFieldFromField(Field modelField, Table table, boolean selectable) {
-        return queryFieldFromFieldWithSelectPrefix(modelField, table, selectable, "");
+    public static QueryField queryFieldFromFieldWithSelectPrefix(Field modelField, Table table, boolean selectable, String selectNamePrefix) {
+        return queryFieldFromFieldWithSelectPrefix(modelField, table, selectable, selectNamePrefix, null);
     }
 
-    public static QueryField queryFieldFromFieldWithSelectPrefix(Field modelField, Table table, boolean selectable, String selectNamePrefix) {
+    public static QueryField queryFieldFromFieldWithSelectPrefix(Field modelField, Table table, boolean selectable, String selectNamePrefix, QueryFieldConditionGenerator conditionGenerator) {
         String tableAlias = ReflectUtility.getAliasId(table);
         String columnName;
         Column internalColumn;
@@ -32,18 +34,19 @@ public class QueryFields {
                 internalColumn,
                 selectColumn,
                 tableAlias,
-                prefixedJsonName
+                prefixedJsonName,
+                conditionGenerator
         );
     }
 
-    public static QueryField nonSelectableQueryField(Column column, String jsonName, Class<?> type) {
+    public static QueryField nonSelectableQueryField(Column column, String jsonName, Class<?> type, QueryFieldConditionGenerator conditionGenerator) {
         Table table = Objects.requireNonNull(column.getTable(), "column.getTable() must be non-null");
         String joinAlias = ReflectUtility.getAliasId(table);
         if (column instanceof Aliased) {
             // Future proofing.
             throw new IllegalArgumentException("Column must not be aliased");
         }
-        return SimpleQueryField.of(column, joinAlias, jsonName, type);
+        return SimpleQueryField.of(column, joinAlias, jsonName, type, conditionGenerator);
     }
 
     @Data(staticConstructor = "of")
@@ -60,8 +63,18 @@ public class QueryFields {
 
         private final Class<?> type;
 
+        private final QueryFieldConditionGenerator conditionGenerator;
+
         public Column getSelectColumn() {
             return null;
+        }
+
+        @Override
+        public FilterCondition generateCondition(ComparisonType comparisonType, String fieldAttribute, List<String> queryParamValues, Function<String, Expression> value2BindVariable) {
+            if (conditionGenerator == null) {
+                return null;
+            }
+            return conditionGenerator.generateCondition(this, comparisonType, fieldAttribute, queryParamValues, value2BindVariable);
         }
     }
 
@@ -83,6 +96,8 @@ public class QueryFields {
         @NonNull
         private final String jsonName;
 
+        private final QueryFieldConditionGenerator conditionGenerator;
+
         public Class<?> getType() {
             return combinedModelField.getType();
         }
@@ -90,5 +105,13 @@ public class QueryFields {
         @Getter(lazy = true)
         @EqualsAndHashCode.Exclude
         private final String datePattern = ReflectUtility.getDateFormat(combinedModelField, null);
+
+        @Override
+        public FilterCondition generateCondition(ComparisonType comparisonType, String fieldAttribute, List<String> queryParamValues, Function<String, Expression> value2BindVariable) {
+            if (conditionGenerator == null) {
+                return null;
+            }
+            return conditionGenerator.generateCondition(this, comparisonType, fieldAttribute, queryParamValues, value2BindVariable);
+        }
     }
 }

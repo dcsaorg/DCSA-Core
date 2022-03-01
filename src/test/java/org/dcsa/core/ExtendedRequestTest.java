@@ -1,38 +1,25 @@
 package org.dcsa.core;
 
-import lombok.RequiredArgsConstructor;
 import org.dcsa.core.extendedrequest.ExtendedParameters;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
-import org.dcsa.core.mock.MockR2dbcDialect;
 import org.dcsa.core.models.A;
 import org.dcsa.core.models.CitySpecificExtendedRequest;
 import org.dcsa.core.models.combined.*;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.r2dbc.dialect.R2dbcDialect;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.regex.Pattern;
+
+import static org.dcsa.core.extendedrequest.testsupport.ExtendedRequestVerifier.verifierFor;
 
 @SpringBootTest(properties = {
-        "sort.sortName=sort",
-        "search.queryParameterAttributeHandling=PARAMETER_NAME_ARRAY_NOTATION"
+        "sort.sortName=sort"
 })
 @ContextConfiguration(classes = ExtendedParameters.class)
 public class ExtendedRequestTest {
-
-    private static final Pattern COLLAPSE_SPACE = Pattern.compile("\\s\\s++");
-    private static final Pattern PRETTY_PRINT_SPLIT =
-            Pattern.compile("\\s+(FROM|(?:LEFT|RIGHT)?\\s*(?:INNER|OUTER)?\\s*JOIN|WHERE|ORDER BY)\\s");
-    private static final Pattern FIELD_LIST_SPLIT = Pattern.compile(",");
 
     @Autowired
     private ExtendedParameters extendedParameters;
@@ -48,7 +35,7 @@ public class ExtendedRequestTest {
                 + "    address_table.city_id AS \"address.cityId\""
                 + " FROM customer_table"
                 + " JOIN address_table ON customer_table.address_id = address_table.address_id";
-        request(CustomerWithAddress.class, extendedParameters).verify(baseQuery);
+        verifierFor(extendedParameters, CustomerWithAddress.class).verify(baseQuery);
     }
 
     @Test
@@ -58,7 +45,7 @@ public class ExtendedRequestTest {
                 + " FROM customer_table"
                 + " JOIN address_table delivery_address ON customer_table.delivery_address_id = delivery_address.address_id"
                 + " JOIN address_table payment_address ON customer_table.payment_address_id = payment_address.address_id";
-        request(CustomerWithForeignKeyAddresses.class, extendedParameters).verify(baseQuery);
+        verifierFor(extendedParameters, CustomerWithForeignKeyAddresses.class).verify(baseQuery);
     }
 
     @Test
@@ -71,7 +58,7 @@ public class ExtendedRequestTest {
                 + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
                 + " JOIN address_table customer_table__delivery_address ON customer_table.delivery_address_id = customer_table__delivery_address.address_id"
                 + " JOIN address_table customer_table__payment_address ON customer_table.payment_address_id = customer_table__payment_address.address_id";
-        request(CustomerBook.class, extendedParameters).verify(baseQuery);
+        verifierFor(extendedParameters, CustomerBook.class).verify(baseQuery);
     }
 
     @Test
@@ -86,7 +73,7 @@ public class ExtendedRequestTest {
                 + " JOIN customer_table ON customer_book_table.customer_id = customer_table.customer_id"
                 + " JOIN address_table customer_table__delivery_address ON customer_table.delivery_address_id = customer_table__delivery_address.address_id"
                 + " JOIN address_table customer_table__payment_address ON customer_table.payment_address_id = customer_table__payment_address.address_id";
-        request(CityCustomerBook.class, extendedParameters).verify(baseQuery);
+        verifierFor(extendedParameters, CityCustomerBook.class).verify(baseQuery);
     }
 
     @Test
@@ -101,7 +88,7 @@ public class ExtendedRequestTest {
                 + " JOIN D_table B_table__D_table ON B_table.dId = B_table__D_table.id"
                 + " JOIN C_table B_table__D_table__C_table ON B_table__D_table.cId = B_table__D_table__C_table.id"
                 + " JOIN F_table B_table__F_table ON B_table.fId_column = B_table__F_table.id";
-        request(A.class, extendedParameters).verify(baseQuery);
+        verifierFor(extendedParameters, A.class).verify(baseQuery);
     }
 
     @Test
@@ -116,11 +103,11 @@ public class ExtendedRequestTest {
                 + " JOIN D_table B_table__D_table ON B_table.dId = B_table__D_table.id"
                 + " JOIN C_table B_table__D_table__C_table ON B_table__D_table.cId = B_table__D_table__C_table.id"
                 + " JOIN F_table B_table__F_table ON B_table.fId_column = B_table__F_table.id";
-        request(A.class, extendedParameters)
+        verifierFor(extendedParameters, A.class)
                 .withParam("b.e1.name", "a")
                 .verify(baseQuery + " WHERE B_table__c1__e1.name = :b.e1.name");
 
-        request(A.class, extendedParameters)
+        verifierFor(extendedParameters, A.class)
                 .withParam("b.e1.name", "a")
                 .verify(baseQuery.replace("SELECT", "SELECT DISTINCT") + " WHERE B_table__c1__e1.name = :b.e1.name",
                         req -> req.setSelectDistinct(true));
@@ -149,13 +136,13 @@ public class ExtendedRequestTest {
                 + " JOIN customer_table ON order_table.customer_id = customer_table.address_id"
                 + " JOIN address_table customer_table__customer_address ON customer_table.address_id = customer_table__customer_address.address_id"
                 + " JOIN address_table warehouse_address ON order_table.address_id = warehouse_address.address_id";
-        request(OrderWithCustomerAndAddresses.class, extendedParameters).verify(baseQuery);
+        verifierFor(extendedParameters, OrderWithCustomerAndAddresses.class).verify(baseQuery);
 
-        request(OrderWithCustomerAndAddresses.class, extendedParameters)
+        verifierFor(extendedParameters, OrderWithCustomerAndAddresses.class)
                 .withParam("warehouse.address", "a")
                 .verify(baseQuery + " WHERE warehouse_address.street_name = :warehouse.address");
 
-        request(OrderWithCustomerAndAddresses.class, extendedParameters)
+        verifierFor(extendedParameters, OrderWithCustomerAndAddresses.class)
                 .withParam("warehouse.address", "a")
                 .withParam("customer.name", "b")
                 .verify(baseQuery
@@ -163,7 +150,7 @@ public class ExtendedRequestTest {
                         +  " AND customer_table.customer_name = :customer.name"
                 );
 
-        request(OrderWithCustomerAndAddresses.class, extendedParameters)
+        verifierFor(extendedParameters, OrderWithCustomerAndAddresses.class)
                 .withParam("warehouse.address", "a")
                 .withParam("customer.name", "b")
                 .withParam("customerAddress.address", "c")
@@ -175,8 +162,8 @@ public class ExtendedRequestTest {
                         + " ORDER BY \"customerAddress\" ASC, \"warehouse\" ASC"
                 );
 
-        request(OrderWithCustomerAndAddresses.class, extendedParameters)
-                .withParam("deliveryDate[gte]", "2021-01-01T00:00:00Z")
+        verifierFor(ExtendedRequest::new, extendedParameters, OrderWithCustomerAndAddresses.class)
+                .withParam("deliveryDate:gte", "2021-01-01T00:00:00Z")
                 .verify(baseQuery + " WHERE order_table.delivery_date >= :deliveryDate");
     }
 
@@ -187,59 +174,18 @@ public class ExtendedRequestTest {
                         + " FROM city_table";
         String extraJoins = " JOIN country_table c ON city_table.country_id = c.id";
         Function<R2dbcDialect, CitySpecificExtendedRequest> requestConstructor = (r2dbcDialect) -> new CitySpecificExtendedRequest(extendedParameters, r2dbcDialect);
-        request(requestConstructor).verify(baseQueryNoExtraJoins);
+        verifierFor(requestConstructor).verify(baseQueryNoExtraJoins);
 
-        request(requestConstructor)
+        verifierFor(requestConstructor)
                 .withParam("cn", "dk")
+                // Special-case, the underlying generator (ComparisonType.EQ) collapses an "IN" into "="
+                // when there is a single item (but it could just as well have used "IN" here).
                 .verify(baseQueryNoExtraJoins + extraJoins + " WHERE c.country_name = :cn");
+
+        verifierFor(requestConstructor)
+                .withParam("cn", "dk,en,de")
+                // The repeated ":cn" matches each value being provided.
+                .verify(baseQueryNoExtraJoins + extraJoins + " WHERE c.country_name IN (:cn, :cn, :cn)");
     }
 
-    private static <T> ExtendedRequestVerifier<T> request(Class<T> clazz, ExtendedParameters extendedParameters) {
-        return new ExtendedRequestVerifier<>(new ExtendedRequest<>(extendedParameters, new MockR2dbcDialect(), clazz));
-    }
-
-    private static <T> ExtendedRequestVerifier<T> request(Function<R2dbcDialect, ? extends ExtendedRequest<T>> requestCreator) {
-        return new ExtendedRequestVerifier<>(requestCreator.apply(new MockR2dbcDialect()));
-    }
-
-    @RequiredArgsConstructor
-    private static class ExtendedRequestVerifier<T> {
-
-        private final ExtendedRequest<T> request;
-
-        private final LinkedHashMap<String, List<String>> params = new LinkedHashMap<>();
-
-        public ExtendedRequestVerifier<T> withParam(String param, String value) {
-            this.params.computeIfAbsent(param, k -> new ArrayList<>()).add(value);
-            return this;
-        }
-
-        public void verify(String query, Consumer<ExtendedRequest<T>> requestMutator) {
-            String generated;
-            if (params.isEmpty()) {
-                request.resetParameters();
-            } else {
-                request.parseParameter(params);
-            }
-            if (requestMutator != null) {
-                requestMutator.accept(request);
-            }
-            generated = request.getQuery().toQuery();
-            String generatedPretty = prettifyQuery(generated);
-            Assertions.assertEquals(prettifyQuery(query), generatedPretty);
-            Assertions.assertFalse(generatedPretty.contains(".."),
-                    "Generated SQL contains \"..\" which is unlikely to be intentional");
-        }
-
-        public void verify(String query) {
-            this.verify(query, null);
-        }
-
-        // makes IntelliJ's "show differences" view more useful in case of a mismatch
-        private static String prettifyQuery(String text) {
-            String intermediate = COLLAPSE_SPACE.matcher(text).replaceAll(" ");
-            String multiline = PRETTY_PRINT_SPLIT.matcher(intermediate).replaceAll("\n $1 ");
-            return FIELD_LIST_SPLIT.matcher(multiline).replaceAll(",\n   ");
-        }
-    }
 }
