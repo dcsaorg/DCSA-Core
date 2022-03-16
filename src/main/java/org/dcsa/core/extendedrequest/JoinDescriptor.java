@@ -6,25 +6,16 @@ public interface JoinDescriptor {
 
     Join.JoinType getJoinType();
     String getDependentAlias();
-    Column getLHSColumn();
-    Column getRHSColumn();
+    Condition getCondition();
 
     default Class<?> getRHSModel() {
         return null;
     }
 
-    default Table getRHSTable() {
-        Column rhs = getRHSColumn();
-        Table t = rhs.getTable();
-        if (t == null) {
-            throw new IllegalStateException(this.getClass().getSimpleName() + " has a RHS Column without a table." +
-                    " It needs to provide its own getRHSTable()");
-        }
-        return t;
-    }
+    TableLike getRHSTable();
 
     default String getJoinAliasId() {
-        Table t = getRHSTable();
+        TableLike t = getRHSTable();
         // Use IdentifierProcessing.NONE to ensure we get the original case of the alias.
         if (t instanceof Aliased) {
             return ((Aliased) t).getAlias().getReference(IdentifierProcessing.NONE);

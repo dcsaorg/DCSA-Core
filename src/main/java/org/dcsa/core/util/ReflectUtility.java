@@ -8,6 +8,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.relational.core.sql.Aliased;
 import org.springframework.data.relational.core.sql.IdentifierProcessing;
 import org.springframework.data.relational.core.sql.SqlIdentifier;
+import org.springframework.data.relational.core.sql.TableLike;
 
 import javax.el.MethodNotFoundException;
 import javax.validation.constraints.NotNull;
@@ -380,7 +381,7 @@ public class ReflectUtility {
     }
 
 
-    public static String getAliasId(org.springframework.data.relational.core.sql.Table table) {
+    public static String getAliasId(TableLike table) {
         SqlIdentifier aliasId;
         if (table instanceof Aliased) {
             aliasId = ((Aliased) table).getAlias();
