@@ -4,8 +4,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.dcsa.core.model.JoinedWithModel;
-import org.springframework.data.relational.core.sql.Column;
-import org.springframework.data.relational.core.sql.Join;
+import org.springframework.data.relational.core.sql.*;
 
 @RequiredArgsConstructor(staticName = "of")
 @Data
@@ -27,5 +26,15 @@ public class JoinedWithModelBasedJoinDescriptor implements JoinDescriptor {
 
     public Class<?> getRHSModel() {
         return joinedWithModel.rhsModel();
+    }
+
+    @Override
+    public Condition getCondition() {
+      return Conditions.isEqual(LHSColumn, RHSColumn);
+    }
+
+    @Override
+    public TableLike getRHSTable() {
+      return RHSColumn.getTable();
     }
 }

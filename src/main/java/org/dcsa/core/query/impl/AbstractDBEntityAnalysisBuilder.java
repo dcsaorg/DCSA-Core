@@ -6,10 +6,7 @@ import org.dcsa.core.extendedrequest.QueryFieldConditionGenerator;
 import org.dcsa.core.extendedrequest.QueryFields;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
-import org.springframework.data.relational.core.sql.Column;
-import org.springframework.data.relational.core.sql.Join;
-import org.springframework.data.relational.core.sql.SqlIdentifier;
-import org.springframework.data.relational.core.sql.Table;
+import org.springframework.data.relational.core.sql.*;
 
 import java.lang.reflect.Field;
 import java.util.Objects;
@@ -21,7 +18,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
 
     protected abstract Table getTableForModel(Class<?> model, String alias);
 
-    protected Table getTableFor(String alias) {
+    protected TableLike getTableFor(String alias) {
         JoinDescriptor joinDescriptor = getJoinDescriptor(alias);
         if (joinDescriptor == null) {
             return getPrimaryModelTable();
@@ -29,7 +26,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
         return joinDescriptor.getRHSTable();
     }
 
-    protected Table getTableFor(Class<?> lhsModel) {
+    protected TableLike getTableFor(Class<?> lhsModel) {
         JoinDescriptor joinDescriptor = getJoinDescriptor(lhsModel);
         if (joinDescriptor == null) {
             return getPrimaryModelTable();
@@ -40,10 +37,10 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
 
     protected abstract Class<?> getModelFor(String aliasId);
 
-    protected abstract Class<?> getModelFor(Table table);
+    protected abstract Class<?> getModelFor(TableLike table);
 
     protected DBEntityAnalysis.DBEntityAnalysisBuilder<T> joinOnImpl(Join.JoinType joinType, Column lhsColumn, Column rhsColumn, Class<?> rhsModel) {
-        Table lhsTable = lhsColumn.getTable();
+        TableLike lhsTable = lhsColumn.getTable();
         checkJoinType(joinType, rhsModel);
         if (lhsTable == null) {
             throw new IllegalArgumentException("lhsColumn must have a non-null getTable()");
@@ -52,7 +49,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
             throw new IllegalArgumentException("rhsColumn must have a non-null getTable()");
         }
         String lhsAlias = ReflectUtility.getAliasId(lhsTable);
-        return registerJoinDescriptor(SimpleJoinDescriptor.of(joinType, lhsColumn, rhsColumn, rhsModel, lhsAlias));
+        return registerJoinDescriptor(SimpleJoinDescriptor.of(joinType, rhsColumn.getTable(), rhsModel, Conditions.isEqual(lhsColumn, rhsColumn), lhsAlias));
     }
 
     protected DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> joinOnThenImpl(Join.JoinType joinType, Column lhsColumn, Column rhsColumn, Class<?> rhsModel) {
@@ -63,16 +60,16 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
 
     public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onTable(String alias) {
         Class<?> model = getModelFor(alias);
-        Table table = getTableFor(alias);
+        TableLike table = getTableFor(alias);
         return DBEntityAnalysisWithTableBuilderImpl.of(this, table, model);
     }
 
     public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onTable(Class<?> model) {
-        Table table = getTableFor(model);
+        TableLike table = getTableFor(model);
         return DBEntityAnalysisWithTableBuilderImpl.of(this, table, model);
     }
 
-    public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onTable(Table table) {
+    public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onTable(TableLike table) {
         Class<?> model = getModelFor(table);
         return DBEntityAnalysisWithTableBuilderImpl.of(this, table, model);
     }
@@ -97,11 +94,11 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
         return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, getTableFor(lhsJoinAlias), rhsTable, rhsModel);
     }
 
-    public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Table lhsTable, Table rhsTable) {
+    public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, TableLike lhsTable, TableLike rhsTable) {
         return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, lhsTable, rhsTable, null);
     }
 
-    public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, Table lhsTable, Table rhsTable, Class<?> rhsModel) {
+    public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> join(Join.JoinType joinType, TableLike lhsTable, TableLike rhsTable, Class<?> rhsModel) {
         return DBEntityAnalysisJoinBuilderImpl.of(this, joinType, lhsTable, rhsTable, rhsModel);
     }
 
@@ -135,35 +132,35 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
     protected static class DBEntityAnalysisJoinBuilderImpl<T> implements DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> {
         private final AbstractDBEntityAnalysisBuilder<T> builder;
         private final Join.JoinType joinType;
-        private final Table lhsTable;
-        private final Table rhsTable;
+        private final TableLike lhsTable;
+        private final TableLike rhsTable;
         private final Class<?> rhsModel;
 
         public DBEntityAnalysis.DBEntityAnalysisBuilder<T> onEquals(String lhsColumnName, String rhsColumnName) {
-            return onEqualsImpl(lhsColumnName, rhsColumnName, Column::create);
+            return onEqualsImpl(lhsColumnName, rhsColumnName, TableLike::column);
         }
 
         public DBEntityAnalysis.DBEntityAnalysisBuilder<T> onEquals(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName) {
-            return onEqualsImpl(lhsColumnName, rhsColumnName, Column::create);
+            return onEqualsImpl(lhsColumnName, rhsColumnName, TableLike::column);
         }
 
         public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onEqualsThen(String lhsColumnName, String rhsColumnName) {
-            return onEqualsThenImpl(lhsColumnName, rhsColumnName, Column::create);
+            return onEqualsThenImpl(lhsColumnName, rhsColumnName, TableLike::column);
         }
 
         public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onEqualsThen(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName) {
-            return onEqualsThenImpl(lhsColumnName, rhsColumnName, Column::create);
+            return onEqualsThenImpl(lhsColumnName, rhsColumnName, TableLike::column);
         }
 
-        private <P> DBEntityAnalysis.DBEntityAnalysisBuilder<T> onEqualsImpl(P lhs, P rhs, BiFunction<P, Table, Column> toColumn) {
-            Column lhsColumn = toColumn.apply(lhs, lhsTable);
-            Column rhsColumn = toColumn.apply(rhs, rhsTable);
+        private <P> DBEntityAnalysis.DBEntityAnalysisBuilder<T> onEqualsImpl(P lhs, P rhs, BiFunction<TableLike, P, Column> toColumn) {
+            Column lhsColumn = toColumn.apply(lhsTable, lhs);
+            Column rhsColumn = toColumn.apply(rhsTable, rhs);
             return builder.joinOnImpl(joinType, lhsColumn, rhsColumn, rhsModel);
         }
 
-        private <P> DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onEqualsThenImpl(P lhs, P rhs, BiFunction<P, Table, Column> toColumn) {
-            Column lhsColumn = toColumn.apply(lhs, lhsTable);
-            Column rhsColumn = toColumn.apply(rhs, rhsTable);
+        private <P> DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onEqualsThenImpl(P lhs, P rhs, BiFunction<TableLike, P, Column> toColumn) {
+            Column lhsColumn = toColumn.apply(lhsTable, lhs);
+            Column rhsColumn = toColumn.apply(rhsTable, rhs);
             return builder.joinOnThenImpl(joinType, lhsColumn, rhsColumn, rhsModel);
         }
 
@@ -205,7 +202,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
     protected static class DBEntityAnalysisWithTableBuilderImpl<T> implements DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> {
 
         private final AbstractDBEntityAnalysisBuilder<T> builder;
-        private final Table lhsTable;
+        private final TableLike lhsTable;
         private final Class<?> lhsModel;
 
         public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(Class<?> rhsModel) {
@@ -216,7 +213,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
             return chainJoin(Join.JoinType.JOIN, rhsModel, rhsJoinAlias);
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(Table rhsTable) {
+        public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(TableLike rhsTable) {
             return chainJoin(Join.JoinType.JOIN, rhsTable);
         }
 
@@ -228,11 +225,11 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
             return chainJoinImpl(joinType, builder.getTableForModel(rhsModel, rhsJoinAlias), rhsModel);
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(Join.JoinType joinType, Table rhsTable) {
+        public DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoin(Join.JoinType joinType, TableLike rhsTable) {
             return chainJoinImpl(joinType, rhsTable, null);
         }
 
-        private DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoinImpl(Join.JoinType joinType, Table rhsTable, Class<?> rhsModel) {
+        private DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> chainJoinImpl(Join.JoinType joinType, TableLike rhsTable, Class<?> rhsModel) {
             return DBEntityAnalysisJoinBuilderImpl.of(builder, joinType, lhsTable, rhsTable, rhsModel);
         }
 
@@ -262,8 +259,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
         }
 
         public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryField(SqlIdentifier columnName, String jsonName, Class<?> valueType, QueryFieldConditionGenerator conditionGenerator) {
-            Column column = Column.create(columnName, lhsTable);
-            return builder.registerQueryField(QueryFields.nonSelectableQueryField(column, jsonName, valueType, conditionGenerator));
+            return builder.registerQueryField(QueryFields.nonSelectableQueryField(lhsTable.column(columnName), jsonName, valueType, conditionGenerator));
         }
 
     }

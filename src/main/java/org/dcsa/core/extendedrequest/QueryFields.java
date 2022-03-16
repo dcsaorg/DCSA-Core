@@ -14,11 +14,11 @@ import java.util.function.Function;
 
 public class QueryFields {
 
-    public static QueryField queryFieldFromFieldWithSelectPrefix(Field modelField, Table table, boolean selectable, String selectNamePrefix) {
+    public static QueryField queryFieldFromFieldWithSelectPrefix(Field modelField, TableLike table, boolean selectable, String selectNamePrefix) {
         return queryFieldFromFieldWithSelectPrefix(modelField, table, selectable, selectNamePrefix, null);
     }
 
-    public static QueryField queryFieldFromFieldWithSelectPrefix(Field modelField, Table table, boolean selectable, String selectNamePrefix, QueryFieldConditionGenerator conditionGenerator) {
+    public static QueryField queryFieldFromFieldWithSelectPrefix(Field modelField, TableLike table, boolean selectable, String selectNamePrefix, QueryFieldConditionGenerator conditionGenerator) {
         String tableAlias = ReflectUtility.getAliasId(table);
         String columnName;
         Column internalColumn;
@@ -40,7 +40,7 @@ public class QueryFields {
     }
 
     public static QueryField nonSelectableQueryField(Column column, String jsonName, Class<?> type, QueryFieldConditionGenerator conditionGenerator) {
-        Table table = Objects.requireNonNull(column.getTable(), "column.getTable() must be non-null");
+        TableLike table = Objects.requireNonNull(column.getTable(), "column.getTable() must be non-null");
         String joinAlias = ReflectUtility.getAliasId(table);
         if (column instanceof Aliased) {
             // Future proofing.
