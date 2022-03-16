@@ -2,10 +2,7 @@ package org.dcsa.core.extendedrequest;
 
 import lombok.Getter;
 import org.dcsa.core.util.ReflectUtility;
-import org.springframework.data.relational.core.sql.Column;
-import org.springframework.data.relational.core.sql.Expression;
-import org.springframework.data.relational.core.sql.SelectBuilder;
-import org.springframework.data.relational.core.sql.Table;
+import org.springframework.data.relational.core.sql.*;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -72,9 +69,7 @@ public class TableAndJoins {
 
     private SelectBuilder.SelectFromAndJoinCondition applyJoin(JoinDescriptor joinDescriptor, SelectBuilder.SelectJoin selectBuilder) {
         SelectBuilder.SelectOn selectOn;
-        Table table = joinDescriptor.getRHSTable();
-        Expression lhsExpression = joinDescriptor.getLHSColumn();
-        Expression rhsExpression = joinDescriptor.getRHSColumn();
+        TableLike table = joinDescriptor.getRHSTable();
         switch (joinDescriptor.getJoinType()) {
             case JOIN:
                 selectOn = selectBuilder.join(table);
@@ -87,6 +82,6 @@ public class TableAndJoins {
             default:
                 throw new UnsupportedOperationException("Unsupported join type: " + joinDescriptor.getJoinType());
         }
-        return selectOn.on(lhsExpression).equals(rhsExpression);
+        return selectOn.on(joinDescriptor.getCondition());
     }
 }

@@ -313,7 +313,8 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
             Column rhsColumn = Column.create(SqlIdentifier.unquoted(rhsFieldName), rhsTable);
 
             String dependentAlias = prefix + currentNode.getAlias();
-            JoinDescriptor joinDescriptor = SimpleJoinDescriptor.of(childNode.getJoinType(), lhsColumn, rhsColumn, childNode.getModelType(), dependentAlias);
+            JoinDescriptor joinDescriptor = SimpleJoinDescriptor.of(childNode.getJoinType(), rhsTable, childNode.getModelType(),
+              Conditions.isEqual(lhsColumn, rhsColumn), dependentAlias);
             registerJoinDescriptor(joinDescriptor);
 
             generatePrefixedJoinsDeep(childNode, newPrefix);
@@ -523,7 +524,7 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
     }
 
     @Override
-    protected Class<?> getModelFor(Table table) {
+    protected Class<?> getModelFor(TableLike table) {
         return getModelFor(ReflectUtility.getAliasId(table));
     }
 
