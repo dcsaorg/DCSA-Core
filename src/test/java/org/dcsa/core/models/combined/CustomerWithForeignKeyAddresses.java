@@ -3,6 +3,7 @@ package org.dcsa.core.models.combined;
 import lombok.Data;
 import org.dcsa.core.model.ForeignKey;
 import org.dcsa.core.models.Address;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -11,6 +12,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Table("customer_table")
 public class CustomerWithForeignKeyAddresses {
 
+    @Id
     @Column("customer_id")
     private Long id;
 

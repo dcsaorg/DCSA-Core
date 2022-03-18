@@ -4,6 +4,7 @@ import lombok.Data;
 import org.dcsa.core.model.ForeignKey;
 import org.dcsa.core.model.JoinedWithModel;
 import org.dcsa.core.model.MapEntity;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -16,6 +17,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @JoinedWithModel(lhsJoinAlias = "c2", lhsFieldName = "eId", lhsModel = C.class, rhsModel = E.class, rhsFieldName = "id", rhsJoinAlias = "e2")
 @JoinedWithModel(lhsFieldName = "dId", rhsModel = D.class, rhsFieldName = "id")
 public class B {
+    @Id
     private Long id;
 
     private Long cId;

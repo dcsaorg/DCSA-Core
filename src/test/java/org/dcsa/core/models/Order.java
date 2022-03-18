@@ -2,6 +2,7 @@ package org.dcsa.core.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -11,6 +12,7 @@ import java.time.OffsetDateTime;
 @Table("order_table")
 public class Order {
 
+    @Id
     /* Deliberately different to text ExtendedOrder lookup */
     @Column("order_id")
     private Long id;
