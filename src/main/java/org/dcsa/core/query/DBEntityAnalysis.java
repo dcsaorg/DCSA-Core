@@ -67,15 +67,28 @@ public interface DBEntityAnalysis<T> {
         DBEntityAnalysis<T> build();
     }
 
-    interface DBEntityAnalysisJoinBuilder<T> {
-        DBEntityAnalysisBuilder<T> onEquals(String lhsColumnName, String rhsColumnName);
-        DBEntityAnalysisBuilder<T> onEquals(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName);
-        DBEntityAnalysisBuilder<T> onFieldEquals(String lhsFieldName, String rhsFieldName);
+    interface DBEntityAnalysisJoinBuilder<T> extends ConditionBuilder<T, DBEntityAnalysisWithTableBuilder<T>> {
 
-        // Chain into another join - useful for "FROM A JOIN B (A.x=B.x) JOIN C (B.y=C.y)"-cases
-        DBEntityAnalysisWithTableBuilder<T> onEqualsThen(String lhsColumnName, String rhsColumnName);
-        DBEntityAnalysisWithTableBuilder<T> onEqualsThen(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName);
-        DBEntityAnalysisWithTableBuilder<T> onFieldEqualsThen(String lhsFieldName, String rhsFieldName);
+    }
+
+    interface ConditionBuilder<T, R> {
+        ConditionChainBuilder<T, R> onEquals(String lhsColumnName, String rhsColumnName);
+        ConditionChainBuilder<T, R> onEquals(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName);
+        ConditionChainBuilder<T, R> onFieldEquals(String lhsFieldName, String rhsFieldName);
+
+        R onEqualsThen(String lhsColumnName, String rhsColumnName);
+        R onEqualsThen(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName);
+        R onFieldEqualsThen(String lhsFieldName, String rhsFieldName);
+    }
+
+    /*
+     * Note it is not possible to use nesting to affect precedence, so default SQL precedence applies.
+     *
+     * As a consequence, this interface only supports "Disjunctive Normal Form".
+     */
+    interface ConditionChainBuilder<T, R> {
+        ConditionBuilder<T, R> and();
+        ConditionBuilder<T, R> or();
     }
 
     interface DBEntityAnalysisWithTableBuilder<T> {
