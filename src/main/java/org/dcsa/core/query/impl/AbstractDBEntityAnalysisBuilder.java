@@ -34,29 +34,30 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
         return joinDescriptor.getRHSTable();
     }
 
-
     protected abstract Class<?> getModelFor(String aliasId);
 
     protected abstract Class<?> getModelFor(TableLike table);
 
-    protected DBEntityAnalysis.DBEntityAnalysisBuilder<T> joinOnImpl(Join.JoinType joinType, Column lhsColumn, Column rhsColumn, Class<?> rhsModel) {
-        TableLike lhsTable = lhsColumn.getTable();
+    private static Condition columnsAreEqual(Column lhsColumn, Column rhsColumn) {
+      if (lhsColumn.getTable() == null) {
+        throw new IllegalArgumentException("lhsColumn must have a non-null getTable()");
+      }
+      if (rhsColumn.getTable() == null) {
+        throw new IllegalArgumentException("rhsColumn must have a non-null getTable()");
+      }
+      return Conditions.isEqual(lhsColumn, rhsColumn);
+    }
+
+    protected DBEntityAnalysis.DBEntityAnalysisBuilder<T> joinOnImpl(Join.JoinType joinType, Condition condition, TableLike lhsTable, TableLike rhsTable, Class<?> rhsModel) {
         checkJoinType(joinType, rhsModel);
-        if (lhsTable == null) {
-            throw new IllegalArgumentException("lhsColumn must have a non-null getTable()");
-        }
-        if (rhsColumn.getTable() == null) {
-            throw new IllegalArgumentException("rhsColumn must have a non-null getTable()");
-        }
         String lhsAlias = ReflectUtility.getAliasId(lhsTable);
-        return registerJoinDescriptor(SimpleJoinDescriptor.of(joinType, rhsColumn.getTable(), rhsModel, Conditions.isEqual(lhsColumn, rhsColumn), lhsAlias));
+        return registerJoinDescriptor(SimpleJoinDescriptor.of(joinType, rhsTable, rhsModel, condition, lhsAlias));
     }
 
-    protected DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> joinOnThenImpl(Join.JoinType joinType, Column lhsColumn, Column rhsColumn, Class<?> rhsModel) {
-        joinOnImpl(joinType, lhsColumn, rhsColumn, rhsModel);
-        return DBEntityAnalysisWithTableBuilderImpl.of(this, Objects.requireNonNull(rhsColumn.getTable()), rhsModel);
+    protected DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> joinOnThenImpl(Join.JoinType joinType, Condition condition, TableLike lhsTable, TableLike rhsTable, Class<?> rhsModel) {
+        joinOnImpl(joinType, condition, lhsTable, rhsTable, rhsModel);
+        return DBEntityAnalysisWithTableBuilderImpl.of(this, Objects.requireNonNull(rhsTable), rhsModel);
     }
-
 
     public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onTable(String alias) {
         Class<?> model = getModelFor(alias);
@@ -103,9 +104,9 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
     }
 
     public DBEntityAnalysis.DBEntityAnalysisBuilder<T> joinOn(Join.JoinType joinType, Column lhsColumn, Column rhsColumn) {
-        return joinOnImpl(joinType, lhsColumn, rhsColumn, null);
+        Condition condition = columnsAreEqual(lhsColumn, rhsColumn);
+        return joinOnImpl(joinType, condition, Objects.requireNonNull(lhsColumn.getTable()), Objects.requireNonNull(rhsColumn.getTable()), null);
     }
-
 
     protected void checkJoinType(Join.JoinType joinType, Class<?> modelType) {
         /* Fail-fast on unsupported joins */
@@ -128,6 +129,19 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
         }
     }
 
+    @RequiredArgsConstructor
+    private enum ConditionAggregator {
+      FIRST_CONDITION((a, b) -> { assert a == null; return b; }),
+      AND_CONDITION(Condition::and),
+      OR_CONDITION(Condition::or),
+      ;
+      private final BiFunction<Condition, Condition, Condition> aggregator;
+
+      public Condition merge(Condition lhs, Condition rhs) {
+        return aggregator.apply(lhs, rhs);
+      }
+    }
+
     @RequiredArgsConstructor(staticName = "of")
     protected static class DBEntityAnalysisJoinBuilderImpl<T> implements DBEntityAnalysis.DBEntityAnalysisJoinBuilder<T> {
         private final AbstractDBEntityAnalysisBuilder<T> builder;
@@ -135,13 +149,19 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
         private final TableLike lhsTable;
         private final TableLike rhsTable;
         private final Class<?> rhsModel;
+        private final Condition condition;
+        private final ConditionAggregator currentAggregator;
 
-        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> onEquals(String lhsColumnName, String rhsColumnName) {
+        public DBEntityAnalysis.ConditionChainBuilder<T, DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T>> onEquals(String lhsColumnName, String rhsColumnName) {
             return onEqualsImpl(lhsColumnName, rhsColumnName, TableLike::column);
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> onEquals(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName) {
+        public DBEntityAnalysis.ConditionChainBuilder<T, DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T>> onEquals(SqlIdentifier lhsColumnName, SqlIdentifier rhsColumnName) {
             return onEqualsImpl(lhsColumnName, rhsColumnName, TableLike::column);
+        }
+
+        public DBEntityAnalysis.ConditionChainBuilder<T, DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T>> onFieldEquals(String lhsFieldName, String rhsFieldName) {
+            return onFieldEqualsImpl(lhsFieldName, rhsFieldName, this::onEquals);
         }
 
         public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onEqualsThen(String lhsColumnName, String rhsColumnName) {
@@ -152,16 +172,30 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
             return onEqualsThenImpl(lhsColumnName, rhsColumnName, TableLike::column);
         }
 
-        private <P> DBEntityAnalysis.DBEntityAnalysisBuilder<T> onEqualsImpl(P lhs, P rhs, BiFunction<TableLike, P, Column> toColumn) {
+        public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onFieldEqualsThen(String lhsFieldName, String rhsFieldName) {
+            return onFieldEqualsImpl(lhsFieldName, rhsFieldName, this::onEqualsThen);
+        }
+
+        private <P> ConditionChainBuilderImpl<T, DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T>> onEqualsImpl(P lhs, P rhs, BiFunction<TableLike, P, Column> toColumn) {
             Column lhsColumn = toColumn.apply(lhsTable, lhs);
             Column rhsColumn = toColumn.apply(rhsTable, rhs);
-            return builder.joinOnImpl(joinType, lhsColumn, rhsColumn, rhsModel);
+            Condition newCondition = columnsAreEqual(lhsColumn, rhsColumn);
+            return (nextAggregator) -> of(
+              builder,
+              joinType,
+              lhsTable,
+              rhsTable,
+              rhsModel,
+              this.currentAggregator.merge(this.condition, newCondition),
+              nextAggregator
+            );
         }
 
         private <P> DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onEqualsThenImpl(P lhs, P rhs, BiFunction<TableLike, P, Column> toColumn) {
             Column lhsColumn = toColumn.apply(lhsTable, lhs);
             Column rhsColumn = toColumn.apply(rhsTable, rhs);
-            return builder.joinOnThenImpl(joinType, lhsColumn, rhsColumn, rhsModel);
+            Condition newCondition = columnsAreEqual(lhsColumn, rhsColumn);
+            return builder.joinOnThenImpl(joinType, newCondition, lhsTable, rhsTable, rhsModel);
         }
 
         private <B> B onFieldEqualsImpl(String lhsFieldName, String rhsFieldName, BiFunction<String, String, B> impl) {
@@ -189,13 +223,27 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
             return impl.apply(lhsColumnName, rhsColumnName);
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> onFieldEquals(String lhsFieldName, String rhsFieldName) {
-            return onFieldEqualsImpl(lhsFieldName, rhsFieldName, this::onEquals);
+        public static <T> DBEntityAnalysisJoinBuilderImpl<T> of(AbstractDBEntityAnalysisBuilder<T> builder,
+                                                                Join.JoinType joinType,
+                                                                TableLike lhsTable,
+                                                                TableLike rhsTable,
+                                                                Class<?> rhsModel) {
+          return of(builder, joinType, lhsTable, rhsTable, rhsModel, null, ConditionAggregator.FIRST_CONDITION);
         }
+    }
 
-        public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onFieldEqualsThen(String lhsFieldName, String rhsFieldName) {
-            return onFieldEqualsImpl(lhsFieldName, rhsFieldName, this::onEqualsThen);
-        }
+    @FunctionalInterface
+    private interface ConditionChainBuilderImpl<T, R> extends DBEntityAnalysis.ConditionChainBuilder<T, R> {
+
+      default DBEntityAnalysis.ConditionBuilder<T, R> and() {
+        return chainImpl(ConditionAggregator.AND_CONDITION);
+      }
+
+      default DBEntityAnalysis.ConditionBuilder<T, R> or() {
+        return chainImpl(ConditionAggregator.OR_CONDITION);
+      }
+
+      DBEntityAnalysis.ConditionBuilder<T, R> chainImpl(ConditionAggregator conditionAggregator);
     }
 
     @RequiredArgsConstructor(staticName = "of")
