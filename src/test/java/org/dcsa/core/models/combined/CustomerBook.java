@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.dcsa.core.model.ForeignKey;
 import org.dcsa.core.models.AbstractCustomerBook;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -14,6 +15,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @ToString(callSuper = true)
 @Table("customer_book_table")
 public class CustomerBook extends AbstractCustomerBook {
+    @Id
     @Column("customer_book_id")
     private Long id;
 
