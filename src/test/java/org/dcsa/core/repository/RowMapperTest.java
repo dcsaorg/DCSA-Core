@@ -7,10 +7,12 @@ import lombok.RequiredArgsConstructor;
 import org.dcsa.core.extendedrequest.ExtendedParameters;
 import org.dcsa.core.extendedrequest.ExtendedRequest;
 import org.dcsa.core.extendedrequest.testsupport.MockR2dbcDialect;
+import org.dcsa.core.model.JoinedWithModel;
 import org.dcsa.core.models.Address;
 import org.dcsa.core.models.City;
 import org.dcsa.core.models.Customer;
 import org.dcsa.core.models.combined.*;
+import org.dcsa.core.stub.StubColumnMetadata;
 import org.dcsa.core.stub.StubRow;
 import org.dcsa.core.stub.StubRowMetadata;
 import org.junit.jupiter.api.Assertions;
@@ -20,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -45,21 +48,56 @@ public class RowMapperTest {
         customerWithAddress.setName("customerName");
         customerWithAddress.setAddress(address);
         customerWithAddress.setAddressId(address.getAddressId());
+        customerWithAddress.setCustomerStatus(CustomerStatus.ACTIVE);
 
         StubRow row = StubRow.of(Map.of(
                 "id", customerWithAddress.getId(),
                 "name", customerWithAddress.getName(),
                 "addressId", customerWithAddress.getAddressId(),
+                "customerStatus", customerWithAddress.getCustomerStatus().name(),
                 "address.addressId", address.getAddressId(),
                 "address.address", address.getAddress(),
                 "address.cityId", address.getCityId()
 
+        ), Map.of(
+          "customerStatus", CustomerStatus.class
         ));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
         RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
 
         rowMap(row, rowMetadata, CustomerWithAddress.class, extendedParameters).verify(customerWithAddress);
     }
+
+  @Test
+  public void testCustomerWithAddressWithoutMatch() {
+      // Pretend it was a LEFT JOIN that failed.
+    CustomerWithAddress customerWithAddress = new CustomerWithAddress();
+    customerWithAddress.setId(1L);
+    customerWithAddress.setName("customerName");
+    customerWithAddress.setCustomerStatus(CustomerStatus.ACTIVE);
+    customerWithAddress.setAddress(null);
+    customerWithAddress.setAddressId(2L);
+
+    StubRow row = StubRow.of(new HashMap<>(){{
+      put("id", customerWithAddress.getId());
+      put("name", customerWithAddress.getName());
+      put("addressId", customerWithAddress.getAddressId());
+      put("customerStatus", customerWithAddress.getCustomerStatus().name());
+      // If a LEFT JOIN fails, then all the properties will be there (but set to null).
+      put("address.addressId", null);
+      put("address.address", null);
+      put("address.cityId", null);
+    }}, Map.of(
+      "customerStatus", CustomerStatus.class,
+      "address.addressId", Long.class,
+      "address.address", String.class,
+      "address.cityId", Long.class
+    ));
+    List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
+    RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
+
+    rowMap(row, rowMetadata, CustomerWithAddress.class, extendedParameters).verify(customerWithAddress);
+  }
 
     @Test
     public void testCustomerWithForeignKeyAddresses() {
@@ -210,6 +248,7 @@ public class RowMapperTest {
         customer.setId(3L);
         customer.setAddressId(customerAddress.getAddressId());
         customer.setName("customerName");
+        customer.setCustomerStatus(CustomerStatus.ACTIVE);
         orderWithCustomerAndAddresses.setId(17L);
         orderWithCustomerAndAddresses.setOrderline("orderLine");
         orderWithCustomerAndAddresses.setReceiverId(customer.getAddressId());
@@ -229,6 +268,7 @@ public class RowMapperTest {
                 Map.entry("customer.id", customer.getId()),
                 Map.entry("customer.name", customer.getName()),
                 Map.entry("customer.addressId", customer.getAddressId()),
+                Map.entry("customer.customerStatus", customer.getCustomerStatus().name()),
 
                 Map.entry("customerAddress.addressId", customerAddress.getAddressId()),
                 Map.entry("customerAddress.address", customerAddress.getAddress()),
@@ -237,7 +277,7 @@ public class RowMapperTest {
                 Map.entry("warehouse.addressId", warehouseAddress.getAddressId()),
                 Map.entry("warehouse.address", warehouseAddress.getAddress()),
                 Map.entry("warehouse.cityId", warehouseAddress.getCityId())
-        ));
+        ), Map.of("customer.customerStatus", CustomerStatus.class));
         List<ColumnMetadata> columnMetadatas = row.getStubColumnMetadatas();
         RowMetadata rowMetadata = StubRowMetadata.of(columnMetadatas);
 

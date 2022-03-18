@@ -1,12 +1,14 @@
 package org.dcsa.core.models;
 
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Data
 @Table("address_table")
 public class Address {
+    @Id
     @Column("address_id")
     private Long addressId;
 
