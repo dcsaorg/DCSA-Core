@@ -103,7 +103,10 @@ public interface DBEntityAnalysis<T> {
         default DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName) {
             return this.registerQueryFieldFromField(fieldName, null);
         }
-        DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName, QueryFieldConditionGenerator conditionGenerator);
+        default DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName, QueryFieldConditionGenerator conditionGenerator) {
+          return registerQueryFieldFromField(fieldName, "", conditionGenerator);
+        }
+        DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName, String jsonPrefix, QueryFieldConditionGenerator conditionGenerator);
         default DBEntityAnalysisBuilder<T> registerQueryField(SqlIdentifier columnName, String jsonName, Class<?> valueType) {
             return this.registerQueryField(columnName, jsonName, valueType, null);
         }
@@ -113,6 +116,11 @@ public interface DBEntityAnalysis<T> {
         default DBEntityAnalysisWithTableBuilder<T> registerQueryFieldFromFieldThen(String fieldName) {
             registerQueryFieldFromField(fieldName);
             return this;
+        }
+
+        default DBEntityAnalysisWithTableBuilder<T> registerQueryFieldFromFieldThen(String fieldName, String jsonPrefix) {
+          registerQueryFieldFromField(fieldName, jsonPrefix, null);
+          return this;
         }
 
         default DBEntityAnalysisWithTableBuilder<T> registerQueryFieldThen(SqlIdentifier columnName, String jsonName, Class<?> valueType) {

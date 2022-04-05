@@ -285,7 +285,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
             return builder.registerQueryFieldAlias(jsonName, jsonNameAlias);
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName, QueryFieldConditionGenerator conditionGenerator) {
+        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName, String jsonPrefix, QueryFieldConditionGenerator conditionGenerator) {
             Field field;
             if (lhsModel == null) {
                 throw new UnsupportedOperationException("Cannot use field based field registration as there is no model"
@@ -301,7 +301,7 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
                     field,
                     lhsTable,
                     false,
-                    "",
+                    jsonPrefix,
                     conditionGenerator
             ));
         }
