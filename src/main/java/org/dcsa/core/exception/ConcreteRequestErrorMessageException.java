@@ -38,6 +38,10 @@ public abstract class ConcreteRequestErrorMessageException extends DCSAException
         return new NotFoundException("notFound", null, message, cause);
     }
 
+    public static ConcreteRequestErrorMessageException invalidInput(String message) {
+      return new BadRequestException("invalidInput", null, message, null);
+    }
+
     public static ConcreteRequestErrorMessageException invalidInput(String message, Throwable cause) {
         return new BadRequestException("invalidInput", null, message, cause);
     }

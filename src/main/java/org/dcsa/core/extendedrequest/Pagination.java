@@ -1,5 +1,6 @@
 package org.dcsa.core.extendedrequest;
 
+import org.dcsa.core.exception.ConcreteRequestErrorMessageException;
 import org.dcsa.core.exception.GetException;
 import org.springframework.data.relational.core.sql.SelectBuilder;
 
@@ -27,7 +28,7 @@ public class Pagination<T> {
     private final ExtendedRequest<T> extendedRequest;
     private final ExtendedParameters extendedParameters;
 
-    private Integer limit;
+    private int limit;
     private int indexCursor;
     private int total;
 
@@ -44,37 +45,35 @@ public class Pagination<T> {
 
     protected void parseLimitParameter(String value, boolean fromCursor) {
         if (extendedRequest.isCursor()) {
-            throw new GetException("Cannot use the Limit parameter while accessing a paginated result using the " + extendedParameters.getPaginationCursorName() + " parameter!");
+            throw ConcreteRequestErrorMessageException.invalidParameter("Cannot use the limit parameter while accessing a paginated result using the " + extendedParameters.getPaginationCursorName() + " parameter!");
         }
 
         try {
-            limit = Integer.parseInt(value);
+            if ("ALL".equals(value)) {
+              limit = 0;
+            } else {
+              limit = Integer.parseInt(value);
+              if (limit < 1) {
+                throw ConcreteRequestErrorMessageException.invalidParameter("Invalid " + extendedParameters.getPaginationPageSizeName() + " value: " + value + ". Must be at least 1");
+              }
+            }
             if (!fromCursor) {
                 extendedRequest.setNoCursor();
             }
         } catch (NumberFormatException numberFormatException) {
-            throw new GetException("Unknown " + extendedParameters.getPaginationPageSizeName() + " value:" + value + ". Must be a Number!");
+            throw ConcreteRequestErrorMessageException.invalidParameter("Unknown " + extendedParameters.getPaginationPageSizeName() + " value: " + value + ". Must be a Number!");
         }
-    }
-
-    protected void getOffsetQueryString(StringBuilder sb) {
-        if (indexCursor != 0) {
-            sb.append(" OFFSET ").append(indexCursor);
-        }
-    }
-
-    protected void getLimitQueryString(StringBuilder sb) {
-        if (limit != null) {
-            sb.append(" LIMIT ").append(limit);
+        if (extendedParameters.getMaxPageSize() != 0 && (limit == 0 || limit > extendedParameters.getMaxPageSize())) {
+          throw ConcreteRequestErrorMessageException.invalidParameter("Invalid " + extendedParameters.getPaginationPageSizeName() + " value: " + value + ". Max page is: " + extendedParameters.getMaxPageSize());
         }
     }
 
     @SuppressWarnings("unchecked")
     protected <SB extends SelectBuilder.SelectLimitOffset> SB applyLimitOffset(SB t) {
-        if (limit != null && indexCursor != 0) {
+        if (limit != 0 && indexCursor != 0) {
             return (SB) t.limitOffset(limit, indexCursor);
         }
-        if (limit != null) {
+        if (limit != 0) {
             return (SB) t.limit(limit);
         }
         return indexCursor != 0 ? (SB) t.offset(indexCursor) : t;
@@ -138,16 +137,12 @@ public class Pagination<T> {
     }
 
     protected void encodeLimit(StringBuilder sb) {
-        if (limit != null) {
+        if (limit != 0) {
             if (sb.length() != 0) {
                 sb.append(ExtendedRequest.PARAMETER_SPLIT);
             }
             sb.append(extendedParameters.getPaginationPageSizeName()).append(LIMIT_SPLIT).append(limit);
         }
-    }
-
-    public Integer getIndexCursor() {
-        return indexCursor;
     }
 
     public Integer getLimit() {
