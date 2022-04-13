@@ -2,12 +2,15 @@ package org.dcsa.core.extendedrequest;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Getter
 @Configuration
 public class ExtendedParameters {
 
@@ -43,11 +46,24 @@ public class ExtendedParameters {
     private String sortParameterName;
 
     // Default pagination pageSize set to ALL elements
-    // This can be changed in the Application.yaml file to 20 by writing:
+    //
+    // If set to 0, then this uses the value of pagination.maxPageSize
+    //
+    // This can be changed in theaApplication.yaml file to 20 by writing:
     // pagination:
     //   defaultPageSize: 20
-    @Value( "${pagination.defaultPageSize:#{null}}" )
-    private Integer defaultPageSize;
+    @Value( "${pagination.defaultPageSize:0}" )
+    private int defaultPageSize;
+
+    // Max pagination pageSize set to ALL elements
+    //
+    // Set to 0 for no limit
+    //
+    // This can be changed in the application.yaml file to 100 by writing:
+    // pagination:
+    //   maxPageSize: 100
+    @Value( "${pagination.maxPageSize:0}" )
+    private int maxPageSize;
 
     // Default pagination pageSize variable name set to "limit"
     // This can be changed in Application.yaml file to "pageSize" by writing:
@@ -145,56 +161,7 @@ public class ExtendedParameters {
     // search:
     //   queryParameterAttributeSeparator: "_"
     @Value("${search.queryParameterAttributeSeparator::}")
-    @Getter
     private String queryParameterAttributeSeparator;
-
-    public String getSortDirectionSeparator() {
-        return sortDirectionSeparator;
-    }
-
-    public String getSortDirectionAscendingName() {
-        return sortDirectionAscendingName;
-    }
-
-    public String getSortDirectionDescendingName() {
-        return sortDirectionDescendingName;
-    }
-
-    public String getSortParameterName() {
-        return sortParameterName;
-    }
-
-    public Integer getDefaultPageSize() {
-        return defaultPageSize;
-    }
-
-    public String getPaginationPageSizeName() {
-        return paginationPageSizeName;
-    }
-
-    public String getPaginationCursorName() {
-        return paginationCursorName;
-    }
-
-    public String getPaginationCurrentPageName() {
-        return paginationCurrentPageName;
-    }
-
-    public String getPaginationNextPageName() {
-        return paginationNextPageName;
-    }
-
-    public String getPaginationPreviousPageName() {
-        return paginationPreviousPageName;
-    }
-
-    public String getPaginationFirstPageName() {
-        return paginationFirstPageName;
-    }
-
-    public String getPaginationLastPageName() {
-        return paginationLastPageName;
-    }
 
     public List<String> getReservedParameters() {
         return reservedParameters != null ?
@@ -202,16 +169,24 @@ public class ExtendedParameters {
                 Collections.emptyList();
     }
 
-    public String getEncryptionKey() {
-        return encryptionKey;
+    public int getDefaultPageSize() {
+      if (defaultPageSize == 0) {
+        return maxPageSize;
+      }
+      return defaultPageSize;
     }
 
-    public String getIndexCursorName() {
-        return indexCursorName;
+  @EventListener(ApplicationStartedEvent.class)
+  public void verifyConfiguration() {
+    if (defaultPageSize < 0) {
+      throw new IllegalStateException("Invalid configuration: pagination.defaultPageSize must be greater than or equal to 0");
     }
-
-    public String getEnumSplit() {
-        return enumSplit;
+    if (maxPageSize < 0) {
+      throw new IllegalStateException("Invalid configuration: pagination.maxPageSize must be greater than or equal to 0");
     }
+    if (maxPageSize > 0 && defaultPageSize > maxPageSize) {
+      throw new IllegalStateException("Invalid configuration: pagination.maxPageSize must be greater than pagination.defaultPageSize (or set to 0)");
+    }
+  }
 
 }
