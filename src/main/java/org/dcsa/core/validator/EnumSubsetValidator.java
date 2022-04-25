@@ -42,12 +42,13 @@ public class EnumSubsetValidator implements ConstraintValidator<EnumSubset, Obje
               : Stream.of((String) types);
       return enumStream.allMatch(e -> subsetTypes.contains(e));
     } else if (types instanceof List) {
-      List<? extends Enum> enumList = (List<? extends Enum>) types;
+      @SuppressWarnings("unchecked")
+      List<? extends Enum<?>> enumList = (List<? extends Enum<?>>) types;
       return enumList.stream()
           .map(Enum::name)
-          .allMatch(e -> subsetTypes.contains(e));
+          .allMatch(subsetTypes::contains);
     } else if (types instanceof Enum) {
-      return subsetTypes.contains(((Enum) types).name());
+      return subsetTypes.contains(((Enum<?>) types).name());
     } else {
       throw new NotImplementedException("type not implemented:" + types.getClass().getTypeName());
     }
