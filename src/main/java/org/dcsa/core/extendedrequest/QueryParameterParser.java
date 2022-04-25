@@ -3,7 +3,7 @@ package org.dcsa.core.extendedrequest;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.dcsa.core.exception.GetException;
+import org.dcsa.core.exception.ConcreteRequestErrorMessageException;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.r2dbc.dialect.PostgresDialect;
@@ -28,8 +28,6 @@ import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 public class QueryParameterParser<T> {
-
-    private static final Predicate<String> IGNORE_NONE = (a) -> false;
 
     public static final FilterCondition EMPTY_CONDITION = InlineableFilterCondition.of(TrueCondition.INSTANCE);
 
@@ -71,10 +69,6 @@ public class QueryParameterParser<T> {
         return Collections.unmodifiableMap(copy);
     }
 
-    public void parseQueryParameter(Map<String, List<String>> queryParameters) {
-        parseQueryParameter(queryParameters, IGNORE_NONE);
-    }
-
     public void parseQueryParameter(Map<String, List<String>> queryParameters, Predicate<String> ignoredParameter) {
         for (Map.Entry<String, List<String>> queryParameter : queryParameters.entrySet()) {
             final String parameterKey = queryParameter.getKey();
@@ -111,7 +105,8 @@ public class QueryParameterParser<T> {
                 filters.add(filterCondition);
             } else {
                 if (values.size() != 1) {
-                    throw new GetException("Cannot have " + parameterKey + " twice: Feature is not implemented");
+                    throw ConcreteRequestErrorMessageException.invalidQuery(parameterKey,
+                      "Cannot have " + parameterKey + " twice: Feature is not implemented");
                 }
                 parseSingleValueQueryParameter(queryField, comparisonType, fieldAttribute, values.get(0));
             }
@@ -137,7 +132,8 @@ public class QueryParameterParser<T> {
             if (attribute == null) {
                 comparisonType = ComparisonType.EQ;
             } else if (comparisonType != ComparisonType.EQ && comparisonType != ComparisonType.NEQ) {
-                throw new GetException("Cannot use attribute (operator) " + attribute + " on " + queryField.getJsonName()
+                throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                  "Cannot use attribute (operator) " + attribute + " on " + queryField.getJsonName()
                         + " with null value: Null values can only be used with strictly equal or not equal");
             }
             Condition condition = Conditions.isNull(comparisonType.defaultFieldConversion(queryField));
@@ -155,7 +151,8 @@ public class QueryParameterParser<T> {
             try {
                 return ComparisonType.valueOf(fieldAttribute.toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new GetException("Attribute (operator) " + fieldAttribute + " is invalid for " + queryField.getJsonName());
+                throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                  "Attribute (operator) " + fieldAttribute + " is invalid for " + queryField.getJsonName());
             }
         }
         return ComparisonType.EQ;
@@ -169,8 +166,8 @@ public class QueryParameterParser<T> {
         }
 
         if (value == null || value.equals("")) {
-            throw new GetException("Cannot use empty value as filter for " + queryField.getJsonName()
-                    + ".");
+            throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+              "Cannot use empty value as filter for " + queryField.getJsonName() + ".");
         }
 
         if (fieldType.isEnum()) {
@@ -181,7 +178,8 @@ public class QueryParameterParser<T> {
                 comparisonType = ComparisonType.EQ;
             }
             if (comparisonType.isRequiredOrdering()) {
-                throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
+                throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                  "Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": It does not have an ordering but the operator needs ordering");
             }
             if (enumList.length == 1) {
@@ -207,23 +205,27 @@ public class QueryParameterParser<T> {
             parsed = value;
         } else if (UUID.class.equals(fieldType)) {
             if (comparisonType.isRequiredOrdering()) {
-                throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
+                throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                  "Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": It does not have an ordering but the operator needs ordering");
             }
             if (comparisonType != ComparisonType.EQ) {
-                throw new GetException("Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
+                throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                  "Cannot use attribute (operator) " + fieldAttribute + " on " + queryField.getJsonName()
                         + ": UUID values can only be used with strictly equal");
             }
             try {
                 parsed = UUID.fromString(value);
             } catch (IllegalArgumentException e) {
-                throw new GetException("Cannot filter on " + queryField.getJsonName() + ": The value \"" + value
+                throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                  "Cannot filter on " + queryField.getJsonName() + ": The value \"" + value
                         + "\" could not be parsed as an UUID");
             }
         } else if (Temporal.class.isAssignableFrom(fieldType)) {
             String dateFormat = queryField.getDatePattern();
             if (dateFormat != null && !dateFormat.equals("")) {
-                throw new GetException("Cannot filter on " + queryField.getJsonName() + ": It uses a custom date pattern");
+                throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                  "Cannot filter on " + queryField.getJsonName() + ": It uses a custom date pattern");
             }
 
             try {
@@ -234,10 +236,12 @@ public class QueryParameterParser<T> {
                 } else if (LocalDateTime.class.equals(fieldType)) {
                     parsed = LocalDateTime.parse(value);
                 } else {
-                    throw new GetException("Cannot filter on " + queryField.getJsonName() + ": Unsupported Temporal class");
+                    throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                      "Cannot filter on " + queryField.getJsonName() + ": Unsupported Temporal class");
                 }
             } catch (DateTimeParseException e) {
-                throw new GetException("Cannot filter on " + queryField.getJsonName() + ": The value \"" + value
+                throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                  "Cannot filter on " + queryField.getJsonName() + ": The value \"" + value
                         + "\" could not be parsed in the correct date format");
             }
         } else if (Number.class.isAssignableFrom(fieldType)) {
@@ -248,7 +252,8 @@ public class QueryParameterParser<T> {
             } else if (BigDecimal.class.equals(fieldType)) {
                 parsed = new BigDecimal(value);
             } else {
-                throw new GetException("Cannot filter on " + queryField.getJsonName()
+                throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                  "Cannot filter on " + queryField.getJsonName()
                         + ": Numeric format " + fieldType.getTypeName() + " is not supported");
             }
         } else if (Boolean.class.equals(fieldType)) {
@@ -257,10 +262,12 @@ public class QueryParameterParser<T> {
             } else if ("FALSE".equalsIgnoreCase(value)) {
                 parsed = Boolean.FALSE;
             } else {
-                throw new GetException("Boolean filter value must be either: (TRUE|FALSE) - value not recognized: " + value + " on filter: " + fieldType.getSimpleName());
+                throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+                  "Boolean filter value must be either: (TRUE|FALSE) - value not recognized: " + value + " on filter: " + fieldType.getSimpleName());
             }
         } else {
-            throw new GetException("Type on filter (" + queryField.getJsonName() + ") not recognized: " + fieldType.getSimpleName());
+            throw ConcreteRequestErrorMessageException.invalidQuery(queryField.getJsonName(),
+              "Type on filter (" + queryField.getJsonName() + ") not recognized: " + fieldType.getSimpleName());
         }
         return parsed;
     }
@@ -271,15 +278,18 @@ public class QueryParameterParser<T> {
         try {
             queryField = dbAnalysis.getQueryFieldFromJSONName(jsonName);
         } catch (IllegalArgumentException e) {
-            throw new GetException("Unknown parameter/field name: " + jsonName);
+            throw ConcreteRequestErrorMessageException.invalidQuery(jsonName,
+              "Unknown parameter/field name: " + jsonName);
         }
         javaField = queryField.getCombinedModelField();
         if (javaField != null) {
             if (javaField.isAnnotationPresent(JsonIgnore.class)) {
-                throw new GetException("Cannot filter on field: " + jsonName + " (field is ignored)");
+                throw ConcreteRequestErrorMessageException.invalidQuery(jsonName,
+                  "Cannot filter on field: " + jsonName + " (field is ignored)");
             }
             if (javaField.isAnnotationPresent(Transient.class)) {
-                throw new GetException("Cannot filter on field: " + jsonName + " (field is transient)");
+                throw ConcreteRequestErrorMessageException.invalidQuery(jsonName,
+                  "Cannot filter on field: " + jsonName + " (field is transient)");
             }
         }
         referencedFields.add(queryField);
