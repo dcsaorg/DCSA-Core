@@ -22,7 +22,8 @@ public class CitySpecificExtendedRequest extends ExtendedRequest<City> {
         return builder
                 .join(Join.JoinType.JOIN, cityTable, countryTable, County.class)
                 .onFieldEqualsThen("countryId", "id")
-                .registerQueryField(SqlIdentifier.unquoted("country_name"), "cn", String.class, QueryFieldConditionGenerator.inCommaSeparatedList());
+                .registerQueryField(SqlIdentifier.unquoted("country_name"), "cn", String.class, QueryFieldConditionGenerator.inCommaSeparatedList())
+                .finishTable();
 
     }
 }

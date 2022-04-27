@@ -26,6 +26,7 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
     private final Class<T> entityType;
 
     private final Map<String, QueryField> jsonName2DbField = new HashMap<>();
+    private final Map<String, QueryFieldRestriction> jsonName2Restriction = new HashMap<>();
     private final Map<String, QueryField> selectName2DbField = new HashMap<>();
     private final Map<String, QueryField> internalQueryName2DbField = new HashMap<>();
     private final Set<String> declaredButNotSelectable = new HashSet<>();
@@ -49,7 +50,7 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
         return this;
     }
 
-    public JoinDescriptor getJoinDescriptor(Class<?> modelClass) {
+    protected JoinDescriptor getJoinDescriptor(Class<?> modelClass) {
         Set<String> aliases;
         if (this.joinAlias2Class.isEmpty()) {
             initJoinAliasTable();
@@ -68,7 +69,7 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
         return getJoinDescriptor(aliases.stream().findFirst().get());
     }
 
-    public JoinDescriptor getJoinDescriptor(String aliasId) {
+    protected JoinDescriptor getJoinDescriptor(String aliasId) {
         return joinAlias2Descriptor.get(aliasId);
     }
 
@@ -394,6 +395,18 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
     }
 
     @Override
+    public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerRestrictionOnQueryField(String jsonName, QueryFieldRestriction queryFieldRestriction) {
+      if (!this.jsonName2DbField.containsKey(jsonName)) {
+        throw new IllegalArgumentException("Cannot put a restriction on the undeclared field \"" + jsonName
+          + "\". Register the query field first.");
+      }
+      if (this.jsonName2Restriction.putIfAbsent(jsonName, queryFieldRestriction) != null) {
+        throw new IllegalArgumentException("Cannot put multiple restrictions on a field with JSON name: " + jsonName);
+      }
+      return this;
+    }
+
+    @Override
     protected String getColumnName(Class<?> clazz, String fieldName, String annotationVariablePrefix) {
         try {
             return ReflectUtility.transformFromFieldNameToColumnName(
@@ -536,6 +549,7 @@ public class DefaultDBEntityAnalysisBuilder<T> extends AbstractDBEntityAnalysisB
         used = true;
         return new DefaultDBEntityAnalysis<>(
                 Collections.unmodifiableMap(jsonName2DbField),
+                Collections.unmodifiableMap(jsonName2Restriction),
                 Collections.unmodifiableMap(selectName2DbField),
                 Collections.unmodifiableSet(declaredButNotSelectable),
                 Collections.unmodifiableList(allSelectableFields),
