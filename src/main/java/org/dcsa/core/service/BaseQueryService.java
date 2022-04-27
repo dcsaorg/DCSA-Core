@@ -13,9 +13,9 @@ import reactor.core.publisher.Flux;
  */
 @SuppressWarnings("unused")
 public interface BaseQueryService<DM, TO, I> {
-    /**
-     * Public as an implementation detail.  Do not use this method.
-     */
-    Class<DM> getModelClass();
-    Flux<TO> findAllExtended(ExtendedRequest<DM> extendedRequest);
+  /**
+   * Public as an implementation detail.  Do not use this method.
+   */
+  Class<DM> getModelClass();
+  Flux<TO> findAllExtended(ExtendedRequest<DM> extendedRequest);
 }

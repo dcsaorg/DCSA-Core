@@ -16,21 +16,21 @@ import java.util.function.Function;
 @Slf4j
 public class DCSACoreConfiguration {
 
-    @Value("${dcsa.supportProxyHeaders:true}")
-    private boolean supportProxyHeaders;
+  @Value("${dcsa.supportProxyHeaders:true}")
+  private boolean supportProxyHeaders;
 
-    @Bean
-    public R2dbcDialect r2dbcDialectBean(DatabaseClient databaseClient) {
-        return DialectResolver.getDialect(databaseClient.getConnectionFactory());
-    }
+  @Bean
+  public R2dbcDialect r2dbcDialectBean(DatabaseClient databaseClient) {
+    return DialectResolver.getDialect(databaseClient.getConnectionFactory());
+  }
 
-    @Bean
-    public Function<ServerHttpRequest, ServerHttpRequest> forwardedHeaderTransformer() {
-        if (!supportProxyHeaders) {
-            log.info("Disabled support for Proxy headers (X-Forwarded-*, etc.). Use dcsa.supportProxyHeader=[true|false] to change this");
-            return Function.identity();
-        }
-        log.info("Enabled support for Proxy headers (X-Forwarded-*, etc.) from *any* IP. Use dcsa.supportProxyHeader=[true|false] to change this");
-        return new ForwardedHeaderTransformer();
+  @Bean
+  public Function<ServerHttpRequest, ServerHttpRequest> forwardedHeaderTransformer() {
+    if (!supportProxyHeaders) {
+      log.info("Disabled support for Proxy headers (X-Forwarded-*, etc.). Use dcsa.supportProxyHeader=[true|false] to change this");
+      return Function.identity();
     }
+    log.info("Enabled support for Proxy headers (X-Forwarded-*, etc.) from *any* IP. Use dcsa.supportProxyHeader=[true|false] to change this");
+    return new ForwardedHeaderTransformer();
+  }
 }

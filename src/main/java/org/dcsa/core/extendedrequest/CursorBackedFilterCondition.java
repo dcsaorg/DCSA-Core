@@ -7,9 +7,9 @@ import java.util.Map;
 
 public interface CursorBackedFilterCondition extends FilterCondition {
 
-    Iterable<QueryField> getReferencedQueryFields();
+  Iterable<QueryField> getReferencedQueryFields();
 
-    Bindings getBindings();
+  Bindings getBindings();
 
-    Map<String, List<String>> getCursorParameters();
+  Map<String, List<String>> getCursorParameters();
 }
