@@ -1,9 +1,7 @@
 package org.dcsa.core.query.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.dcsa.core.extendedrequest.JoinDescriptor;
-import org.dcsa.core.extendedrequest.QueryFieldConditionGenerator;
-import org.dcsa.core.extendedrequest.QueryFields;
+import org.dcsa.core.extendedrequest.*;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.dcsa.core.util.ReflectUtility;
 import org.springframework.data.relational.core.sql.*;
@@ -11,6 +9,8 @@ import org.springframework.data.relational.core.sql.*;
 import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnalysis.DBEntityAnalysisBuilder<T> {
 
@@ -25,6 +25,9 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
         }
         return joinDescriptor.getRHSTable();
     }
+
+    protected abstract JoinDescriptor getJoinDescriptor(String alias);
+    protected abstract JoinDescriptor getJoinDescriptor(Class<?> model);
 
     protected TableLike getTableFor(Class<?> lhsModel) {
         JoinDescriptor joinDescriptor = getJoinDescriptor(lhsModel);
@@ -180,16 +183,23 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
             Column lhsColumn = toColumn.apply(lhsTable, lhs);
             Column rhsColumn = toColumn.apply(rhsTable, rhs);
             Condition newCondition = columnsAreEqual(lhsColumn, rhsColumn);
-            return (nextAggregator) -> of(
-              builder,
-              joinType,
-              lhsTable,
-              rhsTable,
-              rhsModel,
-              this.currentAggregator.merge(this.condition, newCondition),
-              nextAggregator
+
+            return ConditionChainBuilderImpl.of(
+              // on endCondition
+              () -> builder.joinOnThenImpl(joinType, newCondition, lhsTable, rhsTable, rhsModel),
+              // on chaining into a new condition
+              (nextAggregator) -> of(
+                builder,
+                joinType,
+                lhsTable,
+                rhsTable,
+                rhsModel,
+                this.currentAggregator.merge(this.condition, newCondition),
+                nextAggregator
+              )
             );
         }
+
 
         private <P> DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> onEqualsThenImpl(P lhs, P rhs, BiFunction<TableLike, P, Column> toColumn) {
             Column lhsColumn = toColumn.apply(lhsTable, lhs);
@@ -232,18 +242,23 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
         }
     }
 
-    @FunctionalInterface
-    private interface ConditionChainBuilderImpl<T, R> extends DBEntityAnalysis.ConditionChainBuilder<T, R> {
+    @RequiredArgsConstructor(staticName = "of")
+    private static class ConditionChainBuilderImpl<T, R> implements DBEntityAnalysis.ConditionChainBuilder<T, R> {
+      private final Supplier<R> resultOnEnd;
+      private final Function<ConditionAggregator, DBEntityAnalysis.ConditionBuilder<T, R>> chainImpl;
 
-      default DBEntityAnalysis.ConditionBuilder<T, R> and() {
-        return chainImpl(ConditionAggregator.AND_CONDITION);
+      public DBEntityAnalysis.ConditionBuilder<T, R> and() {
+        return chainImpl.apply(ConditionAggregator.AND_CONDITION);
       }
 
-      default DBEntityAnalysis.ConditionBuilder<T, R> or() {
-        return chainImpl(ConditionAggregator.OR_CONDITION);
+      public DBEntityAnalysis.ConditionBuilder<T, R> or() {
+        return chainImpl.apply(ConditionAggregator.OR_CONDITION);
       }
 
-      DBEntityAnalysis.ConditionBuilder<T, R> chainImpl(ConditionAggregator conditionAggregator);
+      @Override
+      public R endCondition() {
+        return resultOnEnd.get();
+      }
     }
 
     @RequiredArgsConstructor(staticName = "of")
@@ -281,11 +296,17 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
             return DBEntityAnalysisJoinBuilderImpl.of(builder, joinType, lhsTable, rhsTable, rhsModel);
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryFieldAlias(String jsonName, String jsonNameAlias) {
-            return builder.registerQueryFieldAlias(jsonName, jsonNameAlias);
+        public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> registerQueryFieldAlias(String jsonName, String jsonNameAlias) {
+            builder.registerQueryFieldAlias(jsonName, jsonNameAlias);
+            return this;
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryFieldFromField(String fieldName, String jsonPrefix, QueryFieldConditionGenerator conditionGenerator) {
+        @Override
+        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> finishTable() {
+          return builder;
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> registerQueryFieldFromField(String fieldName, String jsonPrefix, QueryFieldRestriction queryFieldRestriction, QueryFieldConditionGenerator conditionGenerator) {
             Field field;
             if (lhsModel == null) {
                 throw new UnsupportedOperationException("Cannot use field based field registration as there is no model"
@@ -297,17 +318,29 @@ public abstract class AbstractDBEntityAnalysisBuilder<T> implements DBEntityAnal
                 throw new IllegalArgumentException("The model " + lhsModel.getSimpleName() + " does not have a field \""
                         + fieldName + "\"");
             }
-            return builder.registerQueryField(QueryFields.queryFieldFromFieldWithSelectPrefix(
-                    field,
-                    lhsTable,
-                    false,
-                    jsonPrefix,
-                    conditionGenerator
-            ));
+            QueryField queryField = QueryFields.queryFieldFromFieldWithSelectPrefix(
+              field,
+              lhsTable,
+              false,
+              jsonPrefix,
+              conditionGenerator
+            );
+            builder.registerQueryField(queryField);
+            if (queryFieldRestriction != null) {
+              builder.registerRestrictionOnQueryField(queryField.getJsonName(), queryFieldRestriction);
+            }
+            return this;
         }
 
-        public DBEntityAnalysis.DBEntityAnalysisBuilder<T> registerQueryField(SqlIdentifier columnName, String jsonName, Class<?> valueType, QueryFieldConditionGenerator conditionGenerator) {
-            return builder.registerQueryField(QueryFields.nonSelectableQueryField(lhsTable.column(columnName), jsonName, valueType, conditionGenerator));
+        @Override
+        public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> registerRestrictionOnQueryField(String jsonName, QueryFieldRestriction queryFieldRestriction) {
+          builder.registerRestrictionOnQueryField(jsonName, queryFieldRestriction);
+          return this;
+        }
+
+        public DBEntityAnalysis.DBEntityAnalysisWithTableBuilder<T> registerQueryField(SqlIdentifier columnName, String jsonName, Class<?> valueType, QueryFieldConditionGenerator conditionGenerator) {
+            builder.registerQueryField(QueryFields.nonSelectableQueryField(lhsTable.column(columnName), jsonName, valueType, conditionGenerator));
+            return this;
         }
 
     }

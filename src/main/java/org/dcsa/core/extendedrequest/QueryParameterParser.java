@@ -53,6 +53,7 @@ public class QueryParameterParser<T> {
             throw new IllegalStateException("build must only be called once");
         }
         used = true;
+        handleDefaultParameters();
         return DelegatingCursorBackedFilterCondition.of(
                 andAllFilters(filters, false),
                 immutableCopy(parsedParameters),
@@ -61,12 +62,54 @@ public class QueryParameterParser<T> {
         );
     }
 
+    private void handleDefaultParameters() {
+      for (QueryField queryField : dbAnalysis.getQueryFields()) {
+        QueryFieldRestriction restriction = dbAnalysis.getQueryFieldRestriction(queryField);
+        if (restriction == null || !restriction.hasDefault() || !referencedFields.add(queryField)) {
+          continue;
+        }
+        assert restriction.defaultValue() != null && !restriction.defaultValue().isEmpty();
+        parseSingleParameter(queryField.getJsonName(), queryField.getJsonName(), null, restriction.defaultValue(), false);
+      }
+    }
+
     private static Map<String, List<String>> immutableCopy(Map<String, List<String>> orig) {
         LinkedHashMap<String, List<String>> copy = new LinkedHashMap<>(orig.size());
         for (Map.Entry<String, List<String>> entry : orig.entrySet()) {
             copy.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return Collections.unmodifiableMap(copy);
+    }
+
+    private void parseSingleParameter(String parameterKey, String jsonName, String fieldAttribute, List<String> values, boolean validateValue) {
+      if (values.isEmpty()) {
+        throw new IllegalArgumentException("No values provided for " + parameterKey);
+      }
+      QueryField queryField = getQueryFieldFromJSONName(jsonName);
+      if (validateValue) {
+        QueryFieldRestriction queryFieldRestriction = dbAnalysis.getQueryFieldRestriction(queryField);
+        if (queryFieldRestriction != null) {
+          queryFieldRestriction.validateValues(queryField, values);
+        }
+      }
+      ComparisonType comparisonType = parseComparisonType(queryField, fieldAttribute);
+      Function<String, Expression> value2BindVariable = v -> this.bindQueryParameterValue(queryField, comparisonType, fieldAttribute, v);
+      FilterCondition filterCondition = queryField.generateCondition(
+        comparisonType,
+        fieldAttribute,
+        values,
+        value2BindVariable
+      );
+      if (filterCondition != null) {
+        filters.add(filterCondition);
+      } else {
+        if (values.size() != 1) {
+          throw ConcreteRequestErrorMessageException.invalidQuery(parameterKey,
+            "Cannot have " + parameterKey + " twice: Feature is not implemented");
+        }
+        parseSingleValueQueryParameter(queryField, comparisonType, fieldAttribute, values.get(0));
+      }
+      parsedParameters.computeIfAbsent(parameterKey, ignored -> new ArrayList<>()).addAll(values);
     }
 
     public void parseQueryParameter(Map<String, List<String>> queryParameters, Predicate<String> ignoredParameter) {
@@ -89,28 +132,7 @@ public class QueryParameterParser<T> {
             } else {
                 fieldAttribute = null;
             }
-            if (values.isEmpty()) {
-                throw new IllegalArgumentException("No values provided for " + parameterKey);
-            }
-
-            QueryField queryField = getQueryFieldFromJSONName(jsonName);
-            ComparisonType comparisonType = parseComparisonType(queryField, fieldAttribute);
-            Function<String, Expression> value2BindVariable = v -> this.bindQueryParameterValue(queryField, comparisonType, fieldAttribute, v);
-            FilterCondition filterCondition = queryField.generateCondition(
-                    comparisonType,
-                    fieldAttribute,
-                    values,
-                    value2BindVariable);
-            if (filterCondition != null) {
-                filters.add(filterCondition);
-            } else {
-                if (values.size() != 1) {
-                    throw ConcreteRequestErrorMessageException.invalidQuery(parameterKey,
-                      "Cannot have " + parameterKey + " twice: Feature is not implemented");
-                }
-                parseSingleValueQueryParameter(queryField, comparisonType, fieldAttribute, values.get(0));
-            }
-            parsedParameters.computeIfAbsent(parameterKey, ignored -> new ArrayList<>()).addAll(values);
+            parseSingleParameter(parameterKey, jsonName, fieldAttribute, values, true);
         }
     }
 
@@ -311,10 +333,11 @@ public class QueryParameterParser<T> {
     }
 
     private static Expression surroundWithWildCards(Expression rhs) {
-        List<Expression> params = new ArrayList<>(3);
-        params.add(SQL.literalOf("%"));
-        params.add(rhs);
-        params.add(SQL.literalOf("%"));
+        List<Expression> params = List.of(
+          SQL.literalOf("%"),
+          rhs,
+          SQL.literalOf("%")
+        );
         return SimpleFunction.create("CONCAT", params);
     }
 
