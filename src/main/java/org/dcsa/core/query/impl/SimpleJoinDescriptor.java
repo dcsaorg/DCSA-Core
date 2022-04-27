@@ -8,18 +8,18 @@ import org.springframework.data.relational.core.sql.*;
 @Data(staticConstructor = "of")
 class SimpleJoinDescriptor implements JoinDescriptor {
 
-    @NonNull
-    private final Join.JoinType joinType;
+  @NonNull
+  private final Join.JoinType joinType;
 
-    private final TableLike RHSTable;
+  private final TableLike RHSTable;
 
-    private final Class<?> RHSModel;
+  private final Class<?> RHSModel;
 
-    private final Condition condition;
+  private final Condition condition;
 
-    private final String dependentAlias;
+  private final String dependentAlias;
 
-    public static JoinDescriptor of(Join.JoinType joinType, Column lhsColumn, Column rhsColumn, String dependentAlias) {
-        return of(joinType, rhsColumn.getTable(), null, Conditions.isEqual(lhsColumn, rhsColumn), dependentAlias);
-    }
+  public static JoinDescriptor of(Join.JoinType joinType, Column lhsColumn, Column rhsColumn, String dependentAlias) {
+    return of(joinType, rhsColumn.getTable(), null, Conditions.isEqual(lhsColumn, rhsColumn), dependentAlias);
+  }
 }

@@ -10,29 +10,29 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class ExtendedRepositoryImpl<T, I> extends SimpleR2dbcRepository<T, I> implements ExtendedRepository<T, I> {
-    private final DatabaseClient databaseClient;
-    private final RowMapper rowMapper = new RowMapper();
+  private final DatabaseClient databaseClient;
+  private final RowMapper rowMapper = new RowMapper();
 
-    public ExtendedRepositoryImpl(MappingRelationalEntityInformation<T, I> mappingRelationalEntityInformation,
-                                  R2dbcEntityTemplate r2dbcEntityTemplate,
-                                  MappingR2dbcConverter mappingR2dbcConverter) {
-        super(mappingRelationalEntityInformation, r2dbcEntityTemplate, mappingR2dbcConverter);
-        this.databaseClient = r2dbcEntityTemplate.getDatabaseClient();
-    }
+  public ExtendedRepositoryImpl(MappingRelationalEntityInformation<T, I> mappingRelationalEntityInformation,
+                                R2dbcEntityTemplate r2dbcEntityTemplate,
+                                MappingR2dbcConverter mappingR2dbcConverter) {
+    super(mappingRelationalEntityInformation, r2dbcEntityTemplate, mappingR2dbcConverter);
+    this.databaseClient = r2dbcEntityTemplate.getDatabaseClient();
+  }
 
-    public Mono<Integer> countAllExtended(final ExtendedRequest<T> extendedRequest) {
-        return extendedRequest.getCount(databaseClient)
-                .map((row, metadata) -> row.get(0, Integer.class))
-                .first()
-                .defaultIfEmpty(0);
-    }
+  public Mono<Integer> countAllExtended(final ExtendedRequest<T> extendedRequest) {
+    return extendedRequest.getCount(databaseClient)
+      .map((row, metadata) -> row.get(0, Integer.class))
+      .first()
+      .defaultIfEmpty(0);
+  }
 
-    public Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest) {
-        boolean ignoreUnknownProperties = extendedRequest.ignoreUnknownProperties();
-        return extendedRequest.getFindAll(databaseClient)
-                .map((row, metadata) ->
-                        rowMapper.mapRow(row, metadata, extendedRequest.getDbEntityAnalysis(),
-                                extendedRequest.getModelClass(), ignoreUnknownProperties)
-                ).all();
-    }
+  public Flux<T> findAllExtended(final ExtendedRequest<T> extendedRequest) {
+    boolean ignoreUnknownProperties = extendedRequest.ignoreUnknownProperties();
+    return extendedRequest.getFindAll(databaseClient)
+      .map((row, metadata) ->
+        rowMapper.mapRow(row, metadata, extendedRequest.getDbEntityAnalysis(),
+          extendedRequest.getModelClass(), ignoreUnknownProperties)
+      ).all();
+  }
 }

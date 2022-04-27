@@ -24,7 +24,7 @@ public class EnumValidator implements ConstraintValidator<ValidEnum, String> {
     }
 
     Stream<String> enumStream =
-        values.contains(",") ? Arrays.stream(values.split(",")) : Stream.of(values);
+      values.contains(",") ? Arrays.stream(values.split(",")) : Stream.of(values);
 
     return enumStream.allMatch(e -> EnumUtils.isValidEnum(clazz, e));
   }

@@ -5,13 +5,13 @@ import org.springframework.data.relational.core.sql.Condition;
 
 public interface FilterCondition {
 
-    Condition computeCondition(R2dbcDialect r2dbcDialect);
+  Condition computeCondition(R2dbcDialect r2dbcDialect);
 
-    default Condition computeCondition() {
-        return computeCondition(null);
-    };
+  default Condition computeCondition() {
+    return computeCondition(null);
+  };
 
-    default boolean isInlineable() {
-        return false;
-    }
+  default boolean isInlineable() {
+    return false;
+  }
 }
