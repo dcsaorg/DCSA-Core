@@ -21,17 +21,9 @@ import org.springframework.r2dbc.core.PreparedOperation;
 import org.springframework.r2dbc.core.binding.BindTarget;
 import org.springframework.r2dbc.core.binding.Bindings;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -184,13 +176,6 @@ public class ExtendedRequest<T> {
     }
 
     byte[] decodedCursor = Base64.getUrlDecoder().decode(cursorValue);
-
-    // If encryption is used - decrypt the parameter
-    String encryptionKey = getExtendedParameters().getEncryptionKey();
-    if (encryptionKey != null) {
-      decodedCursor = decrypt(encryptionKey, decodedCursor);
-    }
-
     Map<String, List<String>> params = convertToQueryStringToHashMap(new String(decodedCursor, StandardCharsets.UTF_8));
     parseParameter(params, true);
     isCursor = true;
@@ -342,54 +327,6 @@ public class ExtendedRequest<T> {
     }
   }
 
-  /*
-   * DO NOT USE THIS CIPHER FOR ANYTHING IMPORTANT (we are not in asseco-reactive-api-code)
-   * -> Reason: https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Electronic_codebook_(ECB)
-   *
-   * In this case, we are using it as a mild deterrent for having people not fiddle with our cursor argument
-   * because we intend to change the implementation at a later date.  Someone breaking it can at best change
-   * which "page" they are on in a search and as such it has no real value for them to break the encryption
-   * (and we lose very little if they do).
-   *
-   * If you are looking for a:
-   *  * good encryption algorithm for keeping things *SECRET*, then AES/GCM/PKCS5PADDING is a much better choice
-   *    but requires an IV (initialization vector), which we are too lazy to manage here (given the lack of value
-   *    in what we are protecting).
-   *  * good algorithm for keeping things *UNCHANGED* (or detect manipulation), then look for a HMAC a la
-   *    HmacSHA512.
-   *
-   * Though, please consider if you are really on the right track.  Sending encrypted values to the client that
-   * it is not supposed to understand is rarely a good idea.
-   *
-   * DO NOT COPY PASTE THIS WITHOUT UNDERSTANDING YOUR OWN USE CASE.  The /ECB/ part is insecure for almost
-   * anything you want to keep a secret.
-   */
-  private static final String TRANSFORMATION = "AES/ECB/PKCS5PADDING"; /* !INSECURE! */
-
-  private byte[] encrypt(String key, byte[] text) {
-    try {
-      Key aesKey = new SecretKeySpec(key.getBytes(), "AES");
-      Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-
-      cipher.init(Cipher.ENCRYPT_MODE, aesKey);
-      return cipher.doFinal(text);
-    } catch (NoSuchAlgorithmException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException exception) {
-      throw new GetException("Error creating encryption algorithm:" + exception.getMessage());
-    }
-  }
-
-  private byte[] decrypt(String key, byte[] text) {
-    try {
-      Key aesKey = new SecretKeySpec(key.getBytes(), "AES");
-      Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-
-      cipher.init(Cipher.DECRYPT_MODE, aesKey);
-      return cipher.doFinal(text);
-    } catch (NoSuchAlgorithmException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException exception) {
-      throw new GetException("Error creating encryption algorithm:" + exception.getMessage());
-    }
-  }
-
   public void insertHeaders(ServerHttpResponse response, ServerHttpRequest request) {
     HttpHeaders headers = response.getHeaders();
     StringBuilder exposeHeaders = new StringBuilder();
@@ -445,12 +382,6 @@ public class ExtendedRequest<T> {
       return sb.toString();
     }
     byte[] parameters = sb.toString().getBytes(StandardCharsets.UTF_8);
-
-    // If encryption is used - encrypt the parameter string
-    String encryptionKey = getExtendedParameters().getEncryptionKey();
-    if (encryptionKey != null) {
-      parameters = encrypt(encryptionKey, parameters);
-    }
     return getExtendedParameters().getPaginationCursorName() + CURSOR_SPLIT + Base64.getUrlEncoder().withoutPadding().encodeToString(parameters);
   }
 

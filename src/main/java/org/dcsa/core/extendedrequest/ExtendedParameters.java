@@ -128,13 +128,6 @@ public class ExtendedParameters {
   @Value( "${pagination.reservedParameters:#{null}}" )
   private String reservedParameters;
 
-  // Set the encryption key used to encrypt cursor (KeySet) based pagination. If null - no encryption will be used.
-  // This can be changed in Application.yaml fil to "xyz123" by writing:
-  // pagination:
-  //   encryptionKey: xyz123
-  @Value( "${pagination.encryptionKey:#{null}}" )
-  private String encryptionKey;
-
   // Set the internal pagination parameter name to "|Offset|". It is important that this name does NOT
   // conflict with field names. It needs to be unique!
   // This can be changed in Application.yaml fil to "|index|" by writing:
