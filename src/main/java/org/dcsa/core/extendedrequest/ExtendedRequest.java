@@ -6,7 +6,7 @@ import io.r2dbc.spi.RowMetadata;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.dcsa.core.exception.GetException;
+import org.dcsa.core.exception.ConcreteRequestErrorMessageException;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.springframework.data.r2dbc.dialect.R2dbcDialect;
 import org.springframework.data.relational.core.dialect.RenderContextFactory;
@@ -161,14 +161,15 @@ public class ExtendedRequest<T> {
       parsed = true;
     }
     if (parsed && value.size() != 1) {
-      throw new GetException("param " + key + " was repeated but should only appear once");
+      throw ConcreteRequestErrorMessageException.invalidQuery(key, "param " + key + " was repeated but should only appear once");
     }
     return parsed;
   }
 
   private void parseCursorParameter(String cursorValue) {
     if (isCursor != null && !isCursor) {
-      throw new GetException("Cannot use " + getExtendedParameters().getPaginationCursorName() + " parameter in combination with Sorting, Filtering or Limiting of the result!");
+      throw ConcreteRequestErrorMessageException.invalidQuery(getExtendedParameters().getPaginationCursorName(),
+        "Cannot use " + getExtendedParameters().getPaginationCursorName() + " parameter in combination with Sorting, Filtering or Limiting of the result!");
     }
 
     byte[] decodedCursor = Base64.getUrlDecoder().decode(cursorValue);
@@ -319,7 +320,7 @@ public class ExtendedRequest<T> {
       Constructor<T> constructor = modelClass.getDeclaredConstructor();
       return constructor.newInstance();
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      throw new GetException("Error when creating a new instance of: " + modelClass.getSimpleName());
+      throw ConcreteRequestErrorMessageException.internalServerError("Error when creating a new instance of: " + modelClass.getSimpleName());
     }
   }
 
