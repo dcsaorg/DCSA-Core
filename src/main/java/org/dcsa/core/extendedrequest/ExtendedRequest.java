@@ -11,15 +11,11 @@ import org.dcsa.core.query.DBEntityAnalysis;
 import org.springframework.data.r2dbc.dialect.R2dbcDialect;
 import org.springframework.data.relational.core.dialect.RenderContextFactory;
 import org.springframework.data.relational.core.sql.*;
-import org.springframework.data.relational.core.sql.render.RenderContext;
-import org.springframework.data.relational.core.sql.render.SqlRenderer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.r2dbc.core.PreparedOperation;
-import org.springframework.r2dbc.core.binding.BindTarget;
-import org.springframework.r2dbc.core.binding.Bindings;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -383,25 +379,5 @@ public class ExtendedRequest<T> {
     }
     byte[] parameters = sb.toString().getBytes(StandardCharsets.UTF_8);
     return getExtendedParameters().getPaginationCursorName() + CURSOR_SPLIT + Base64.getUrlEncoder().withoutPadding().encodeToString(parameters);
-  }
-
-  @RequiredArgsConstructor(staticName = "of")
-  private static class PreparedQuery implements PreparedOperation<Select> {
-
-    @Getter
-    private final Select source;
-    private final RenderContext renderContext;
-    private final Bindings bindings;
-
-    @Override
-    public void bindTo(BindTarget target) {
-      bindings.apply(target);
-    }
-
-    @Override
-    public String toQuery() {
-      SqlRenderer sqlRenderer = SqlRenderer.create(this.renderContext);
-      return sqlRenderer.render(source);
-    }
   }
 }
