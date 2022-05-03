@@ -16,7 +16,7 @@ public interface QueryFieldRestriction {
    *
    * @return A list of default values.
    */
-  default List<String> defaultValue() {
+  default List<String> getDefaultValue() {
     return Collections.emptyList();
   }
 
@@ -24,7 +24,7 @@ public interface QueryFieldRestriction {
    * @return true if this restriction has a default value or not.
    */
   default boolean hasDefault() {
-    return !defaultValue().isEmpty();
+    return !getDefaultValue().isEmpty();
   }
 
   /**
