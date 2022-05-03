@@ -133,23 +133,15 @@ public class ExtendedRequest<T> {
     return queryParameterParser;
   }
 
-  public Sort<T> getSort() {
-    return sort;
-  }
-
-  public Pagination<T> getPagination() {
-    return pagination;
-  }
-
   private boolean parseParameter(String key, List<String> value, boolean fromCursor) {
     boolean parsed = false;
     if (getExtendedParameters().getSortParameterName().equals(key)) {
       // Parse sorting
-      getSort().parseSortParameter(value.get(0), fromCursor);
+      sort.parseSortParameter(value.get(0), fromCursor);
       parsed = true;
     } else if (getExtendedParameters().getPaginationPageSizeName().equals(key)) {
       // Parse limit
-      getPagination().parseLimitParameter(value.get(0), fromCursor);
+      pagination.parseLimitParameter(value.get(0), fromCursor);
       parsed = true;
     } else if (getExtendedParameters().getPaginationCursorName().equals(key)) {
       // Parse cursor
@@ -157,7 +149,7 @@ public class ExtendedRequest<T> {
       parsed = true;
     } else if (getExtendedParameters().getIndexCursorName().equals(key) && fromCursor) {
       // Parse internal pagination cursor
-      getPagination().parseInternalPaginationCursor(value.get(0));
+      pagination.parseInternalPaginationCursor(value.get(0));
       parsed = true;
     }
     if (parsed && value.size() != 1) {
@@ -208,7 +200,6 @@ public class ExtendedRequest<T> {
       markQueryFieldInUse(queryField);
       return queryField.getSelectColumn();
     }).collect(Collectors.toList());
-    Sort<T> sort = getSort();
 
     return generateBaseQuery(Select.builder().select(expressions))
       .orderBy(sort.getOrderByFields()).build();
@@ -224,7 +215,6 @@ public class ExtendedRequest<T> {
     if (filterCondition == null) {
       finishedParsingParameters();
     }
-    Pagination<T> pagination = getPagination();
     if (selectDistinct) {
       selectBuilder = selectBuilder.distinct();
     }
@@ -239,7 +229,7 @@ public class ExtendedRequest<T> {
   }
 
   public void setQueryCount(Integer count) {
-    getPagination().setTotal(count);
+    pagination.setTotal(count);
   }
 
   protected SelectBuilder.SelectWhere applyJoins(SelectBuilder.SelectFromAndJoin selectBuilder) {
@@ -336,7 +326,7 @@ public class ExtendedRequest<T> {
   }
 
   protected void addPaginationHeaders(StringBuilder exposeHeaders, HttpHeaders headers, String uri) {
-    if (getPagination().getLimit() != null) {
+    if (pagination.getLimit() != null) {
       addPaginationHeader(uri, headers, getExtendedParameters().getPaginationCurrentPageName(), Pagination.PageRequest.CURRENT, exposeHeaders);
       addPaginationHeader(uri, headers, getExtendedParameters().getPaginationFirstPageName(), Pagination.PageRequest.FIRST, exposeHeaders);
       addPaginationHeader(uri, headers, getExtendedParameters().getPaginationPreviousPageName(), Pagination.PageRequest.PREVIOUS, exposeHeaders);
@@ -361,10 +351,10 @@ public class ExtendedRequest<T> {
 
   private String getHeaderPageCursor(Pagination.PageRequest page) {
     StringBuilder sb = new StringBuilder();
-    if (page != null && !getPagination().encodePagination(sb, page)) {
+    if (page != null && !pagination.encodePagination(sb, page)) {
       return null;
     }
-    getSort().encodeSort(sb);
+    sort.encodeSort(sb);
     for (Map.Entry<String, List<String>> filterParam : filterCondition.getCursorParameters().entrySet()) {
       String parameter = filterParam.getKey();
       for (String value : filterParam.getValue()) {
@@ -374,7 +364,7 @@ public class ExtendedRequest<T> {
         sb.append(parameter).append(FILTER_SPLIT).append(value);
       }
     }
-    getPagination().encodeLimit(sb);
+    pagination.encodeLimit(sb);
     if (page == null) {
       return sb.toString();
     }
