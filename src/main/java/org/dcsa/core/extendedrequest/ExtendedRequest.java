@@ -49,7 +49,6 @@ public class ExtendedRequest<T> {
   private final ExtendedParameters extendedParameters;
   private final R2dbcDialect r2dbcDialect;
   private final Class<T> modelClass;
-  protected Sort<T> sort;
   protected Pagination<T> pagination;
   protected QueryParameterParser<T> queryParameterParser;
   private CursorBackedFilterCondition filterCondition;
@@ -58,10 +57,13 @@ public class ExtendedRequest<T> {
   @Setter
   protected boolean selectDistinct;
 
-  private Boolean isCursor = null;
   private final Set<String> joinAliasInUse = new HashSet<>();
   @Getter
   private DBEntityAnalysis<T> dbEntityAnalysis;
+
+  @Getter
+  @Setter
+  private int queryCount = -1;  // -1 is a placeholder, so we can tell whether setQueryTotal has been called.
 
   public Class<T> getModelClass() {
     return modelClass;
@@ -71,44 +73,10 @@ public class ExtendedRequest<T> {
     return extendedParameters;
   }
 
-  public boolean isCursor() {
-    return isCursor != null && isCursor;
-  }
-
-  public void setNoCursor() {
-    isCursor = false;
-  }
-
   public void parseParameter(Map<String, List<String>> params) {
-    parseParameter(params, false);
-  }
-
-  public void parseParameter(Map<String, List<String>> params, boolean fromCursor) {
     // Reset parameters
     resetParameters();
-
-    ExtendedParameters parameters = getExtendedParameters();
-    Set<String> reservedParameters = new HashSet<>(parameters.getReservedParameters());
-    Set<String> nonFilterParameters = new HashSet<>(reservedParameters);
-
-    nonFilterParameters.add(parameters.getSortParameterName());
-    nonFilterParameters.add(parameters.getPaginationPageSizeName());
-    nonFilterParameters.add(parameters.getPaginationCursorName());
-    nonFilterParameters.add(parameters.getIndexCursorName());
-
-    for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-      String key = entry.getKey();
-      if (reservedParameters.contains(key)) {
-        continue;
-      }
-
-      if (parseParameter(key, entry.getValue(), fromCursor)) {
-        // If the parseParameter consumed it, then it is not a filter parameter
-        nonFilterParameters.add(key);
-      }
-    }
-
-    getQueryParameterParser().parseQueryParameter(params, nonFilterParameters::contains);
+    getQueryParameterParser().parseQueryParameter(params);
     finishedParsingParameters();
   }
 
@@ -121,8 +89,7 @@ public class ExtendedRequest<T> {
   }
 
   public void resetParameters() {
-    sort = new Sort<>(this, getExtendedParameters());
-    pagination = new Pagination<>(this, getExtendedParameters());
+    pagination = new Pagination<>(getExtendedParameters());
     selectDistinct = false;
     dbEntityAnalysis = this.prepareDBEntityAnalysis().build();
     queryParameterParser = new QueryParameterParser<>(extendedParameters, r2dbcDialect, dbEntityAnalysis);
@@ -133,59 +100,6 @@ public class ExtendedRequest<T> {
     return queryParameterParser;
   }
 
-  private boolean parseParameter(String key, List<String> value, boolean fromCursor) {
-    boolean parsed = false;
-    if (getExtendedParameters().getSortParameterName().equals(key)) {
-      // Parse sorting
-      sort.parseSortParameter(value.get(0), fromCursor);
-      parsed = true;
-    } else if (getExtendedParameters().getPaginationPageSizeName().equals(key)) {
-      // Parse limit
-      pagination.parseLimitParameter(value.get(0), fromCursor);
-      parsed = true;
-    } else if (getExtendedParameters().getPaginationCursorName().equals(key)) {
-      // Parse cursor
-      parseCursorParameter(value.get(0));
-      parsed = true;
-    } else if (getExtendedParameters().getIndexCursorName().equals(key) && fromCursor) {
-      // Parse internal pagination cursor
-      pagination.parseInternalPaginationCursor(value.get(0));
-      parsed = true;
-    }
-    if (parsed && value.size() != 1) {
-      throw ConcreteRequestErrorMessageException.invalidQuery(key, "param " + key + " was repeated but should only appear once");
-    }
-    return parsed;
-  }
-
-  private void parseCursorParameter(String cursorValue) {
-    if (isCursor != null && !isCursor) {
-      throw ConcreteRequestErrorMessageException.invalidQuery(getExtendedParameters().getPaginationCursorName(),
-        "Cannot use " + getExtendedParameters().getPaginationCursorName() + " parameter in combination with Sorting, Filtering or Limiting of the result!");
-    }
-
-    byte[] decodedCursor = Base64.getUrlDecoder().decode(cursorValue);
-    Map<String, List<String>> params = convertToQueryStringToHashMap(new String(decodedCursor, StandardCharsets.UTF_8));
-    parseParameter(params, true);
-    isCursor = true;
-  }
-
-  private static Map<String, List<String>> convertToQueryStringToHashMap(String source) {
-    Map<String, List<String>> data = new LinkedHashMap<>();
-    final String[] arrParameters = source.split(PARAMETER_SPLIT);
-    for (final String tempParameterString : arrParameters) {
-      final String[] arrTempParameter = tempParameterString.split("=");
-      final String parameterKey = arrTempParameter[0];
-      final List<String> valueList = data.computeIfAbsent(parameterKey, k -> new ArrayList<>());
-      if (arrTempParameter.length >= 2) {
-        final String parameterValue = arrTempParameter[1];
-        valueList.add(parameterValue);
-      } else {
-        valueList.add("");
-      }
-    }
-    return data;
-  }
 
   public DatabaseClient.GenericExecuteSpec getCount(DatabaseClient databaseClient) {
     return databaseClient.sql(this.getCountQuery());
@@ -195,41 +109,54 @@ public class ExtendedRequest<T> {
     return databaseClient.sql(this.getQuery());
   }
 
+  @SuppressWarnings("unchecked")
+  protected <SB extends SelectBuilder.SelectLimitOffset> SB applyLimitOffset(SB t) {
+    int limit = filterCondition.getLimit();
+    int indexCursor = filterCondition.getOffset();
+    if (limit != 0 && indexCursor != 0) {
+      return (SB) t.limitOffset(limit, indexCursor);
+    }
+    if (limit != 0) {
+      return (SB) t.limit(limit);
+    }
+    return indexCursor != 0 ? (SB) t.offset(indexCursor) : t;
+  }
+
   public Select getSelectQuery() {
     List<Expression> expressions = dbEntityAnalysis.getAllSelectableFields().stream().map(queryField -> {
       markQueryFieldInUse(queryField);
       return queryField.getSelectColumn();
     }).collect(Collectors.toList());
 
-    return generateBaseQuery(Select.builder().select(expressions))
-      .orderBy(sort.getOrderByFields()).build();
+    return generateBaseQuery(Select.builder().select(expressions), true)
+      .orderBy(filterCondition.getOrderByFields()).build();
   }
 
   public Select getSelectCountQuery() {
     return generateBaseQuery(Select.builder().select(
       Functions.count(Expressions.asterisk()).as("count")
-    )).build();
+    ), false).build();
   }
 
-  protected SelectBuilder.SelectOrdered generateBaseQuery(SelectBuilder.SelectAndFrom selectBuilder) {
+  protected SelectBuilder.SelectOrdered generateBaseQuery(SelectBuilder.SelectAndFrom selectBuilder, boolean withLimits) {
     if (filterCondition == null) {
       finishedParsingParameters();
     }
     if (selectDistinct) {
       selectBuilder = selectBuilder.distinct();
     }
-    SelectBuilder.SelectWhere selectWhere = applyJoins(pagination.applyLimitOffset(selectBuilder.from(
+    SelectBuilder.SelectFromAndJoin selectFromAndJoin = selectBuilder.from(
       dbEntityAnalysis.getTableAndJoins().getPrimaryTable()
-    )));
+    );
+    if (withLimits) {
+      selectFromAndJoin = applyLimitOffset(selectFromAndJoin);
+    }
+    SelectBuilder.SelectWhere selectWhere = applyJoins(selectFromAndJoin);
     Condition con = filterCondition.computeCondition(r2dbcDialect);
     if (TrueCondition.INSTANCE.equals(con)) {
       return selectWhere;
     }
     return selectWhere.where(con);
-  }
-
-  public void setQueryCount(Integer count) {
-    pagination.setTotal(count);
   }
 
   protected SelectBuilder.SelectWhere applyJoins(SelectBuilder.SelectFromAndJoin selectBuilder) {
@@ -254,7 +181,7 @@ public class ExtendedRequest<T> {
    * Unused fields can cause joins to be omitted.
    *
    * Note that any field registered via {@link #getQueryParameterParser()} are automatically
-   * registered via {@link #parseParameter(Map, boolean)} (etc.).  However, subclasses
+   * registered via {@link #parseParameter(Map)} (etc.).  However, subclasses
    * that need special handling of some fields/Sort rules, etc. can call this to
    * register the fields as in used as needed.
    *
@@ -326,7 +253,9 @@ public class ExtendedRequest<T> {
   }
 
   protected void addPaginationHeaders(StringBuilder exposeHeaders, HttpHeaders headers, String uri) {
-    if (pagination.getLimit() != null) {
+    assert filterCondition != null : "Parameters ought to have been parsed by now";
+    assert queryCount > -1 : "The total number of entities must be known for this to work";
+    if (filterCondition.getLimit() > 0) {
       addPaginationHeader(uri, headers, getExtendedParameters().getPaginationCurrentPageName(), Pagination.PageRequest.CURRENT, exposeHeaders);
       addPaginationHeader(uri, headers, getExtendedParameters().getPaginationFirstPageName(), Pagination.PageRequest.FIRST, exposeHeaders);
       addPaginationHeader(uri, headers, getExtendedParameters().getPaginationPreviousPageName(), Pagination.PageRequest.PREVIOUS, exposeHeaders);
@@ -351,10 +280,9 @@ public class ExtendedRequest<T> {
 
   private String getHeaderPageCursor(Pagination.PageRequest page) {
     StringBuilder sb = new StringBuilder();
-    if (page != null && !pagination.encodePagination(sb, page)) {
+    if (page != null && !pagination.encodePagination(sb, page, filterCondition.getOffset(), filterCondition.getLimit(), queryCount)) {
       return null;
     }
-    sort.encodeSort(sb);
     for (Map.Entry<String, List<String>> filterParam : filterCondition.getCursorParameters().entrySet()) {
       String parameter = filterParam.getKey();
       for (String value : filterParam.getValue()) {
@@ -364,7 +292,6 @@ public class ExtendedRequest<T> {
         sb.append(parameter).append(FILTER_SPLIT).append(value);
       }
     }
-    pagination.encodeLimit(sb);
     if (page == null) {
       return sb.toString();
     }
