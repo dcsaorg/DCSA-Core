@@ -68,8 +68,8 @@ public class QueryParameterParser<T> {
       if (restriction == null || !restriction.hasDefault() || !referencedFields.add(queryField)) {
         continue;
       }
-      assert restriction.defaultValue() != null && !restriction.defaultValue().isEmpty();
-      parseSingleParameter(queryField.getJsonName(), queryField.getJsonName(), null, restriction.defaultValue(), false);
+      assert restriction.getDefaultValue() != null && !restriction.getDefaultValue().isEmpty();
+      parseSingleParameter(queryField.getJsonName(), queryField.getJsonName(), null, restriction.getDefaultValue(), false);
     }
   }
 
