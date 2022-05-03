@@ -28,7 +28,7 @@ enum ComparisonType {
   private final BiFunction<Expression, Expression, FilterCondition> singleValueConverter;
 
   ComparisonType(boolean requiredOrdering, BiFunction<Expression, Expression, Condition> conditionBiFunction) {
-    this(requiredOrdering, false, (lhs, rhs) -> QueryParameterParser.InlineableFilterCondition.of(conditionBiFunction.apply(lhs, rhs)));
+    this(requiredOrdering, false, (lhs, rhs) -> InlineableFilterCondition.of(conditionBiFunction.apply(lhs, rhs)));
   }
 
   public Expression defaultFieldConversion(QueryField queryField) {
@@ -60,9 +60,9 @@ enum ComparisonType {
       return singleNonNullValueCondition(field, expressions.get(0));
     } else if (this == EQ || this == NEQ) {
       if (this == EQ) {
-        return QueryParameterParser.InlineableFilterCondition.of(Conditions.in(field, expressions));
+        return InlineableFilterCondition.of(Conditions.in(field, expressions));
       }
-      return QueryParameterParser.InlineableFilterCondition.of(Conditions.notIn(field, expressions));
+      return InlineableFilterCondition.of(Conditions.notIn(field, expressions));
     } else {
       return QueryParameterParser.andAllFilters(
         expressions.stream().map(e -> singleValueConverter.apply(field, e)).collect(Collectors.toList()),
