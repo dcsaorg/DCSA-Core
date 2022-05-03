@@ -232,15 +232,6 @@ public class ExtendedRequest<T> {
     return jsonIgnoreProperties != null && jsonIgnoreProperties.ignoreUnknown();
   }
 
-  public T getModelClassInstance(Row row, RowMetadata meta) {
-    try {
-      Constructor<T> constructor = modelClass.getDeclaredConstructor();
-      return constructor.newInstance();
-    } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      throw ConcreteRequestErrorMessageException.internalServerError("Error when creating a new instance of: " + modelClass.getSimpleName());
-    }
-  }
-
   public void insertHeaders(ServerHttpResponse response, ServerHttpRequest request) {
     HttpHeaders headers = response.getHeaders();
     StringBuilder exposeHeaders = new StringBuilder();
