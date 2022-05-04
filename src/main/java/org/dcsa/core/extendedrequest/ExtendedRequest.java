@@ -254,7 +254,7 @@ public class ExtendedRequest<T> {
 
   protected void addPaginationHeaders(StringBuilder exposeHeaders, HttpHeaders headers, String uri) {
     assert filterCondition != null : "Parameters ought to have been parsed by now";
-//    TODO: Fix me so that I don't break integration tests
+//    TODO: Fix me so that I don't break integration tests (https://dcsa.atlassian.net/browse/DDT-1034)
 //    assert queryCount > -1 : "The total number of entities must be known for this to work";
     if (filterCondition.getLimit() > 0) {
       addPaginationHeader(uri, headers, getExtendedParameters().getPaginationCurrentPageName(), Pagination.PageRequest.CURRENT, exposeHeaders);
