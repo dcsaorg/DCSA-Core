@@ -41,7 +41,7 @@ public @interface RequiredIfTrue {
   String fieldReference();
 
   String message() default
-      "if {isFieldReferenceRequired} is true then {fieldReference} cannot be null";
+    "if {isFieldReferenceRequired} is true then {fieldReference} cannot be null";
 
   Class<?>[] groups() default {};
 
