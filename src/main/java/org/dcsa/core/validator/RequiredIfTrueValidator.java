@@ -37,13 +37,13 @@ public class RequiredIfTrueValidator implements ConstraintValidator<RequiredIfTr
       fieldReferenceGetter = ReflectUtility.getGetterMethodFromName(entity.getClass(), fieldReference);
     } catch (MethodNotFoundException e) {
       throw new IllegalStateException(
-          "Invalid @RequiredIfTrueValidator annotation for entity "
-              + entity.getClass().getSimpleName()
-              + ": The entity does not have both of the fields "
-              + isFieldReferenceRequired
-              + " and "
-              + fieldReference,
-          e);
+        "Invalid @RequiredIfTrueValidator annotation for entity "
+          + entity.getClass().getSimpleName()
+          + ": The entity does not have both of the fields "
+          + isFieldReferenceRequired
+          + " and "
+          + fieldReference,
+        e);
     }
 
     if (!(Boolean.class.isAssignableFrom(isFieldReferenceRequiredGetter.getReturnType()) || boolean.class.isAssignableFrom(isFieldReferenceRequiredGetter.getReturnType()))) {
@@ -55,13 +55,13 @@ public class RequiredIfTrueValidator implements ConstraintValidator<RequiredIfTr
       isFieldReferenceValueNull = fieldReferenceGetter.invoke(entity) == null;
     } catch (IllegalAccessException | InvocationTargetException e) {
       throw new IllegalStateException(
-          "Issue with @RequiredIfTrueValidator annotation for entity "
-              + entity.getClass().getSimpleName()
-              + ": The getter for "
-              + isFieldReferenceRequired
-              + " or "
-              + fieldReference
-              + " triggered an exception!");
+        "Issue with @RequiredIfTrueValidator annotation for entity "
+          + entity.getClass().getSimpleName()
+          + ": The getter for "
+          + isFieldReferenceRequired
+          + " or "
+          + fieldReference
+          + " triggered an exception!");
     }
     return !isFieldReferenceRequiredValue || !isFieldReferenceValueNull;
   }

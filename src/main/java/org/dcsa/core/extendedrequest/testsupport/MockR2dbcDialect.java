@@ -10,8 +10,8 @@ import org.springframework.r2dbc.core.binding.BindMarkersFactory;
  */
 public class MockR2dbcDialect extends PostgresDialect {
 
-    @Override
-    public BindMarkersFactory getBindMarkersFactory() {
-        return MockBindMarkers::new;
-    }
+  @Override
+  public BindMarkersFactory getBindMarkersFactory() {
+    return MockBindMarkers::new;
+  }
 }

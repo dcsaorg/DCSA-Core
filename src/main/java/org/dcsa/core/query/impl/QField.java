@@ -8,6 +8,6 @@ import java.lang.reflect.Field;
 @Data
 @RequiredArgsConstructor(staticName = "of")
 class QField {
-    private final Field field;
-    private final boolean filterField;
+  private final Field field;
+  private final boolean filterField;
 }

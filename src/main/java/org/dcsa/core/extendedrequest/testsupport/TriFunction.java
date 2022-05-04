@@ -5,5 +5,5 @@ import org.springframework.data.r2dbc.dialect.R2dbcDialect;
 
 @FunctionalInterface
 public interface TriFunction<A, B, C, D> {
-    D apply(A a, B b, C c);
+  D apply(A a, B b, C c);
 }

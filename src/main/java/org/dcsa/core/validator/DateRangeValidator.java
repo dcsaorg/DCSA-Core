@@ -46,31 +46,31 @@ public class DateRangeValidator implements ConstraintValidator<DateRange, Object
       endFieldGetter = ReflectUtility.getGetterMethodFromName(entity.getClass(), endFieldName);
     } catch (NoSuchFieldException|MethodNotFoundException e) {
       throw new IllegalStateException("Invalid @DateRange annotation for entity " + entity.getClass().getSimpleName()
-              + ": The entity does not have both of the fields " + startFieldName + " and " + endFieldName, e);
+        + ": The entity does not have both of the fields " + startFieldName + " and " + endFieldName, e);
     }
     dateType = startField.getType();
     if (!Temporal.class.isAssignableFrom(dateType) || !Comparable.class.isAssignableFrom(dateType)) {
       throw new IllegalStateException("Invalid @DateRange annotation for entity " + entity.getClass().getSimpleName()
-              + ": The type of " + startFieldName + " must be a Comparable & Temporal (such as ZonedDateTime)");
+        + ": The type of " + startFieldName + " must be a Comparable & Temporal (such as ZonedDateTime)");
     }
     if (!dateType.equals(startFieldGetter.getReturnType())) {
       throw new IllegalStateException("Invalid @DateRange annotation for entity " + entity.getClass().getSimpleName()
-              + ": The field and getter methods disagree on the return type for " + startFieldName);
+        + ": The field and getter methods disagree on the return type for " + startFieldName);
     }
     if (!dateType.equals(endField.getType())) {
       throw new IllegalStateException("Invalid @DateRange annotation for entity " + entity.getClass().getSimpleName()
-              + ": The fields " + startFieldName + " and " + endFieldName + " must have the same type");
+        + ": The fields " + startFieldName + " and " + endFieldName + " must have the same type");
     }
     if (!startFieldGetter.getReturnType().equals(endFieldGetter.getReturnType())) {
       throw new IllegalStateException("Invalid @DateRange annotation for entity " + entity.getClass().getSimpleName()
-              + ": The getters for " + startFieldName + " and " + endFieldName + " must have the same return type");
+        + ": The getters for " + startFieldName + " and " + endFieldName + " must have the same return type");
     }
     try {
       startDateValue = cast(startFieldGetter.invoke(entity));
       endDateValue = cast(endFieldGetter.invoke(entity));
     } catch (IllegalAccessException|InvocationTargetException e) {
       throw new IllegalStateException("Issue with @DateRange annotation for entity " + entity.getClass().getSimpleName()
-              + ": The getter for " + startFieldName + " or " + endFieldName + " triggered an exception!");
+        + ": The getter for " + startFieldName + " or " + endFieldName + " triggered an exception!");
     }
 
     if (startDateValue == null || endDateValue == null) {

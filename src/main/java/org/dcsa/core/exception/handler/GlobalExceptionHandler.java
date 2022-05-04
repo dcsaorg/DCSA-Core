@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(ConcreteRequestErrorMessageException.class)
   public ResponseEntity<RequestFailureTO> handleConcreteRequestErrorMessageException(
-      ServerHttpRequest serverHttpRequest, ConcreteRequestErrorMessageException ex) {
+    ServerHttpRequest serverHttpRequest, ConcreteRequestErrorMessageException ex) {
     ResponseStatus responseStatusAnnotation = ex.getClass().getAnnotation(ResponseStatus.class);
     HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
     ConcreteRequestErrorMessageTO errorEntity = ex.asConcreteRequestMessage();
@@ -41,24 +41,24 @@ public class GlobalExceptionHandler {
     }
 
     RequestFailureTO failureTO =
-        new RequestFailureTO(
-            serverHttpRequest.getMethodValue(),
-            serverHttpRequest.getURI().toString(),
-            List.of(errorEntity),
-            httpStatus);
+      new RequestFailureTO(
+        serverHttpRequest.getMethodValue(),
+        serverHttpRequest.getURI().toString(),
+        List.of(errorEntity),
+        httpStatus);
     return new ResponseEntity<>(failureTO, httpStatus);
   }
 
   @Deprecated
   @ExceptionHandler(DCSAException.class)
   public ResponseEntity<RequestFailureTO> handleDCSAExceptions(
-      ServerHttpRequest serverHttpRequest, DCSAException dcsaEx) {
+    ServerHttpRequest serverHttpRequest, DCSAException dcsaEx) {
 
     log.debug(
-        "{} ({}) - {}",
-        this.getClass().getSimpleName(),
-        dcsaEx.getClass().getSimpleName(),
-        dcsaEx.getMessage());
+      "{} ({}) - {}",
+      this.getClass().getSimpleName(),
+      dcsaEx.getClass().getSimpleName(),
+      dcsaEx.getMessage());
     logExceptionTraceIfEnabled(dcsaEx);
 
     ResponseStatus responseStatusAnnotation = dcsaEx.getClass().getAnnotation(ResponseStatus.class);
@@ -70,86 +70,86 @@ public class GlobalExceptionHandler {
     }
 
     ConcreteRequestErrorMessageTO errorEntity =
-        new ConcreteRequestErrorMessageTO(httpStatus.getReasonPhrase(), dcsaEx.getMessage());
+      new ConcreteRequestErrorMessageTO(httpStatus.getReasonPhrase(), dcsaEx.getMessage());
 
     RequestFailureTO failureTO =
-        new RequestFailureTO(
-            serverHttpRequest.getMethodValue(),
-            serverHttpRequest.getURI().toString(),
-            List.of(errorEntity),
-            httpStatus);
+      new RequestFailureTO(
+        serverHttpRequest.getMethodValue(),
+        serverHttpRequest.getURI().toString(),
+        List.of(errorEntity),
+        httpStatus);
     return new ResponseEntity<>(failureTO, httpStatus);
   }
 
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseEntity<RequestFailureTO> badRequest(
-      ServerHttpRequest serverHttpRequest, ConstraintViolationException cvex) {
+    ServerHttpRequest serverHttpRequest, ConstraintViolationException cvex) {
     String exceptionMessage = null;
     if (Objects.nonNull(cvex.getConstraintViolations())) {
       log.debug("Input error : {}", cvex.getConstraintViolations());
       exceptionMessage =
-          cvex.getConstraintViolations().stream()
-              .filter(Objects::nonNull)
-              .map(
-                  constraintViolation ->
-                      constraintViolation.getPropertyPath()
-                          + " "
-                          + constraintViolation.getMessage())
-              .collect(Collectors.joining(";"));
+        cvex.getConstraintViolations().stream()
+          .filter(Objects::nonNull)
+          .map(
+            constraintViolation ->
+              constraintViolation.getPropertyPath()
+                + " "
+                + constraintViolation.getMessage())
+          .collect(Collectors.joining(";"));
     }
     logExceptionTraceIfEnabled(cvex);
 
     return handleConcreteRequestErrorMessageException(
-        serverHttpRequest,
-        ConcreteRequestErrorMessageException.invalidInput(exceptionMessage, cvex));
+      serverHttpRequest,
+      ConcreteRequestErrorMessageException.invalidInput(exceptionMessage, cvex));
   }
 
   @ExceptionHandler(BadSqlGrammarException.class)
   public ResponseEntity<RequestFailureTO> handle(
-      ServerHttpRequest serverHttpRequest, BadSqlGrammarException ex) {
+    ServerHttpRequest serverHttpRequest, BadSqlGrammarException ex) {
     if ("22001".equals(ex.getR2dbcException().getSqlState())) {
       // The error with code 22001 is thrown when trying to insert a value that is too long for the
       // column
       if (ex.getSql().startsWith("INSERT INTO")) {
         log.debug(
-            "{} insert into error! - {}",
-            this.getClass().getSimpleName(),
-            ex.getR2dbcException().getMessage());
+          "{} insert into error! - {}",
+          this.getClass().getSimpleName(),
+          ex.getR2dbcException().getMessage());
         return handleConcreteRequestErrorMessageException(
-            serverHttpRequest,
-            ConcreteRequestErrorMessageException.invalidParameter(
-                "Trying to insert a string value that is too long"));
+          serverHttpRequest,
+          ConcreteRequestErrorMessageException.invalidParameter(
+            "Trying to insert a string value that is too long"));
       } else {
         log.debug(
-            "{} update error! - {}",
-            this.getClass().getSimpleName(),
-            ex.getR2dbcException().getMessage());
+          "{} update error! - {}",
+          this.getClass().getSimpleName(),
+          ex.getR2dbcException().getMessage());
         return handleConcreteRequestErrorMessageException(
-            serverHttpRequest,
-            ConcreteRequestErrorMessageException.invalidParameter(
-                "Trying to update a string value that is too long"));
+          serverHttpRequest,
+          ConcreteRequestErrorMessageException.invalidParameter(
+            "Trying to update a string value that is too long"));
       }
     } else if ("42804".equals(ex.getR2dbcException().getSqlState())) {
       return handleConcreteRequestErrorMessageException(
-          serverHttpRequest,
-          ConcreteRequestErrorMessageException.internalServerError(
-              "Internal mismatch between backEnd and database - please see log", ex));
+        serverHttpRequest,
+        ConcreteRequestErrorMessageException.internalServerError(
+          "Internal mismatch between backEnd and database - please see log", ex));
     } else {
       return handleConcreteRequestErrorMessageException(
-          serverHttpRequest,
-          ConcreteRequestErrorMessageException.internalServerError(
-              "Internal error with database operation - please see log", ex));
+        serverHttpRequest,
+        ConcreteRequestErrorMessageException.internalServerError(
+          "Internal error with database operation - please see log", ex));
     }
   }
 
   @ExceptionHandler(ServerWebInputException.class)
   public ResponseEntity<RequestFailureTO> handle(
-      ServerHttpRequest serverHttpRequest, ServerWebInputException ex) {
+    ServerHttpRequest serverHttpRequest, ServerWebInputException ex) {
     if (ex.getMessage() != null && ex.getMessage().contains("Invalid UUID string:")) {
       return handleConcreteRequestErrorMessageException(
-          serverHttpRequest,
-          ConcreteRequestErrorMessageException.invalidParameter(
-              "Input was not a valid UUID format", ex));
+        serverHttpRequest,
+        ConcreteRequestErrorMessageException.invalidParameter(
+          "Input was not a valid UUID format", ex));
     } else if (ex.getCause() instanceof DecodingException) {
       return handleDecodingExceptionImpl(serverHttpRequest, (DecodingException) ex.getCause());
     } else if (ex.getCause() instanceof ConstraintViolationException) {
@@ -157,8 +157,8 @@ public class GlobalExceptionHandler {
     } else {
 //      throw ex;
       return handleConcreteRequestErrorMessageException(
-          serverHttpRequest,
-          ConcreteRequestErrorMessageException.invalidInput(ex.getMessage(), ex));
+        serverHttpRequest,
+        ConcreteRequestErrorMessageException.invalidInput(ex.getMessage(), ex));
     }
   }
 
@@ -167,12 +167,12 @@ public class GlobalExceptionHandler {
   // considerably better message.
   @ExceptionHandler(DecodingException.class)
   public ResponseEntity<RequestFailureTO> handleJsonDecodeException(
-      ServerHttpRequest serverHttpRequest, DecodingException ce) {
+    ServerHttpRequest serverHttpRequest, DecodingException ce) {
     return handleDecodingExceptionImpl(serverHttpRequest, ce);
   }
 
   private ResponseEntity<RequestFailureTO> handleDecodingExceptionImpl(
-      ServerHttpRequest serverHttpRequest, DecodingException ce) {
+    ServerHttpRequest serverHttpRequest, DecodingException ce) {
     String attributeReference = "";
     if (ce.getCause() instanceof JsonMappingException) {
       attributeReference = ((JsonMappingException) ce.getCause()).getPathReference();
@@ -180,13 +180,13 @@ public class GlobalExceptionHandler {
       // org.dcsa.jit.model.Timestamp["foo"])
       attributeReference = attributeReference.replaceFirst("^([a-zA-Z0-9]+[.])*+", "");
       attributeReference =
-          " The error is associated with the attribute " + attributeReference + ".";
+        " The error is associated with the attribute " + attributeReference + ".";
     }
     if (ce.getCause() instanceof UnrecognizedPropertyException) {
       // Unwrap one layer of exception message (the outer message is "useless")
       attributeReference =
-          ce.getCause().getLocalizedMessage().replaceAll("\\s*\\([^\\)]*\\)\\s*", " ")
-              + attributeReference;
+        ce.getCause().getLocalizedMessage().replaceAll("\\s*\\([^\\)]*\\)\\s*", " ")
+          + attributeReference;
     }
 
     if (ce.getCause() instanceof InvalidFormatException) {
@@ -194,41 +194,41 @@ public class GlobalExceptionHandler {
       // Per type messages where it makes sense to provide custom messages
       if (OffsetDateTime.class.isAssignableFrom(ife.getTargetType())) {
         attributeReference =
-            "Invalid format for date time field. The value \""
-                + ife.getValue()
-                + "\" cannot be parsed via the patterns \"YYYY-MM-DD'T'HH:MM:SS+ZZZZ\" "
-                + "or \"YYYY-MM-DD'T'HH:MM:SS'Z'\". Please check the input."
-                + attributeReference;
+          "Invalid format for date time field. The value \""
+            + ife.getValue()
+            + "\" cannot be parsed via the patterns \"YYYY-MM-DD'T'HH:MM:SS+ZZZZ\" "
+            + "or \"YYYY-MM-DD'T'HH:MM:SS'Z'\". Please check the input."
+            + attributeReference;
       }
       if (LocalDate.class.isAssignableFrom(ife.getTargetType())) {
         attributeReference =
-            "Invalid format for date field. The value \""
-                + ife.getValue()
-                + "\" cannot be parsed via the pattern \"YYYY-MM-DD\". Please check the input."
-                + attributeReference;
+          "Invalid format for date field. The value \""
+            + ife.getValue()
+            + "\" cannot be parsed via the pattern \"YYYY-MM-DD\". Please check the input."
+            + attributeReference;
       }
     }
     return handleConcreteRequestErrorMessageException(
-        serverHttpRequest,
-        ConcreteRequestErrorMessageException.invalidInput(attributeReference, ce));
+      serverHttpRequest,
+      ConcreteRequestErrorMessageException.invalidInput(attributeReference, ce));
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<?> handleDataIntegrityViolationException(
-      ServerHttpRequest serverHttpRequest, DataIntegrityViolationException ex) {
+    ServerHttpRequest serverHttpRequest, DataIntegrityViolationException ex) {
     // For when the database catches an inconsistency.  They are not the best of error messages
     // but we should ensure they at least have the proper HTTP code.
     return handleConcreteRequestErrorMessageException(
-        serverHttpRequest,
-        ConcreteRequestErrorMessageException.conflict(ex.getLocalizedMessage(), ex));
+      serverHttpRequest,
+      ConcreteRequestErrorMessageException.conflict(ex.getLocalizedMessage(), ex));
   }
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<?> handleAllExceptions(ServerHttpRequest serverHttpRequest, Exception ex) {
     log.warn("Unhandled exception", ex);
     return handleConcreteRequestErrorMessageException(
-        serverHttpRequest,
-        ConcreteRequestErrorMessageException.internalServerError(ex.getMessage(), ex));
+      serverHttpRequest,
+      ConcreteRequestErrorMessageException.internalServerError(ex.getMessage(), ex));
   }
 
   private void logExceptionTraceIfEnabled(Exception ex) {

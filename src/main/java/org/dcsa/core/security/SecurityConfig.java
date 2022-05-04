@@ -40,8 +40,8 @@ public class SecurityConfig {
   @EventListener(ApplicationStartedEvent.class)
   void securityLogConfiguration() {
     log.info(
-        "You are currently running : {} : security is disabled for this profile. "
-            + "Please use `prod` profile to activate security.",
-        environment.getActiveProfiles());
+      "You are currently running : {} : security is disabled for this profile. "
+        + "Please use `prod` profile to activate security.",
+      environment.getActiveProfiles());
   }
 }

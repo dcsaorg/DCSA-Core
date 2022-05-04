@@ -24,9 +24,9 @@ public class EnumSubsetValidator implements ConstraintValidator<EnumSubset, Obje
   @Override
   public void initialize(EnumSubset constraintAnnotation) {
     this.subsetTypes = Arrays.stream(constraintAnnotation.anyOf())
-            .map(s -> s.split(","))
-            .flatMap(Arrays::stream)
-            .collect(Collectors.toSet());
+      .map(s -> s.split(","))
+      .flatMap(Arrays::stream)
+      .collect(Collectors.toSet());
   }
 
   @Override
@@ -37,17 +37,18 @@ public class EnumSubsetValidator implements ConstraintValidator<EnumSubset, Obje
 
     if (types instanceof String) {
       Stream<String> enumStream =
-          ((String) types).contains(",")
-              ? Arrays.stream(((String) types).split(","))
-              : Stream.of((String) types);
+        ((String) types).contains(",")
+          ? Arrays.stream(((String) types).split(","))
+          : Stream.of((String) types);
       return enumStream.allMatch(e -> subsetTypes.contains(e));
     } else if (types instanceof List) {
-      List<? extends Enum> enumList = (List<? extends Enum>) types;
+      @SuppressWarnings("unchecked")
+      List<? extends Enum<?>> enumList = (List<? extends Enum<?>>) types;
       return enumList.stream()
-          .map(Enum::name)
-          .allMatch(e -> subsetTypes.contains(e));
+        .map(Enum::name)
+        .allMatch(subsetTypes::contains);
     } else if (types instanceof Enum) {
-      return subsetTypes.contains(((Enum) types).name());
+      return subsetTypes.contains(((Enum<?>) types).name());
     } else {
       throw new NotImplementedException("type not implemented:" + types.getClass().getTypeName());
     }
