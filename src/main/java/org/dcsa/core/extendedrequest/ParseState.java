@@ -39,7 +39,8 @@ enum ParseState {
     return switch (this) {
       // INITIAL appears here if there were no arguments at all.  State-wise, that means we
       // are done parsing arguments.
-      case INITIAL, PARSING_ARGUMENTS -> PARSED_ARGUMENTS;
+      // PARSED_CURSOR appears here because it happens inside a parsing of arguments.
+      case INITIAL, PARSING_ARGUMENTS, PARSED_CURSOR -> PARSED_ARGUMENTS;
       case PARSING_CURSOR -> PARSED_CURSOR;
       case PARSING_DEFAULTS -> PARSED_DEFAULT;
       default -> throw ConcreteRequestErrorMessageException.internalServerError(

@@ -22,7 +22,7 @@ public class Pagination<T> {
 
 
 
-  protected boolean encodePagination(StringBuilder sb, PageRequest page, int indexCursor, int limit, int total) {
+  public boolean encodePagination(StringBuilder sb, PageRequest page, int indexCursor, int limit, int total) {
     switch (page) {
       case CURRENT: encodeIndexCursor(sb, indexCursor); return true;
       case NEXT: return encodeNext(sb, indexCursor + limit, total);
