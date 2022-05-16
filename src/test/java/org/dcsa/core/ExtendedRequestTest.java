@@ -108,6 +108,17 @@ public class ExtendedRequestTest {
                 .withParam("b.e1.name", "a")
                 .verify(baseQuery + " WHERE B_table__c1__e1.name = :b.e1.name");
 
+      verifierFor(extendedParameters, A.class)
+        .withCursorParam("b.e1.name", "a")
+        .withCursorOffset(10)
+        .verify(baseQuery + " WHERE B_table__c1__e1.name = :b.e1.name OFFSET 10");
+
+      verifierFor(extendedParameters, A.class)
+        .withCursorParam("b.e1.name", "a")
+        .withCursorParam("limit", "20")
+        .withCursorOffset(10)
+        .verify(baseQuery + " WHERE B_table__c1__e1.name = :b.e1.name LIMIT 20 OFFSET 10");
+
         verifierFor(extendedParameters, A.class)
                 .withParam("b.e1.name", "a")
                 .verify(baseQuery.replace("SELECT", "SELECT DISTINCT") + " WHERE B_table__c1__e1.name = :b.e1.name",

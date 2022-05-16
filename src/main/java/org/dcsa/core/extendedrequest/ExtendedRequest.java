@@ -6,6 +6,7 @@ import io.r2dbc.spi.RowMetadata;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.assertj.core.util.VisibleForTesting;
 import org.dcsa.core.exception.ConcreteRequestErrorMessageException;
 import org.dcsa.core.query.DBEntityAnalysis;
 import org.springframework.data.r2dbc.dialect.R2dbcDialect;
@@ -271,8 +272,13 @@ public class ExtendedRequest<T> {
   }
 
   private String getHeaderPageCursor(Pagination.PageRequest page) {
+    return getHeaderPageCursor(page, filterCondition.getOffset());
+  }
+
+  @VisibleForTesting
+  public String getHeaderPageCursor(Pagination.PageRequest page, int offset) {
     StringBuilder sb = new StringBuilder();
-    if (page != null && !pagination.encodePagination(sb, page, filterCondition.getOffset(), filterCondition.getLimit(), queryCount)) {
+    if (page != null && !pagination.encodePagination(sb, page, offset, filterCondition.getLimit(), queryCount)) {
       return null;
     }
     for (Map.Entry<String, List<String>> filterParam : filterCondition.getCursorParameters().entrySet()) {

@@ -183,7 +183,9 @@ public class QueryParameterParser<T> {
     byte[] decodedCursor = Base64.getUrlDecoder().decode(values.get(0));
     Map<String, List<String>> params = convertToQueryStringToHashMap(new String(decodedCursor, StandardCharsets.UTF_8));
     parseQueryParameter(params);
-    parseState = parseState.finishParsingRound();
+    // the parseQueryParameter method will update the parsing round for us.
+    // parseState = parseState.finishParsingRound();
+    assert parseState == ParseState.PARSED_CURSOR;
   }
 
   private void parseLimitQueryParameter(String parameterKey, String jsonName, String fieldAttribute, List<String> values) {

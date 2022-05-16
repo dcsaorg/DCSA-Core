@@ -59,6 +59,39 @@ public interface ExtendedRequestVerifier<E extends ExtendedRequest<T>, T> {
   ExtendedRequestVerifier<E, T> withParam(String param, String value);
 
   /**
+   * Provide a given query parameter which will be passed to the ExtendedRequest as if it was done via cursor.
+   *
+   * This is similar to {@link #withParam(String, String)} but uses the cursor instead.
+   *
+   * Note: As implementation detail, this may be done by parsing the cursor parameters as regular parameters first
+   * and then have the underlying {@link ExtendedRequest} generate the cursor from that. This implies that
+   * "cursor-only" parameters may be restricted in use.
+   *
+   * @param param Name of the parameter (e.g., "carrierBookingReference" or "sort"). The method <i>can</i>
+   *              be repeated with the same value for param.  In this case, the values are combined into a
+   *              list. The parameter will be treated as a query parameter and subject to attribute parsing
+   *              (e.g., "foo:gte" is the "foo" parameter with the attribute "gte").
+   * @param value The value associate to the param.
+   * @return An ExtendedRequestVerifier enabling you to chain into another method.
+   */
+  ExtendedRequestVerifier<E, T> withCursorParam(String param, String value);
+
+  /**
+   * Determine the offset for the cursor
+   *
+   * Set the cursor's offset value to the provided value. This will trigger an "OFFSET" in the SQL on the
+   * assumption that the cursor will use the OFFSET based cursoring.
+   *
+   * Note: As implementation detail, this may be done by parsing the cursor parameters as regular parameters first
+   * and then have the underlying {@link ExtendedRequest} generate the cursor from that. This should not matter
+   * from a functional behaviour test perspective, but it may affect things like mocking.
+   *
+   * @param value The value associate to the param.
+   * @return An ExtendedRequestVerifier enabling you to chain into another method.
+   */
+  ExtendedRequestVerifier<E, T> withCursorOffset(int value);
+
+  /**
    * Perform the test and verify the generated SQL with an expected SQL query
    *
    * @param expectedQuery The expected version of the SQL.  Note the SQL will be beautified.
