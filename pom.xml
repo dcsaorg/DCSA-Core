@@ -19,7 +19,7 @@
 
 	<properties>
 		<!-- Define DCSA-Core version -->
-		<revision>0.8.34</revision>
+		<revision>0.8.35</revision>
 		<sha1/>
 		<changelist>-SNAPSHOT</changelist>
 		<!-- End: Define DCSA-Core version -->
